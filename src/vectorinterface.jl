@@ -1,0 +1,1 @@
+VectorInterface.scalartype(T::Type{<:BlockTensorMap}) = scalartype(eltype(T))
