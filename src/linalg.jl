@@ -34,7 +34,7 @@ end
 function LinearAlgebra.dot(t1::BlockTensorMap, t2::BlockTensorMap)
     space(t1) == space(t2) || throw(SpaceMismatch())
     return sum(zip(parent(t1), parent(t2))) do (x, y)
-        dot(x, y)
+        return dot(x, y)
     end
 end
 
@@ -47,29 +47,28 @@ function LinearAlgebra.mul!(tC::BlockTensorMap, tA::BlockTensorMap, tB::BlockTen
     return tensorcontract!(tC, pC, tA, pA, :N, tB, pB, :N, α, β)
 end
 
-function LinearAlgebra.norm(tA::BlockTensorMap, p::Real = 2)
+function LinearAlgebra.norm(tA::BlockTensorMap, p::Real=2)
     return LinearAlgebra.norm(parent(tA), p)
 end
 
 function TensorKit.:⊗(t1::BlockTensorMap{S}, t2::BlockTensorMap{S}) where {S}
-    pC = ((codomainind(t1)..., (codomainind(t2) .+ numind(t1))...), (domainind(t1)..., (domainind(t2) .+ numind(t1))...))
+    pC = ((codomainind(t1)..., (codomainind(t2) .+ numind(t1))...),
+          (domainind(t1)..., (domainind(t2) .+ numind(t1))...))
     pA = (allind(t1), ())
     pB = ((), allind(t2))
     return tensorproduct(pC, t1, pA, :N, t2, pB, :N)
 end
 
-
 #===========================================================================================
     Inverses
 ===========================================================================================#
-
 
 # function Base.inv(t::BlockTensorMap)
 #     cod = codomain(t)
 #     dom = domain(t)
 #     isisomorphic(cod, dom) ||
 #         throw(SpaceMismatch("codomain $cod and domain $dom are not isomorphic: no inverse"))
-    
+
 #     tdst = TensorMap(data, dom ← cod)
 #     for (c, b) in blocks(t)
 #         blocks(tdst)[c] = inv(b)
@@ -92,16 +91,15 @@ end
 function Base.:(\)(t1::BlockTensorMap, t2::BlockTensorMap)
     codomain(t1) == codomain(t2) ||
         throw(SpaceMismatch("non-matching codomains in t1 \\ t2"))
-        
-    tdst = TensorMap(undef, promote_type(scalartype(t1), scalartype(t2)), domain(t1), domain(t2))
+
+    tdst = TensorMap(undef, promote_type(scalartype(t1), scalartype(t2)), domain(t1),
+                     domain(t2))
     for (c, b) in blocks(t1)
         result = b \ block(t2, c)
-        
-        
+
         blocks(tdst)[c] = b \ block(t2, c)
     end
-    
-    
+
     if sectortype(t1) === Trivial
         data = block(t1, Trivial()) \ block(t2, Trivial())
         return TensorMap(data, domain(t1) ← domain(t2))

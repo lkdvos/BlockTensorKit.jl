@@ -1,6 +1,17 @@
-const SparseBlockTensorMap{S,N₁,N₂,A} = BlockTensorMap{S,N₁,N₂,A} where {A<:SparseArray}
+const SparseBlockTensorMap{S,N₁,N₂,T,N} = BlockTensorMap{S,N₁,N₂,
+                                                         SparseArray{T,N}} where {T,N}
 
-                                                       
+# function Base.getindex(t::SparseBlockTensorMap, I::Int...)
+#     @assert length(I) == numind(t)
+#     return getindex(t, CartesianIndex(I))
+# end
+# function Base.getindex(t::SparseBlockTensorMap, I::CartesianIndex)
+#     @boundscheck checkbounds(t, I)
+#     return get(parent(t).data, I) do
+#         return TensorMap(zeros, scalartype(t), getsubspace(space(t), I))
+#     end
+# end
+
 #===========================================================================================
     Linear Algebra
 ===========================================================================================#
@@ -13,7 +24,8 @@ function LinearAlgebra.axpy!(α::Number, t1::SparseBlockTensorMap, t2::SparseBlo
     return t2
 end
 
-function LinearAlgebra.axpby!(α::Number, t1::SparseBlockTensorMap, β::Number, t2::SparseBlockTensorMap)
+function LinearAlgebra.axpby!(α::Number, t1::SparseBlockTensorMap, β::Number,
+                              t2::SparseBlockTensorMap)
     space(t1) == space(t2) || throw(SpaceMismatch())
     rmul!(t2, β)
     for (i, v) in nonzero_pairs(t1)
@@ -47,7 +59,8 @@ function LinearAlgebra.mul!(C::SparseBlockTensorMap, α::Number, A::SparseBlockT
     return C
 end
 
-function LinearAlgebra.norm(tA::SparseBlockTensorMap, p::Real=2)
+function LinearAlgebra.norm(tA::SparseBlockTensorMap{S,N1,N2,A},
+                            p::Real=2) where {S,N1,N2,A}
     vals = nonzero_values(tA)
     isempty(vals) && return norm(zero(scalartype(tA)), p)
     return LinearAlgebra.norm(norm.(vals), p)
@@ -85,10 +98,9 @@ end
     TensorOperations
 ===========================================================================================#
 
-
 function TensorOperations.tensoradd!(C::SparseBlockTensorMap{S},
-                       A::SparseBlockTensorMap{S}, pA::Index2Tuple,
-                       conjA::Symbol, α::Number, β::Number) where {S}
+                                     A::SparseBlockTensorMap{S}, pA::Index2Tuple,
+                                     conjA::Symbol, α::Number, β::Number) where {S}
     ndims(C) == ndims(A) == sum(length.(pA)) ||
         throw(IndexError("Invalid permutation of length $N: $pA"))
     size(C) == getindices(size(A), linearize(pA)) ||
@@ -103,38 +115,21 @@ function TensorOperations.tensoradd!(C::SparseBlockTensorMap{S},
     return C
 end
 
-
-function TensorOperations.tensorcontract!(C::SparseBlockTensorMap{S}, pC::Index2Tuple,
-                            A::SparseBlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
-                            B::SparseBlockTensorMap{S}, pB::Index2Tuple, conjB::Symbol,
-                            α::Number, β::Number) where {S}
-    (sum(length.(pA)) == ndims(A) && isperm(linearize(pA))) ||
-        throw(IndexError("invalid permutation of length $(ndims(A)): $pA"))
-    (sum(length.(pB)) == ndims(B) && isperm(linearize(pB))) ||
-        throw(IndexError("invalid permutation of length $(ndims(B)): $pB"))
-    (length(pA[1]) + length(pB[2]) == ndims(C)) ||
-        throw(IndexError("non-matching output indices in contraction"))
-    (ndims(C) == length(linearize(pC)) && isperm(linearize(pC))) ||
-        throw(IndexError("invalid permutation of length $(ndims(C)): $pC"))
+function TensorOperations.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
+                                          A::BlockTensorMap{S}, pA::Index2Tuple,
+                                          conjA::Symbol,
+                                          B::SparseBlockTensorMap{S}, pB::Index2Tuple,
+                                          conjB::Symbol,
+                                          α::Number, β::Number) where {S}
+    TensorOperations.argcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
+    TensorOperations.dimcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
 
     sizeA = size(A)
     sizeB = size(B)
-    sizeC = size(C)
 
-    csizeA = getindices(sizeA, pA[2])
-    csizeB = getindices(sizeB, pB[1])
-    osizeA = getindices(sizeA, pA[1])
-    osizeB = getindices(sizeB, pB[2])
-    csizeA == csizeB ||
-        throw(DimensionMismatch("non-matching sizes in contracted dimensions"))
-    getindices((osizeA..., osizeB...), linearize(pC)) == sizeC ||
-        throw(DimensionMismatch("non-matching sizes in uncontracted dimensions"))
+    scale!(C, β)
 
-    β == one(β) ||
-        (iszero(β) ? SparseArrayKit._zero!(parent(C)) : LinearAlgebra.lmul!(β, C))
-
-    keysA = sort!(collect(nonzero_keys(A));
-                  by=IA -> CartesianIndex(getindices(IA.I, pA[2])))
+    keysA = sort!(collect(vec(keys(A))); by=IA -> CartesianIndex(getindices(IA.I, pA[2])))
     keysB = sort!(collect(nonzero_keys(B));
                   by=IB -> CartesianIndex(getindices(IB.I, pB[1])))
 
@@ -176,7 +171,7 @@ function TensorOperations.tensorcontract!(C::SparseBlockTensorMap{S}, pC::Index2
                         IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
                         vA = A[IA]
                         C[IC] = tensorcontract!(C[IC], pC, vA, pA, conjA, vB, pB, conjB, α,
-                                                one(β))
+                                                One())
                     end
                 end
             else
@@ -187,14 +182,11 @@ function TensorOperations.tensorcontract!(C::SparseBlockTensorMap{S}, pC::Index2
                     for kB in rB
                         IB = keysB[kB]
                         IBo = CartesianIndex(getindices(IB.I, pB[2]))
-                        vB = B[IB]
+                        vB = parent(B).data[IB]
                         IABo = CartesianIndex(IAo, IBo)
                         IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
                         C[IC] = tensorcontract!(C[IC], pC, vA, pA, conjA, vB, pB, conjB, α,
-                                                one(β))
-                        # increaseindex!(C,
-                        #                α * (CA == :C ? conj(vA) : vA) *
-                        #                (CB == :C ? conj(vB) : vB), IC)
+                                                One())
                     end
                 end
             end
@@ -212,8 +204,8 @@ end
 
 function TensorOperations.tensortrace!(C::SparseBlockTensorMap{S}, pC::Index2Tuple,
                                        A::SparseBlockTensorMap{S},
-                         pA::Index2Tuple,
-                         conjA::Symbol, α::Number, β::Number) where {S}
+                                       pA::Index2Tuple,
+                                       conjA::Symbol, α::Number, β::Number) where {S}
     NA, NC = ndims(A), ndims(C)
     NC == sum(length.(pC)) ||
         throw(IndexError("Invalid selection of $NC out of $NA: $pC"))
@@ -243,7 +235,7 @@ function TensorOperations.tensortrace!(C::SparseBlockTensorMap{S}, pC::Index2Tup
     return C
 end
 
-function Base.adjoint(t::SparseBlockTensorMap)
+function Base.adjoint(t::BlockTensorMap{S,N₁,N₂,A}) where {S,N₁,N₂,A<:SparseArray}
     cod = domain(t)
     dom = codomain(t)
 
@@ -251,12 +243,15 @@ function Base.adjoint(t::SparseBlockTensorMap)
     adjoint_inds = [domainind(t)..., codomainind(t)...]
     sz_t′ = sz_t[adjoint_inds]
 
-    T = TensorKit.adjointtensormaptype(eltype(spacetype(t)), numin(t), numout(t),
-                                       storagetype(t))
-    data = similar(parent(t), T, sz_t′)
-    for (ind, val) in nonzero_pairs(t)
-        data[CartesianIndex(getindex.(Ref(ind), adjoint_inds)...)] = val'
+    T = typeof(adjoint(first(nonzero_values(t))))
+
+    data = SparseArray{T,N₁ + N₂}(undef, sz_t′)
+    for (I, v) in nonzero_pairs(t)
+        I′ = CartesianIndex(getindex.(Ref(I), adjoint_inds)...)
+        v′ = adjoint(v)
+        data[I′] = v′
     end
+
     return BlockTensorMap(data, cod, dom)
 end
 
@@ -279,3 +274,5 @@ end
 #     end
 #     return BlockTensorMap(data, cod, dom)
 # end
+
+Base.haskey(t::SparseBlockTensorMap, I::CartesianIndex) = haskey(parent(t).data, I)
