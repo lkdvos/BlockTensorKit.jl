@@ -1,5 +1,10 @@
 # TensorOperations Interface: BlockTensorMaps
 # -------------------------------------------
+TO.tensorstructure(t::BlockTensorMap) = space(t)
+function TO.tensorstructure(t::BlockTensorMap, i::Int, conjA::Symbol)
+    return conjA == :N ? space(t, i) : conj(space(t, i))
+end
+
 function TO.tensorscalar(t::BlockTensorMap)
     return ndims(t) == 0 ? tensorscalar(t[]) : throw(DimensionMismatch())
 end
@@ -19,13 +24,23 @@ function TO.tensoradd!(C::BlockTensorMap{S}, A::BlockTensorMap{S}, pA::Index2Tup
     return C
 end
 
-function TO.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
+function TO.tensorcontract!(C::BlockTensorMap{S}, pAB::Index2Tuple,
                             A::BlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
                             B::BlockTensorMap{S}, pB::Index2Tuple, conjB::Symbol,
                             α::Number, β::Number, backend::Backend...) where {S}
-    argcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
-    dimcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
-
+    argcheck_tensorcontract(parent(C), pAB, parent(A), pA, parent(B), pB)
+    dimcheck_tensorcontract(parent(C), pAB, parent(A), pA, parent(B), pB)
+    
+    for (i, j) in zip(pA[2], pB[1])
+        TO.checkcontractible(A, i, conjA, B, j, conjB, "$i and $j")
+    end
+    V = (TO.tensorstructure.(Ref(A), pA[1], conjA)..., TO.tensorstructure.(Ref(B), pB[2], conjB)...)
+    for (i, j) in enumerate(linearize(pAB))
+        V[j] == space(C, i) || throw(SpaceMismatch("incompatible spaces for $i: $(V[j]) ≠ $(space(C, i))"))
+    end
+    
+    
+    
     sizeA = size(A)
     sizeB = size(B)
     csizeA = getindices(sizeA, pA[2])
@@ -38,9 +53,9 @@ function TO.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
                   (osizeA..., one.(osizeB)..., csizeA...))
     BS = sreshape(permutedims(StridedView(parent(B)), linearize(reverse(pB))),
                   (one.(osizeA)..., osizeB..., csizeB...))
-    CS = sreshape(permutedims(StridedView(parent(C)), TupleTools.invperm(linearize(pC))),
+    CS = sreshape(permutedims(StridedView(parent(C)), TupleTools.invperm(linearize(pAB))),
                   (osizeA..., osizeB..., one.(csizeA)...))
-    tensorcontract!.(CS, Ref(pC), AS, Ref(pA), conjA, BS, Ref(pB), conjB, α, One())
+    tensorcontract!.(CS, Ref(pAB), AS, Ref(pA), conjA, BS, Ref(pB), conjB, α, One())
 
     return C
 end
@@ -64,7 +79,7 @@ function TO.tensortrace!(C::BlockTensorMap{S}, pC::Index2Tuple,
 end
 
 function TO.tensoralloc(::Type{BlockTensorMap{S,N₁,N₂,A}},
-                        structure::TensorKit.HomSpace{SumSpace{S},N₁,N₂}, istemp=false,
+                        structure::TensorMapSpace{SumSpace{S},N₁,N₂}, istemp=false,
                         backend::Backend...) where {S,N₁,N₂,A}
     return BlockTensorMap(undef, A, structure)
 end
@@ -104,12 +119,23 @@ end
 function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{S},
                                      pA::Index2Tuple, conjA::Symbol, B::BlockTensorMap{S},
                                      pB::Index2Tuple, conjB::Symbol) where {S,N₁,N₂}
-    VA = conjA == :N ? space(A) : space(A)'
-    VB = conjB == :N ? space(B) : space(B)'
-    V = (getindex.(Ref(VA), pA[1])..., getindex.(Ref(VB), pB[2])...)
-    cod = ProductSumSpace{S,N₁}(getindex.(Ref(V), pC[1]))
-    dom = ProductSumSpace{S,N₂}(dual.(getindex.(Ref(V), pC[2])))
+    spaces1 = TO.flag2op(conjA).(space.(Ref(A), pA[1]))
+    spaces2 = TO.flag2op(conjB).(space.(Ref(B), pB[2]))
+    spaces = (spaces1..., spaces2...)
+    cod = ProductSumSpace{S,N₁}(getindex.(Ref(spaces), pC[1]))
+    dom = ProductSumSpace{S,N₂}(dual.(getindex.(Ref(spaces), pC[2])))
+    
     return dom → cod
+end
+
+function TO.checkcontractible(tA::BlockTensorMap{S}, iA::Int, conjA::Symbol,
+                              tB::BlockTensorMap{S}, iB::Int, conjB::Symbol,
+                              label) where {S}
+    sA = TO.tensorstructure(tA, iA, conjA)'
+    sB = TO.tensorstructure(tB, iB, conjB)
+    sA == sB ||
+        throw(SpaceMismatch("incompatible spaces for $label: $sA ≠ $sB"))
+    return nothing
 end
 
 # TensorOperations interface: BlockTensorMaps - TensorMaps

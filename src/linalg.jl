@@ -1,3 +1,13 @@
+function Base.:(*)(a::Number, t::BlockTensorMap)
+    return lmul!(a, deepcopy(t))
+end
+function Base.:(*)(t::BlockTensorMap, a::Number)
+    return rmul!(deepcopy(t), a)
+end
+function Base.:(+)(t1::BlockTensorMap, t2::BlockTensorMap)
+    return add(t1, t2)
+end
+
 function LinearAlgebra.mul!(C::BlockTensorMap, A::BlockTensorMap, α::Number)
     space(C) == space(A) || throw(SpaceMismatch())
     mul!.(parent(C), parent(A), α)

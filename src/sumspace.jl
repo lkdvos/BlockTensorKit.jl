@@ -7,6 +7,7 @@ SumSpace{S}() where {S} = SumSpace(S[])
 
 const ProductSumSpace{S,N} = ProductSpace{SumSpace{S},N} # for convenience
 const TensorSumSpace{S} = TensorSpace{SumSpace{S}} # for convenience
+const TensorMapSumSpace{S,N₁,N₂} = TensorMapSpace{SumSpace{S},N₁,N₂} # for convenience
 
 TensorKit.InnerProductStyle(S::Type{<:SumSpace}) = InnerProductStyle(eltype(S))
 TensorKit.sectortype(S::Type{<:SumSpace}) = sectortype(eltype(S))
@@ -83,10 +84,13 @@ Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S} = SumSpace{S}
 
 Base.convert(::Type{I}, S::SumSpace{I}) where {I} = join(S)
 Base.convert(::Type{SumSpace{S}}, V::S) where {S} = SumSpace(V)
-function Base.convert(::Type{ProductSumSpace{S,N}}, V::ProductSpace{S,N}) where {S,N}
+function Base.convert(::Type{<:ProductSumSpace{S,N}}, V::ProductSpace{S,N}) where {S,N}
     return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
 end
-function Base.convert(::Type{ProductSpace{S,N}}, V::ProductSumSpace{S,N}) where {S,N}
+function Base.convert(::Type{ProductSumSpace}, V::ProductSpace{S,N}) where {S,N}
+    return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
+end
+function Base.convert(::Type{<:ProductSpace{S,N}}, V::ProductSumSpace{S,N}) where {S,N}
     return ProductSpace{S,N}(join.(V.spaces)...)
 end
 
@@ -107,7 +111,7 @@ function TensorKit.:⊕(S1::SumSpace{I}, S2::SumSpace{I}) where {I}
 end
 
 function TensorKit.fuse(V1::S, V2::S) where {S<:SumSpace}
-    return SumSpace(fuse(⊕(V1.spaces...), ⊕(V2.spaces...)))
+    return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
 end
 
 Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
