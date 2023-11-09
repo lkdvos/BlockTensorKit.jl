@@ -81,13 +81,21 @@ function join(S::SumSpace)
 end
 
 Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S} = SumSpace{S}
+function Base.promote_rule(::Type{S1}, ::Type{<:ProductSpace{S2}}) where {S1<:ElementarySpace,S2<:ElementarySpace}
+    return ProductSpace{promote_type(S1,S2)}
+end
+function Base.promote_rule(::Type{<:ProductSpace{S1}},
+                           ::Type{<:ProductSpace{S2}}) where {S1<:ElementarySpace,
+                                                              S2<:ElementarySpace}
+    return ProductSpace{promote_type(S1,S2)}
+end
 
 Base.convert(::Type{I}, S::SumSpace{I}) where {I} = join(S)
 Base.convert(::Type{SumSpace{S}}, V::S) where {S} = SumSpace(V)
 function Base.convert(::Type{<:ProductSumSpace{S,N}}, V::ProductSpace{S,N}) where {S,N}
     return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
 end
-function Base.convert(::Type{ProductSumSpace}, V::ProductSpace{S,N}) where {S,N}
+function Base.convert(::Type{<:ProductSumSpace{S}}, V::ProductSpace{S,N}) where {S,N}
     return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
 end
 function Base.convert(::Type{<:ProductSpace{S,N}}, V::ProductSumSpace{S,N}) where {S,N}
