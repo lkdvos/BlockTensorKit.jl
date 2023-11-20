@@ -1,3 +1,8 @@
+"""
+    struct SumSpace{S<:ElementarySpace} <: ElementarySpace
+
+A (lazy) direct sum of elementary vector spaces of type `S`.
+"""
 struct SumSpace{S<:ElementarySpace} <: ElementarySpace
     spaces::Vector{S}
 end
@@ -5,19 +10,23 @@ end
 SumSpace(spaces::S...) where {S<:ElementarySpace} = SumSpace(collect(spaces))
 SumSpace{S}() where {S} = SumSpace(S[])
 
-const ProductSumSpace{S,N} = ProductSpace{SumSpace{S},N} # for convenience
-const TensorSumSpace{S} = TensorSpace{SumSpace{S}} # for convenience
-const TensorMapSumSpace{S,N₁,N₂} = TensorMapSpace{SumSpace{S},N₁,N₂} # for convenience
+# Convenience aliases
+const ProductSumSpace{S,N} = ProductSpace{SumSpace{S},N}
+const TensorSumSpace{S} = TensorSpace{SumSpace{S}}
+const TensorMapSumSpace{S,N₁,N₂} = TensorMapSpace{SumSpace{S},N₁,N₂}
 
 TensorKit.InnerProductStyle(S::Type{<:SumSpace}) = InnerProductStyle(eltype(S))
 TensorKit.sectortype(S::Type{<:SumSpace}) = sectortype(eltype(S))
 TensorKit.field(::Type{SumSpace{S}}) where {S} = field(S)
 
 Base.size(S::SumSpace) = size(S.spaces)
+Base.length(S::SumSpace) = length(S.spaces)
 
 Base.getindex(S::SumSpace, i::Int) = S.spaces[i]
 Base.getindex(S::SumSpace, i) = SumSpace(S.spaces[i])
 Base.setindex!(S::SumSpace, args...) = setindex!(S.spaces, args...)
+
+Base.iterate(S::SumSpace, args...) = iterate(S.spaces, args...)
 
 Base.lastindex(S::SumSpace) = lastindex(S.spaces)
 Base.firstindex(S::SumSpace) = firstindex(S.spaces)
@@ -25,16 +34,26 @@ Base.firstindex(S::SumSpace) = firstindex(S.spaces)
 Base.eltype(V::SumSpace) = eltype(typeof(V))
 Base.eltype(::Type{SumSpace{S}}) where {S} = S
 
-Base.iterate(S::SumSpace, args...) = iterate(S.spaces, args...)
+
+Base.axes(S::SumSpace) = Base.OneTo(dim(S))
+Base.axes(S::SumSpace, n::Int) = axes(S.spaces, n)
+function Base.axes(S::SumSpace, c::Sector)
+    offset = 0
+    a = []
+    for s in S.spaces
+        a = push!(a, axes(s, c) .+ offset)
+        offset += dim(s)
+    end
+    return collect(flatten(a))
+end
+
+Base.hash(S::SumSpace, h::UInt) = hash(S.spaces, h)
+Base.:(==)(S1::SumSpace, S2::SumSpace) = S1.spaces == S2.spaces
+@inline Base.isassigned(S::SumSpace, i::Int) = isassigned(S.spaces, i)
 
 TensorKit.dims(S::SumSpace) = map(dim, S.spaces)
 TensorKit.dim(S::SumSpace, n::Int) = dim(S.spaces[n])
 TensorKit.dim(S::SumSpace) = sum(dims(S))
-
-Base.axes(S::SumSpace) = Base.OneTo(dim(S))
-Base.axes(S::SumSpace, n::Int) = axes(S.spaces, n)
-
-Base.length(S::SumSpace) = length(S.spaces)
 
 TensorKit.isdual(S::SumSpace) = isdual(first(S.spaces))
 TensorKit.dual(S::SumSpace) = SumSpace(map(dual, S.spaces))
@@ -54,24 +73,11 @@ function TensorKit._sectors(V::SumSpace, ::Type{Trivial})
 end
 TensorKit._sectors(S::SumSpace, ::Type{<:Sector}) = union(map(sectors, S.spaces))
 
-TensorKit.dim(S::SumSpace, sector::Sector) = mapreduce(v -> dim(v, sector), +, S.spaces)
-TensorKit.dim(S::SumSpace, ::Trivial) = mapreduce(v -> dim(v, Trivial()), +, S.spaces)
-
-function Base.axes(S::SumSpace, c::Sector)
-    offset = 0
-    a = []
-    for s in S.spaces
-        a = push!(a, axes(s, c) .+ offset)
-        offset += dim(s)
-    end
-    return collect(flatten(a))
-end
-
-Base.hash(S::SumSpace, h::UInt) = hash(S.spaces, h)
-Base.:(==)(S1::SumSpace, S2::SumSpace) = S1.spaces == S2.spaces
+TensorKit.dim(S::SumSpace, sector::Sector) = sum(v -> dim(v, sector), S.spaces; init=0)
 
 using TensorKit: ⊕
 
+# TODO: find a better name for this function
 function join(S::SumSpace)
     if length(S) == 1
         return only(S.spaces)
@@ -124,9 +130,18 @@ end
 
 Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
 
+"""
+    sumspacetype(::Union{S,Type{S}}) where {S<:ElementarySpace}
+
+Return the type of a `SumSpace` with elements of type `S`.
+"""
 sumspacetype(::Type{S}) where {S<:ElementarySpace} = SumSpace{S}
 
-@inline Base.isassigned(S::SumSpace, i::Int) = isassigned(S.spaces, i)
+@doc """
+    getsubspace(V, I)
+
+Return the subspace of `V` indexed by `I`.
+""" getsubspace
 
 # scalar indexing yields ProductSpace
 function getsubspace(V::ProductSumSpace{S,N}, I::CartesianIndex{N}) where {S,N}
