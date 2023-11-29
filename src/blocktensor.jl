@@ -782,7 +782,7 @@ for (T1, T2) in
                                           pA::Index2Tuple, conjA::Symbol, B::$T2,
                                           pB::Index2Tuple, conjB::Symbol, α::Number,
                                           β::Number, backend::TO.Backend...)
-            return TO.tensorcontract!(C, convert(BlockTensorMap, A), pA, conjA,
+            return TO.tensorcontract!(C, pC, convert(BlockTensorMap, A), pA, conjA,
                                       convert(BlockTensorMap, B), pB, conjB, α, β,
                                       backend...)
         end
