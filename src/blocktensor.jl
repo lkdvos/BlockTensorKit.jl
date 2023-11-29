@@ -169,7 +169,7 @@ end
 function checkspaces(t::BlockTensorMap{S,N₁,N₂,T,N}, v::AbstractTensorMap{S,N₁,N₂},
                      I::CartesianIndex{N}) where {S,N₁,N₂,T,N}
     getsubspace(space(t), I) == space(v) ||
-        throw(SpaceMismatch("inserting a tensor of space $(space(v)) at index $I into a tensor of space $(space(t))"))
+        throw(SpaceMismatch("inserting a tensor of space $(space(v)) at index $I into a tensor of space $(getsubspace(space(t), I))"))
     return nothing
 end
 function checkspaces(t::BlockTensorMap)
@@ -370,7 +370,7 @@ Base.:(\)(α::Number, t::BlockTensorMap) = scale(t, inv(α))
 # TODO: make this lazy?
 function Base.adjoint(t::BlockTensorMap)
     tdst = similar(t, domain(t) ← codomain(t))
-    adjoint_inds = linearize(domainind(t), codomainind(t))
+    adjoint_inds = TO.linearize((domainind(t), codomainind(t)))
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(getindices(I.I, adjoint_inds)...)
         tdst[I′] = adjoint(v)
