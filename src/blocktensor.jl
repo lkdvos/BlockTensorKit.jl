@@ -308,6 +308,16 @@ function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap{S,N₁,N₂})
     return tdst
 end
 
+function Base.convert(::Type{<:AbstractTensorMap{S1,N₁,N₂}}, t::BlockTensorMap{S2,N₁,N₂}) where {S1,S2,N₁,N₂}
+    cod = ProductSpace(join.(codomain(t).spaces))
+    dom = ProductSpace(join.(domain(t).spaces))
+    tdst = TensorMap(undef, scalartype(t), cod ← dom)
+    for (c, b) in TK.blocks(t)
+        TK.block(tdst, c) .= b
+    end
+    return tdst
+end
+
 # TensorKit Interface
 # -------------------
 
@@ -334,6 +344,14 @@ TK.space(t::BlockTensorMap) = codomain(t) ← domain(t)
 TK.space(t::BlockTensorMap, i) = space(t)[i]
 TK.dim(t::BlockTensorMap) = dim(space(t))
 
+function TK.blocksectors(t::BlockTensorMap)
+    if eltype(t) isa TrivialTensorMap
+        return TK.TrivialOrEmptyIterator(TK.dim(t) == 0)
+    else
+        return blocksectors(codomain(t) ← domain(t))
+    end
+end
+
 function TK.codomainind(::Union{T,Type{T}}) where {S,N₁,T<:BlockTensorMap{S,N₁}}
     return ntuple(n -> n, N₁)
 end
@@ -356,7 +374,31 @@ function TK.adjointtensorindices(t::BlockTensorMap, p::Index2Tuple)
     return TK.adjointtensorindices(t, p[1]), TK.adjointtensorindices(t, p[2])
 end
 
+TK.blocks(t::BlockTensorMap) = ((c, block(t, c)) for c in blocksectors(t))
 
+function TK.block(t::BlockTensorMap, c::Sector)
+    sectortype(t) == typeof(c) || throw(SectorMismatch())
+    
+    rows = prod(getindices(size(t), codomainind(t)))
+    cols = prod(getindices(size(t), domainind(t)))
+
+    if rows == 0 || cols == 0
+        error("to be added")
+    end
+
+    rowdims = subblockdims(codomain(t), c)
+    coldims = subblockdims(domain(t), c)
+
+    b = BlockArray{scalartype(t)}(undef, rowdims, coldims)
+    lin_inds = LinearIndices(parent(t))
+    new_cart_inds = CartesianIndices((rows, cols))
+    for (i, v) in nonzero_pairs(t)
+        b[Block(new_cart_inds[lin_inds[i]].I)] = TK.block(v, c)
+    end
+
+    return b
+    
+end
 
 # Linear Algebra
 # --------------
