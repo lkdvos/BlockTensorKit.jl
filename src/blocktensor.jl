@@ -742,7 +742,7 @@ for (T1, T2) in
                                           pA::Index2Tuple, conjA::Symbol, B::$T2,
                                           pB::Index2Tuple, conjB::Symbol, α, β::Number,
                                           backend::TO.Backend...)
-            C′ = convert(BlockTensorMap, B)
+            C′ = convert(BlockTensorMap, C)
             tensorcontract!(C′, pC, A, pA, conjA, B, pB, conjB, α, β, backend...)
             return C
         end
@@ -777,7 +777,7 @@ for (T1, T2) in
         end
     end
 
-    if T1 !== :BlockTensorMap && T2 !== :BlockTensorMap
+    if !(T1 === :BlockTensorMap && T2 === :BlockTensorMap)
         @eval function TO.tensorcontract!(C::BlockTensorMap, pC::Index2Tuple, A::$T1,
                                           pA::Index2Tuple, conjA::Symbol, B::$T2,
                                           pB::Index2Tuple, conjB::Symbol, α::Number,
