@@ -30,6 +30,6 @@ export SumSpace, ProductSumSpace
 # TensorMaps
 include("blocktensor.jl")
 export BlockTensorMap
-
+export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
 
 end
