@@ -293,6 +293,10 @@ end
 # Converters
 # ----------
 
+function Base.promote_rule(::Type{BlockTensorMap{S,N₁,N₂,T₁,N}}, ::Type{BlockTensorMap{S,N₁,N₂,T₂,N}}) where {S,N₁,N₂,T₁,T₂,N}
+    return BlockTensorMap{S,N₁,N₂,promote_type(T₁, T₂),N}
+end
+
 function Base.convert(::Type{BlockTensorMap{S,N₁,N₂,T₁,N}}, t::BlockTensorMap{S,N₁,N₂,T₂,N}) where {S,N₁,N₂,T₁,T₂,N}
     T₁ === T₂ && return t
     tdst = BlockTensorMap{S,N₁,N₂,T₁,N}(undef, codomain(t), domain(t))
