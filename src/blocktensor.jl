@@ -389,7 +389,7 @@ function TK.block(t::BlockTensorMap, c::Sector)
     rowdims = subblockdims(codomain(t), c)
     coldims = subblockdims(domain(t), c)
 
-    b = BlockArray{scalartype(t)}(undef, rowdims, coldims)
+    b = fill!(BlockArray{scalartype(t)}(undef, rowdims, coldims), zero(scalartype(t)))
     lin_inds = LinearIndices(parent(t))
     new_cart_inds = CartesianIndices((rows, cols))
     for (i, v) in nonzero_pairs(t)
