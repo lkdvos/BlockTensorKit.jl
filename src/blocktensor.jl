@@ -914,6 +914,16 @@ for (T1, T2) in
             return C
         end
         
+        @eval function TK.planarcontract!(C::AbstractTensorMap, A::$T1,
+                                           pA::Index2Tuple, B::$T2,
+                                           pB::Index2Tuple, pAB::Index2Tuple,
+                                           α::Number, β::Number,
+                                           backend::Backend...)
+            C′ = convert(BlockTensorMap, C)
+            planarcontract!(C′, A, pA, B, pB, pAB, α, β, backend...)
+            return C
+        end
+        
         @eval function TO.checkcontractible(tA::$T1, iA::Int, conjA::Symbol,
                                             tB::$T2, iB::Int, conjB::Symbol,
                                             label)
@@ -953,10 +963,20 @@ for (T1, T2) in
                                       convert(BlockTensorMap, B), pB, conjB, α, β,
                                       backend...)
         end
+        
+        @eval function TK.planarcontract!(C::BlockTensorMap, A::$T1,
+                                           pA::Index2Tuple, B::$T2,
+                                           pB::Index2Tuple, pAB::Index2Tuple,
+                                           α::Number, β::Number,
+                                           backend::Backend...)
+            return TK.planarcontract!(C, convert(BlockTensorMap, A), pA,
+                                      convert(BlockTensorMap, B), pB, pAB, α, β,
+                                      backend...)
+        end
     end
 end
 
-# TODO: similar for tensoradd!, tensortrace!
+# TODO: similar for tensoradd!, tensortrace!, planaradd!, planartrace!
 
 Base.haskey(t::BlockTensorMap, I::CartesianIndex) = haskey(t.data, I)
 function Base.haskey(t::BlockTensorMap, i::Int)
