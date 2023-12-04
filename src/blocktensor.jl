@@ -753,7 +753,7 @@ function TO.tensortrace!(C::BlockTensorMap{S}, pC::Index2Tuple,
         IAc1 == IAc2 || continue
 
         IC = CartesianIndex(getindices(IA.I, linearize(pC)))
-        C[IC] = tensortrace!(C[IC], pC, v, pA, conjA, α, one(β))
+        C[IC] = tensortrace!(C[IC], pC, v, pA, conjA, α, One())
     end
     return C
 end
@@ -775,6 +775,127 @@ function TO.checkcontractible(tA::BlockTensorMap{S}, iA::Int, conjA::Symbol,
     sA == sB ||
         throw(SpaceMismatch("incompatible spaces for $label: $sA ≠ $sB"))
     return nothing
+end
+
+# PlanarOperations
+# ----------------
+
+function TK.planaradd!(C::BlockTensorMap{S,N₁,N₂},
+                       A::BlockTensorMap{S},
+                       p::Index2Tuple{N₁,N₂},
+                       α::Number,
+                       β::Number,
+                       backend::Backend...) where {S,N₁,N₂}
+    scale!(C, β)
+    indCinA = linearize(pC)
+    for (IA, v) in nonzero_pairs(A)
+        IC = CartesianIndex(TupleTools.getindices(IA.I, indCinA))
+        C[IC] = planaradd!(C[IC], v, pC, α, One())
+    end
+    return C
+end
+
+function TK.planartrace!(C::BlockTensorMap{S,N₁,N₂},
+                         A::BlockTensorMap{S},
+                         p::Index2Tuple{N₁,N₂},
+                         q::Index2Tuple{N₃,N₃},
+                         α::Number,
+                         β::Number,
+                         backend::Backend...) where {S,N₁,N₂,N₃}
+    scale!(C, β)
+
+    for (IA, v) in nonzero_pairs(A)
+        IAc1 = CartesianIndex(getindices(IA.I, pA[1]))
+        IAc2 = CartesianIndex(getindices(IA.I, pA[2]))
+        IAc1 == IAc2 || continue
+
+        IC = CartesianIndex(getindices(IA.I, linearize(pC)))
+        C[IC] = planartrace!(C[IC], v, p, q, α, One())
+    end
+    return C
+end
+
+function TK.planarcontract!(C::BlockTensorMap{S,N₁,N₂},
+                         A::BlockTensorMap{S},
+                         pA::Index2Tuple,
+                         B::BlockTensorMap{S},
+                         pB::Index2Tuple,
+                         pAB::Index2Tuple{N₁,N₂},
+                         α::Number,
+                         β::Number,
+                         backend::Backend...) where {S,N₁,N₂}
+    scale!(C, β)
+
+    keysA = sort!(collect(nonzero_keys(A));
+                  by=IA -> CartesianIndex(getindices(IA.I, pA[2])))
+    keysB = sort!(collect(nonzero_keys(B));
+                  by=IB -> CartesianIndex(getindices(IB.I, pB[1])))
+
+    iA = iB = 1
+    @inbounds while iA <= length(keysA) && iB <= length(keysB)
+        IA = keysA[iA]
+        IB = keysB[iB]
+        IAc = CartesianIndex(getindices(IA.I, pA[2]))
+        IBc = CartesianIndex(getindices(IB.I, pB[1]))
+        if IAc == IBc
+            Ic = IAc
+            jA = iA
+            while jA < length(keysA)
+                if CartesianIndex(getindices(keysA[jA + 1].I, pA[2])) == Ic
+                    jA += 1
+                else
+                    break
+                end
+            end
+            jB = iB
+            while jB < length(keysB)
+                if CartesianIndex(getindices(keysB[jB + 1].I, pB[1])) == Ic
+                    jB += 1
+                else
+                    break
+                end
+            end
+            rA = iA:jA
+            rB = iB:jB
+            if length(rA) < length(rB)
+                for kB in rB
+                    IB = keysB[kB]
+                    IBo = CartesianIndex(getindices(IB.I, pB[2]))
+                    vB = B[IB]
+                    for kA in rA
+                        IA = keysA[kA]
+                        IAo = CartesianIndex(getindices(IA.I, pA[1]))
+                        IABo = CartesianIndex(IAo, IBo)
+                        IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
+                        vA = A[IA]
+                        C[IC] = planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
+                    end
+                end
+            else
+                for kA in rA
+                    IA = keysA[kA]
+                    IAo = CartesianIndex(getindices(IA.I, pA[1]))
+                    vA = A[IA]
+                    for kB in rB
+                        IB = keysB[kB]
+                        IBo = CartesianIndex(getindices(IB.I, pB[2]))
+                        vB = parent(B).data[IB]
+                        IABo = CartesianIndex(IAo, IBo)
+                        IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
+                        C[IC] = planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
+                    end
+                end
+            end
+            iA = jA + 1
+            iB = jB + 1
+        elseif IAc < IBc
+            iA += 1
+        else
+            iB += 1
+        end
+    end
+
+    return C
 end
 
 # methods for automatically working with TensorMap - BlockTensorMaps
