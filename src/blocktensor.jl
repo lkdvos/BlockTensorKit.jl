@@ -312,7 +312,7 @@ function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap{S,N₁,N₂})
     return tdst
 end
 
-function Base.convert(::Type{<:AbstractTensorMap{S1,N₁,N₂}}, t::BlockTensorMap{S2,N₁,N₂}) where {S1,S2,N₁,N₂}
+function Base.convert(::Type{<:AbstractTensorMap{S,N₁,N₂}}, t::BlockTensorMap{S,N₁,N₂}) where {S,N₁,N₂}
     cod = ProductSpace(join.(codomain(t).spaces))
     dom = ProductSpace(join.(domain(t).spaces))
     tdst = TensorMap(undef, scalartype(t), cod ← dom)
@@ -787,12 +787,27 @@ function TK.planaradd!(C::BlockTensorMap{S,N₁,N₂},
                        β::Number,
                        backend::Backend...) where {S,N₁,N₂}
     scale!(C, β)
-    indCinA = linearize(pC)
+    indCinA = linearize(p)
     for (IA, v) in nonzero_pairs(A)
         IC = CartesianIndex(TupleTools.getindices(IA.I, indCinA))
-        C[IC] = planaradd!(C[IC], v, pC, α, One())
+        C[IC] = TK.planaradd!(C[IC], v, p, α, One())
     end
     return C
+end
+
+function TK.planaradd!(C::AbstractTensorMap{S,N₁,N₂}, A::BlockTensorMap{S}, p::Index2Tuple{N₁,N₂}, α::Number, β::Number, backend::Backend...) where {S,N₁,N₂}
+    C′ = convert(BlockTensorMap, C)
+    TK.planaradd!(C′, A, p, α, β, backend...)
+    return C
+end
+
+function TK.planaradd!(C::BlockTensorMap{S,N₁,N₂},
+                       A::AbstractTensorMap{S},
+                       p::Index2Tuple{N₁,N₂},
+                       α::Number,
+                       β::Number,
+                       backend::Backend...) where {S,N₁,N₂}
+    return TK.planaradd!(C, convert(BlockTensorMap, A), p, α, β, backend...)
 end
 
 function TK.planartrace!(C::BlockTensorMap{S,N₁,N₂},
@@ -805,27 +820,26 @@ function TK.planartrace!(C::BlockTensorMap{S,N₁,N₂},
     scale!(C, β)
 
     for (IA, v) in nonzero_pairs(A)
-        IAc1 = CartesianIndex(getindices(IA.I, pA[1]))
-        IAc2 = CartesianIndex(getindices(IA.I, pA[2]))
+        IAc1 = CartesianIndex(getindices(IA.I, q[1]))
+        IAc2 = CartesianIndex(getindices(IA.I, q[2]))
         IAc1 == IAc2 || continue
 
-        IC = CartesianIndex(getindices(IA.I, linearize(pC)))
-        C[IC] = planartrace!(C[IC], v, p, q, α, One())
+        IC = CartesianIndex(getindices(IA.I, linearize(p)))
+        C[IC] = TK.planartrace!(C[IC], v, p, q, α, One())
     end
     return C
 end
 
 function TK.planarcontract!(C::BlockTensorMap{S,N₁,N₂},
-                         A::BlockTensorMap{S},
-                         pA::Index2Tuple,
-                         B::BlockTensorMap{S},
-                         pB::Index2Tuple,
-                         pAB::Index2Tuple{N₁,N₂},
-                         α::Number,
-                         β::Number,
-                         backend::Backend...) where {S,N₁,N₂}
+                            A::BlockTensorMap{S},
+                            pA::Index2Tuple,
+                            B::BlockTensorMap{S},
+                            pB::Index2Tuple,
+                            pAB::Index2Tuple{N₁,N₂},
+                            α::Number,
+                            β::Number,
+                            backend::Backend...) where {S,N₁,N₂}
     scale!(C, β)
-
     keysA = sort!(collect(nonzero_keys(A));
                   by=IA -> CartesianIndex(getindices(IA.I, pA[2])))
     keysB = sort!(collect(nonzero_keys(B));
@@ -866,9 +880,9 @@ function TK.planarcontract!(C::BlockTensorMap{S,N₁,N₂},
                         IA = keysA[kA]
                         IAo = CartesianIndex(getindices(IA.I, pA[1]))
                         IABo = CartesianIndex(IAo, IBo)
-                        IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
+                        IC = CartesianIndex(getindices(IABo.I, linearize(pAB)))
                         vA = A[IA]
-                        C[IC] = planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
+                        C[IC] = TK.planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
                     end
                 end
             else
@@ -881,8 +895,8 @@ function TK.planarcontract!(C::BlockTensorMap{S,N₁,N₂},
                         IBo = CartesianIndex(getindices(IB.I, pB[2]))
                         vB = parent(B).data[IB]
                         IABo = CartesianIndex(IAo, IBo)
-                        IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
-                        C[IC] = planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
+                        IC = CartesianIndex(getindices(IABo.I, linearize(pAB)))
+                        C[IC] = TK.planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
                     end
                 end
             end
@@ -920,7 +934,7 @@ for (T1, T2) in
                                            α::Number, β::Number,
                                            backend::Backend...)
             C′ = convert(BlockTensorMap, C)
-            planarcontract!(C′, A, pA, B, pB, pAB, α, β, backend...)
+            TK.planarcontract!(C′, A, pA, B, pB, pAB, α, β, backend...)
             return C
         end
         
@@ -963,12 +977,12 @@ for (T1, T2) in
                                       convert(BlockTensorMap, B), pB, conjB, α, β,
                                       backend...)
         end
-        
+
         @eval function TK.planarcontract!(C::BlockTensorMap, A::$T1,
-                                           pA::Index2Tuple, B::$T2,
-                                           pB::Index2Tuple, pAB::Index2Tuple,
-                                           α::Number, β::Number,
-                                           backend::Backend...)
+                                          pA::Index2Tuple, B::$T2,
+                                          pB::Index2Tuple, pAB::Index2Tuple,
+                                          α::Number, β::Number,
+                                          backend::Backend...)
             return TK.planarcontract!(C, convert(BlockTensorMap, A), pA,
                                       convert(BlockTensorMap, B), pB, pAB, α, β,
                                       backend...)
