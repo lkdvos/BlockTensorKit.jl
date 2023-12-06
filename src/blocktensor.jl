@@ -622,7 +622,7 @@ function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{S}
     return dom → cod
 end
 
-function TO.tensorcontract_type(TC::Type{<:Number}, pC::Index2Tuple{N₁,N₂},
+function TO.tensorcontract_type(TC::Type{<:Number}, ::Index2Tuple{N₁,N₂},
                                 A::BlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
                                 B::BlockTensorMap{S}, pB::Index2Tuple, conjB::Symbol,
                                 istemp=false, backend::Backend...) where {S,N₁,N₂}
@@ -631,18 +631,6 @@ function TO.tensorcontract_type(TC::Type{<:Number}, pC::Index2Tuple{N₁,N₂},
         throw(ArgumentError("incompatible storage types"))
     T = tensormaptype(S, N₁, N₂, M)
     return BlockTensorMap{S,N₁,N₂,T,N₁ + N₂}
-end
-
-function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{S},
-                                     pA::Index2Tuple, conjA::Symbol,
-                                     B::BlockTensorMap{S},
-                                     pB::Index2Tuple, conjB::Symbol) where {S,N₁,N₂}
-    spaces1 = TO.flag2op(conjA).(space.(Ref(A), pA[1]))
-    spaces2 = TO.flag2op(conjB).(space.(Ref(B), pB[2]))
-    spaces = (spaces1..., spaces2...)
-    cod = ProductSumSpace{S,N₁}(getindex.(Ref(spaces), pC[1]))
-    dom = ProductSumSpace{S,N₂}(dual.(getindex.(Ref(spaces), pC[2])))
-    return dom → cod
 end
 
 function TO.tensoradd!(C::BlockTensorMap{S}, pC::Index2Tuple,
