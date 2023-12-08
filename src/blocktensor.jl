@@ -328,9 +328,9 @@ end
 function Base.copy(t::BlockTensorMap{S,N₁,N₂,T,N}) where {S,N₁,N₂,T,N}
     return BlockTensorMap{S,N₁,N₂,T,N}(copy(t.data), codomain(t), domain(t))
 end
-function Base.deepcopy(t::BlockTensorMap{S,N₁,N₂,T,N}) where {S,N₁,N₂,T,N}
-    return BlockTensorMap{S,N₁,N₂,T,N}(deepcopy(t.data), codomain(t), domain(t))
-end
+# function Base.deepcopy(t::BlockTensorMap{S,N₁,N₂,T,N}) where {S,N₁,N₂,T,N}
+#     return BlockTensorMap{S,N₁,N₂,T,N}(deepcopy(t.data), codomain(t), domain(t))
+# end
 
 # TensorKit Interface
 # -------------------
@@ -633,9 +633,25 @@ function TO.tensorcontract_type(TC::Type{<:Number}, ::Index2Tuple{N₁,N₂},
     return BlockTensorMap{S,N₁,N₂,T,N₁ + N₂}
 end
 
+# By default, make "dense" allocations
+function TO.tensoralloc(::Type{BlockTensorMap{S,N1,N2,T,N}}, structure::TensorMapSumSpace, istemp::Bool, backend::B...) where {S,N1,N2,T,N,B<:Backend}
+    C = BlockTensorMap{S,N1,N2,T,N}(undef, structure)
+    for I in eachindex(C)
+        C[I] = TO.tensoralloc(T, getsubspace(structure, I), istemp, backend...)
+    end
+    return C
+end
+
+function TO.tensorfree!(t::BlockTensorMap, backend::Backend...)
+    for v in nonzero_values(t)
+        TO.tensorfree!(v, backend...)
+    end
+    return nothing
+end
+
 function TO.tensoradd!(C::BlockTensorMap{S}, pC::Index2Tuple,
                        A::BlockTensorMap{S}, conjA::Symbol,
-                       α::Number, β::Number) where {S}
+                       α::Number, β::Number, backend::Backend...) where {S}
     argcheck_tensoradd(C, pC, A)
     dimcheck_tensoradd(C, pC, A)
 
@@ -643,7 +659,7 @@ function TO.tensoradd!(C::BlockTensorMap{S}, pC::Index2Tuple,
     indCinA = linearize(pC)
     for (IA, v) in nonzero_pairs(A)
         IC = CartesianIndex(TupleTools.getindices(IA.I, indCinA))
-        C[IC] = tensoradd!(C[IC], pC, v, conjA, α, One())
+        C[IC] = tensoradd!(C[IC], pC, v, conjA, α, One(), backend...)
     end
     return C
 end
@@ -651,7 +667,7 @@ end
 function TO.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
                             A::BlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
                             B::BlockTensorMap{S}, pB::Index2Tuple, conjB::Symbol,
-                            α::Number, β::Number) where {S}
+                            α::Number, β::Number, backend::Backend...) where {S}
     argcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
     dimcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
 
@@ -700,7 +716,7 @@ function TO.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
                         IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
                         vA = A[IA]
                         C[IC] = tensorcontract!(C[IC], pC, vA, pA, conjA, vB, pB, conjB, α,
-                                                One())
+                                                One(), backend...)
                     end
                 end
             else
@@ -715,7 +731,7 @@ function TO.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
                         IABo = CartesianIndex(IAo, IBo)
                         IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
                         C[IC] = tensorcontract!(C[IC], pC, vA, pA, conjA, vB, pB, conjB, α,
-                                                One())
+                                                One(), backend...)
                     end
                 end
             end
@@ -734,7 +750,7 @@ end
 function TO.tensortrace!(C::BlockTensorMap{S}, pC::Index2Tuple,
                          A::BlockTensorMap{S},
                          pA::Index2Tuple,
-                         conjA::Symbol, α::Number, β::Number) where {S}
+                         conjA::Symbol, α::Number, β::Number, backend::Backend...) where {S}
     argcheck_tensortrace(C, pC, A, pA)
     dimcheck_tensortrace(C, pC, A, pA)
 
@@ -746,7 +762,7 @@ function TO.tensortrace!(C::BlockTensorMap{S}, pC::Index2Tuple,
         IAc1 == IAc2 || continue
 
         IC = CartesianIndex(getindices(IA.I, linearize(pC)))
-        C[IC] = tensortrace!(C[IC], pC, v, pA, conjA, α, One())
+        C[IC] = tensortrace!(C[IC], pC, v, pA, conjA, α, One(), backend...)
     end
     return C
 end
