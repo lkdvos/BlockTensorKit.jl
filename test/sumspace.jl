@@ -3,25 +3,25 @@ using TensorKit
 @testset "CartesianSpace" begin
     ds = [2, 3, 2]
     d = sum(ds)
-    
-    V = SumSpace(Ref(ℝ).^ds)
+
+    V = SumSpace(Ref(ℝ) .^ ds)
     @test eval(Meta.parse(sprint(show, V))) == V
     @test eval(Meta.parse(sprint(show, typeof(V)))) == typeof(V)
     @test isa(V, VectorSpace)
     @test isa(V, ElementarySpace)
-    
+
     @test isa(InnerProductStyle(V), HasInnerProduct)
     @test isa(InnerProductStyle(V), EuclideanProduct)
     @test isa(V, SumSpace)
-    
+
     @test !isdual(V)
     @test !isdual(V')
-    
+
     @test @constinferred(hash(V)) == hash(deepcopy(V))
     @test V == @constinferred(dual(V)) == @constinferred(conj(V)) ==
           @constinferred(adjoint(V))
     @test field(V) == ℝ
-    
+
     @test @constinferred(sectortype(V)) == Trivial
     @test ((@constinferred sectors(V))...,) == (Trivial(),)
     @test length(sectors(V)) == 1

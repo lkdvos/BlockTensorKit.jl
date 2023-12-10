@@ -29,6 +29,12 @@ export SumSpace, ProductSumSpace
 
 # TensorMaps
 include("blocktensor.jl")
+
+# various interfaces
+include("linalg.jl")
+include("tensorkit.jl")
+include("vectorinterface.jl")
+include("tensoroperations.jl")
 export BlockTensorMap
 export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
 

@@ -2,9 +2,8 @@ using TensorKit, BlockTensorKit
 using Test, TestExtras
 using Random
 
-
 T = Float64
-dims = ([2, 3], [3, 2], [1, 2], [2, 1], [2,])
+dims = ([2, 3], [3, 2], [1, 2], [2, 1], [2])
 spaces = map(ds -> SumSpace(CartesianSpace.(ds)), dims)
 
 bA = TensorMap(randn, T, ⊗(spaces[1:2]...), ⊗(spaces[3:5]...))
