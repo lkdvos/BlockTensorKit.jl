@@ -165,7 +165,7 @@ function getsubspace(V::ProductSumSpace{S,N}, I::Vararg{Int,N}) where {S,N}
 end
 
 # non-scalar indexing yields ProductSumSpace
-function getsubspace(V::ProductSumSpace{S,N}, I::Vararg{<:Any,N}) where {S,N}
+function getsubspace(V::ProductSumSpace{S,N}, I::Vararg{Any,N}) where {S,N}
     return ProductSumSpace{S,N}(map(getindex, V.spaces, I))
 end
 
@@ -178,7 +178,7 @@ end
 function getsubspace(V::TensorKit.HomSpace{<:SumSpace}, I::Vararg{Int,N}) where {N}
     return getsubspace(V, CartesianIndex(I...))
 end
-function getsubspace(V::TensorKit.HomSpace{S,P₁,P₂}, I::Vararg{<:Any,N}) where {S,P₁,P₂,N}
+function getsubspace(V::TensorKit.HomSpace{S,P₁,P₂}, I::Vararg{Any,N}) where {S,P₁,P₂,N}
     N₁ = length(codomain(V))
     N₂ = length(domain(V))
     N₁ + N₂ == N || throw(ArgumentError("Invalid indexing"))
@@ -190,11 +190,11 @@ end
 function _getsubspace_scalar(V::ProductSumSpace{S,N}, I::Vararg{Int,N}) where {S,N}
     return ProductSpace{S,N}(map(getindex, V.spaces, I))
 end
-function _getsubspace_nonscalar(V::ProductSumSpace{S,N}, I::Vararg{<:Any,N}) where {S,N}
+function _getsubspace_nonscalar(V::ProductSumSpace{S,N}, I::Vararg{Any,N}) where {S,N}
     return ProductSumSpace{S,N}(map(getindex, V.spaces, I))
 end
 
-function subblockdims(S::ProductSpace{<:SumSpace,N}, c::Sector) where {N}
+function subblockdims(S::ProductSpace{SumSpace,N}, c::Sector) where {N}
     return N == 0 ? [1] :
            vec(map(I -> blockdim(getsubspace(S, I), c),
                    CartesianIndices(map(length, S.spaces))))
