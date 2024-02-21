@@ -24,7 +24,7 @@ TK.dim(t::BlockTensorMap) = dim(space(t))
 
 function TK.blocksectors(t::BlockTensorMap)
     if eltype(t) isa TrivialTensorMap
-        return TK.TrivialOrEmptyIterator(TK.dim(t) == 0)
+        return OneOrNoneIterator(TK.dim(t) == 0, Trivial())
     else
         return blocksectors(codomain(t) ← domain(t))
     end

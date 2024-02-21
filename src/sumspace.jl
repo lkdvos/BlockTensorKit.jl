@@ -68,7 +68,7 @@ end
 
 TensorKit.sectors(S::SumSpace) = TensorKit._sectors(S, sectortype(S))
 function TensorKit._sectors(V::SumSpace, ::Type{Trivial})
-    return TensorKit.TrivialOrEmptyIterator(dim(V) == 0)
+    return OneOrNoneIterator(dim(V) != 0, Trivial())
 end
 TensorKit._sectors(S::SumSpace, ::Type{<:Sector}) = union(map(sectors, S.spaces)...)
 
