@@ -194,8 +194,8 @@ function _getsubspace_nonscalar(V::ProductSumSpace{S,N}, I::Vararg{Any,N}) where
     return ProductSumSpace{S,N}(map(getindex, V.spaces, I))
 end
 
-function subblockdims(S::ProductSpace{SumSpace,N}, c::Sector) where {N}
+function subblockdims(V::ProductSumSpace{S,N}, c::Sector) where {S,N}
     return N == 0 ? [1] :
-           vec(map(I -> blockdim(getsubspace(S, I), c),
-                   CartesianIndices(map(length, S.spaces))))
+           vec(map(I -> blockdim(getsubspace(V, I), c),
+                   CartesianIndices(map(length, V.spaces))))
 end
