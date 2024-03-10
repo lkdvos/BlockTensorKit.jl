@@ -6,7 +6,7 @@ export undef_blocks
 export getsubspace
 
 using TensorKit
-using SparseArrayKit
+using TensorKit: OneOrNoneIterator
 using VectorInterface
 using TensorOperations
 using TensorOperations: dimcheck_tensoradd, dimcheck_tensorcontract, dimcheck_tensortrace,
