@@ -147,19 +147,19 @@ function Base.similar(t::BlockTensorMap, T::Type, codomain::VectorSpace,
 end
 # 3 arguments
 function Base.similar(t::BlockTensorMap, codomain::VectorSpace, domain::VectorSpace)
-    return similar(t, scalartype(t), codomain ← domain)
+    return similar(t, eltype(t), codomain ← domain)
 end
 function Base.similar(t::BlockTensorMap, T::Type, codomain::VectorSpace)
     return similar(t, T, codomain ← one(codomain))
 end
 # 2 arguments
 function Base.similar(t::BlockTensorMap, codomain::VectorSpace)
-    return similar(t, scalartype(t), codomain ← one(codomain))
+    return similar(t, eltype(t), codomain ← one(codomain))
 end
-Base.similar(t::BlockTensorMap, P::TensorMapSpace) = similar(t, scalartype(t), P)
+Base.similar(t::BlockTensorMap, P::TensorMapSpace) = similar(t, eltype(t), P)
 Base.similar(t::BlockTensorMap, T::Type) = similar(t, T, space(t))
 # 1 argument
-Base.similar(t::BlockTensorMap) = similar(t, scalartype(t), space(t))
+Base.similar(t::BlockTensorMap) = similar(t, eltype(t), space(t))
 
 # actual implementation
 function Base.similar(::BlockTensorMap, T::Type, P::TensorMapSumSpace)
