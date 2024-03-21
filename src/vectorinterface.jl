@@ -1,28 +1,14 @@
 # VectorInterface
 # ---------------
 
-function VI.zerovector(t::BlockTensorMap, ::Type{S}) where {S<:Number}
-    function get_params(t::BlockTensorMap{S, N₁, N₂, T, N}) where {S, N₁, N₂, T, N}
-        return (S, N₁, N₂, T, N)
-    end
-
-    S1, N₁, N₂, T, N = get_params(t)
-
-    T = Union{T, TrivialTensorMap{S1, N₁, N₂}}
-    return BlockTensorMap{S1,N₁,N₂,T,N}(undef, codomain(t), domain(t))
-    return BlockTensorMap{get_params(t)...}(undef, codomain(t), domain(t))
-    return similar(t, S, space(t)) # Original Code
+function VI.zerovector(t::BlockTensorMap{E₁}, ::Type{E₂}) where {E₁,E₂<:Number}
+    return similar(t, E₂, space(t))
 end
 VI.zerovector!(t::BlockTensorMap) = (empty!(t.data); t)
 VI.zerovector!!(t::BlockTensorMap) = zerovector!(t)
 
 function VI.scale(t::BlockTensorMap, α::Number)
     t′ = zerovector(t, VI.promote_scale(t, α))
-    # t′ = zerovector(t) # MY CODE
-    # T = Union{eltype(t), TrivialTensorMap}
-    # t′ = BlockTensorMap(undef, T, space(t))
-
-    # println(typeof(t′))
     scale!(t′, t, α)
     return t′
 end
@@ -42,13 +28,11 @@ function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap,
     # in-place scale elements from tx (getindex might allocate!)
     for (I, v) in nonzero_pairs(tx)
         println(ty[I])
-        # println(typeof(ty), " ?= ", typeof(v), " ?= ", typeof(scale!(ty[I], v, α)))
         ty[I] = scale!(ty[I], v, α)
     end
     return ty
 end
 function VI.scale!!(x::BlockTensorMap, α::Number)
-    time_mpo = make_time_mpo(H, 0.1, WI)
     return VI.promote_scale(x, α) <: scalartype(x) ? scale!(x, α) : scale(x, α)
 end
 function VI.scale!!(y::BlockTensorMap, x::BlockTensorMap,
@@ -88,3 +72,5 @@ function VI.inner(x::BlockTensorMap, y::BlockTensorMap)
     end
     return s
 end
+
+VI.scalartype(::BlockTensorMap{E,S,N₁,N₂,N}) where {E,S,N₁,N₂,N} = E

@@ -1,14 +1,14 @@
 # TensorOperations
 # ----------------
 
-function TO.tensoradd_type(TC, ::Index2Tuple{N₁,N₂}, ::BlockTensorMap{S},
-                           conjA::Symbol) where {S,N₁,N₂}
-    T = tensormaptype(S, N₁, N₂, TC)
-    return BlockTensorMap{S,N₁,N₂,T,N₁ + N₂}
+function TO.tensoradd_type(TC, ::Index2Tuple{N₁,N₂}, ::BlockTensorMap{E,S},
+                           conjA::Symbol) where {E,S,N₁,N₂}
+    newE = promote_type(TC, E)
+    return BlockTensorMap{newE,S,N₁,N₂,N₁ + N₂}
 end
 
-function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{S},
-                                conjA::Symbol) where {S,N₁,N₂}
+function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{E,S},
+                                conjA::Symbol) where {E,S,N₁,N₂}
     if conjA == :N
         pC′ = pC
         V = space(A)
@@ -22,20 +22,26 @@ function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{S}
 end
 
 function TO.tensorcontract_type(TC::Type{<:Number}, ::Index2Tuple{N₁,N₂},
-                                A::BlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
-                                B::BlockTensorMap{S}, pB::Index2Tuple, conjB::Symbol,
-                                istemp=false, backend::Backend...) where {S,N₁,N₂}
-    M = TK.similarstoragetype(A, TC)
-    M == TK.similarstoragetype(B, TC) ||
-        throw(ArgumentError("incompatible storage types"))
-    T = tensormaptype(S, N₁, N₂, M)
-    return BlockTensorMap{S,N₁,N₂,T,N₁ + N₂}
+                                A::BlockTensorMap{E₁,S}, pA::Index2Tuple, conjA::Symbol,
+                                B::BlockTensorMap{E₂,S}, pB::Index2Tuple, conjB::Symbol,
+                                istemp=false, backend::Backend...) where {E₁,E₂,S,N₁,N₂}
+    # M = TK.similarstoragetype(A, TC)
+    # M == TK.similarstoragetype(B, TC) ||
+    #     throw(ArgumentError("incompatible storage types"))
+    # check if the scalartypes are compatible
+    newE = try
+        promote_type(TC, E₁, E₂)
+    catch
+        throw(ArgumentError("incompatible scalartypes"))
+    end
+    return BlockTensorMap{newE,S,N₁,N₂,N₁ + N₂}
 end
 
 # By default, make "dense" allocations
-function TO.tensoralloc(::Type{BlockTensorMap{S,N1,N2,T,N}}, structure::TensorMapSumSpace,
-                        istemp::Bool, backend::B...) where {S,N1,N2,T,N,B<:Backend}
-    C = BlockTensorMap{S,N1,N2,T,N}(undef, structure)
+function TO.tensoralloc(::Type{BlockTensorMap{E,S,N1,N2,N}}, structure::TensorMapSumSpace,
+                        istemp::Bool, backend::B...) where {E,S,N1,N2,N,B<:Backend}
+    C = BlockTensorMap{E,S,N1,N2,N}(undef, structure)
+    T = tensormaptype(S, N1, N2, E)
     for I in eachindex(C)
         C[I] = TO.tensoralloc(T, getsubspace(structure, I), istemp, backend...)
     end
@@ -49,9 +55,10 @@ function TO.tensorfree!(t::BlockTensorMap, backend::Backend...)
     return nothing
 end
 
-function TO.tensoradd!(C::BlockTensorMap{S}, pC::Index2Tuple,
-                       A::BlockTensorMap{S}, conjA::Symbol,
-                       α::Number, β::Number, backend::Backend...) where {S}
+# For the moment, enforce all scalartypes to be the same. Possibly change this in the future.
+function TO.tensoradd!(C::BlockTensorMap{E,S}, pC::Index2Tuple,
+                       A::BlockTensorMap{E,S}, conjA::Symbol,
+                       α::Number, β::Number, backend::Backend...) where {E,S}
     argcheck_tensoradd(C, pC, A)
     dimcheck_tensoradd(C, pC, A)
 
@@ -64,10 +71,10 @@ function TO.tensoradd!(C::BlockTensorMap{S}, pC::Index2Tuple,
     return C
 end
 
-function TO.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
-                            A::BlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
-                            B::BlockTensorMap{S}, pB::Index2Tuple, conjB::Symbol,
-                            α::Number, β::Number, backend::Backend...) where {S}
+function TO.tensorcontract!(C::BlockTensorMap{E,S}, pC::Index2Tuple,
+                            A::BlockTensorMap{E,S}, pA::Index2Tuple, conjA::Symbol,
+                            B::BlockTensorMap{E,S}, pB::Index2Tuple, conjB::Symbol,
+                            α::Number, β::Number, backend::Backend...) where {E,S}
     argcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
     dimcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
 
@@ -147,10 +154,11 @@ function TO.tensorcontract!(C::BlockTensorMap{S}, pC::Index2Tuple,
     return C
 end
 
-function TO.tensortrace!(C::BlockTensorMap{S}, pC::Index2Tuple,
-                         A::BlockTensorMap{S},
+function TO.tensortrace!(C::BlockTensorMap{E,S}, pC::Index2Tuple,
+                         A::BlockTensorMap{E,S},
                          pA::Index2Tuple,
-                         conjA::Symbol, α::Number, β::Number, backend::Backend...) where {S}
+                         conjA::Symbol, α::Number, β::Number,
+                         backend::Backend...) where {E,S}
     argcheck_tensortrace(C, pC, A, pA)
     dimcheck_tensortrace(C, pC, A, pA)
 
@@ -167,8 +175,8 @@ function TO.tensortrace!(C::BlockTensorMap{S}, pC::Index2Tuple,
     return C
 end
 
-function TO.tensorscalar(C::BlockTensorArray{T,0}) where {T}
-    return isempty(C.data) ? zero(scalartype(C)) : tensorscalar(C[])
+function TO.tensorscalar(C::BlockTensorArray{E,0}) where {E}
+    return isempty(C.data) ? zero(scalartype(E)) : tensorscalar(C[])
 end
 
 TO.tensorstructure(t::BlockTensorMap) = space(t)
@@ -177,9 +185,9 @@ function TO.tensorstructure(t::BlockTensorMap, iA::Int, conjA::Symbol)
 end
 
 function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂},
-                                     A::BlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
-                                     B::BlockTensorMap{S}, pB::Index2Tuple,
-                                     conjB::Symbol) where {S,N₁,N₂}
+                                     A::BlockTensorMap{E,S}, pA::Index2Tuple, conjA::Symbol,
+                                     B::BlockTensorMap{E,S}, pB::Index2Tuple,
+                                     conjB::Symbol) where {E,S,N₁,N₂}
     spaces1 = TO.flag2op(conjA).(space.(Ref(A), pA[1]))
     spaces2 = TO.flag2op(conjB).(space.(Ref(B), pB[2]))
     spaces = (spaces1..., spaces2...)
@@ -188,9 +196,9 @@ function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂},
     return dom → cod
 end
 function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂},
-                                     A::BlockTensorMap{S}, pA::Index2Tuple, conjA::Symbol,
-                                     B::AbstractTensorMap{S}, pB::Index2Tuple,
-                                     conjB::Symbol) where {S,N₁,N₂}
+                                     A::BlockTensorMap{E,S}, pA::Index2Tuple, conjA::Symbol,
+                                     B::AbstractTensorMap{E,S}, pB::Index2Tuple,
+                                     conjB::Symbol) where {E,S,N₁,N₂}
     spaces1 = TO.flag2op(conjA).(space.(Ref(A), pA[1]))
     spaces2 = TO.flag2op(conjB).(space.(Ref(B), pB[2]))
     spaces = (spaces1..., spaces2...)
@@ -199,10 +207,10 @@ function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂},
     return dom → cod
 end
 function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂},
-                                     A::AbstractTensorMap{S}, pA::Index2Tuple,
+                                     A::AbstractTensorMap{E,S}, pA::Index2Tuple,
                                      conjA::Symbol,
-                                     B::BlockTensorMap{S}, pB::Index2Tuple,
-                                     conjB::Symbol) where {S,N₁,N₂}
+                                     B::BlockTensorMap{E,S}, pB::Index2Tuple,
+                                     conjB::Symbol) where {E,S,N₁,N₂}
     spaces1 = TO.flag2op(conjA).(space.(Ref(A), pA[1]))
     spaces2 = TO.flag2op(conjB).(space.(Ref(B), pB[2]))
     spaces = (spaces1..., spaces2...)
@@ -211,9 +219,9 @@ function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂},
     return dom → cod
 end
 
-function TO.checkcontractible(tA::BlockTensorMap{S}, iA::Int, conjA::Symbol,
-                              tB::BlockTensorMap{S}, iB::Int, conjB::Symbol,
-                              label) where {S}
+function TO.checkcontractible(tA::BlockTensorMap{E,S}, iA::Int, conjA::Symbol,
+                              tB::BlockTensorMap{E,S}, iB::Int, conjB::Symbol,
+                              label) where {E,S}
     sA = TO.tensorstructure(tA, iA, conjA)'
     sB = TO.tensorstructure(tB, iB, conjB)
     sA == sB ||
@@ -225,8 +233,8 @@ end
 # ----------------
 
 function TK.BraidingTensor(V1::SumSpace{S}, V2::SumSpace{S}) where {S}
-    tdst = BlockTensorMap{S,2,2,TK.BraidingTensor{S,Matrix{ComplexF64}}}(undef, V2 ⊗ V1,
-                                                                         V1 ⊗ V2)
+    tdst = BlockTensorMap{ComplexF64,S,2,2}(undef, V2 ⊗ V1,
+                                            V1 ⊗ V2)
     for I in CartesianIndices(tdst)
         if I[1] == I[4] && I[2] == I[3]
             V = getsubspace(space(tdst), I)
@@ -237,12 +245,12 @@ function TK.BraidingTensor(V1::SumSpace{S}, V2::SumSpace{S}) where {S}
     return tdst
 end
 
-function TK.planaradd!(C::BlockTensorMap{S,N₁,N₂},
-                       A::BlockTensorMap{S},
+function TK.planaradd!(C::BlockTensorMap{E,S,N₁,N₂},
+                       A::BlockTensorMap{E,S},
                        p::Index2Tuple{N₁,N₂},
                        α::Number,
                        β::Number,
-                       backend::Backend...) where {S,N₁,N₂}
+                       backend::Backend...) where {E,S,N₁,N₂}
     scale!(C, β)
     indCinA = linearize(p)
     for (IA, v) in nonzero_pairs(A)
@@ -252,30 +260,30 @@ function TK.planaradd!(C::BlockTensorMap{S,N₁,N₂},
     return C
 end
 
-function TK.planaradd!(C::AbstractTensorMap{S,N₁,N₂}, A::BlockTensorMap{S},
+function TK.planaradd!(C::AbstractTensorMap{E,S,N₁,N₂}, A::BlockTensorMap{E,S},
                        p::Index2Tuple{N₁,N₂}, α::Number, β::Number,
-                       backend::Backend...) where {S,N₁,N₂}
+                       backend::Backend...) where {E,S,N₁,N₂}
     C′ = convert(BlockTensorMap, C)
     TK.planaradd!(C′, A, p, α, β, backend...)
     return C
 end
 
-function TK.planaradd!(C::BlockTensorMap{S,N₁,N₂},
-                       A::AbstractTensorMap{S},
+function TK.planaradd!(C::BlockTensorMap{E,S,N₁,N₂},
+                       A::AbstractTensorMap{E,S},
                        p::Index2Tuple{N₁,N₂},
                        α::Number,
                        β::Number,
-                       backend::Backend...) where {S,N₁,N₂}
+                       backend::Backend...) where {E,S,N₁,N₂}
     return TK.planaradd!(C, convert(BlockTensorMap, A), p, α, β, backend...)
 end
 
-function TK.planartrace!(C::BlockTensorMap{S,N₁,N₂},
-                         A::BlockTensorMap{S},
+function TK.planartrace!(C::BlockTensorMap{E,S,N₁,N₂},
+                         A::BlockTensorMap{E,S},
                          p::Index2Tuple{N₁,N₂},
                          q::Index2Tuple{N₃,N₃},
                          α::Number,
                          β::Number,
-                         backend::Backend...) where {S,N₁,N₂,N₃}
+                         backend::Backend...) where {E,S,N₁,N₂,N₃}
     scale!(C, β)
 
     for (IA, v) in nonzero_pairs(A)
@@ -289,15 +297,15 @@ function TK.planartrace!(C::BlockTensorMap{S,N₁,N₂},
     return C
 end
 
-function TK.planarcontract!(C::BlockTensorMap{S,N₁,N₂},
-                            A::BlockTensorMap{S},
+function TK.planarcontract!(C::BlockTensorMap{E,S,N₁,N₂},
+                            A::BlockTensorMap{E,S},
                             pA::Index2Tuple,
-                            B::BlockTensorMap{S},
+                            B::BlockTensorMap{E,S},
                             pB::Index2Tuple,
                             pAB::Index2Tuple{N₁,N₂},
                             α::Number,
                             β::Number,
-                            backend::Backend...) where {S,N₁,N₂}
+                            backend::Backend...) where {E,S,N₁,N₂}
     scale!(C, β)
     keysA = sort!(collect(nonzero_keys(A));
                   by=IA -> CartesianIndex(getindices(IA.I, pA[2])))

@@ -61,22 +61,22 @@ function LinearAlgebra.mul!(C::BlockTensorMap, α::Number, A::BlockTensorMap)
     return C
 end
 
-function LinearAlgebra.lmul!(α::Number, t::BlockTensorMap{S}) where {S<:IndexSpace}
+function LinearAlgebra.lmul!(α::Number, t::BlockTensorMap)
     for v in nonzero_values(t)
         lmul!(α, v)
     end
     return t
 end
 
-function LinearAlgebra.rmul!(t::BlockTensorMap{S}, α::Number) where {S<:IndexSpace}
+function LinearAlgebra.rmul!(t::BlockTensorMap, α::Number)
     for v in nonzero_values(t)
         rmul!(v, α)
     end
     return t
 end
 
-function LinearAlgebra.norm(tA::BlockTensorMap{S,N₁,N₂,A},
-                            p::Real=2) where {S,N₁,N₂,A}
+function LinearAlgebra.norm(tA::BlockTensorMap,
+                            p::Real=2)
     vals = nonzero_values(tA)
     isempty(vals) && return norm(zero(scalartype(tA)), p)
     return LinearAlgebra.norm(norm.(vals), p)
