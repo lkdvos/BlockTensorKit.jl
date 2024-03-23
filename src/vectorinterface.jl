@@ -27,7 +27,6 @@ function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap,
     end
     # in-place scale elements from tx (getindex might allocate!)
     for (I, v) in nonzero_pairs(tx)
-        println(ty[I])
         ty[I] = scale!(ty[I], v, α)
     end
     return ty
@@ -74,3 +73,4 @@ function VI.inner(x::BlockTensorMap, y::BlockTensorMap)
 end
 
 VI.scalartype(::BlockTensorMap{E,S,N₁,N₂,N}) where {E,S,N₁,N₂,N} = E
+VI.scalartype(::Type{<:BlockTensorMap{E}}) where {E} = E
