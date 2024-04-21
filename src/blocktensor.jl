@@ -331,9 +331,12 @@ end
 
 # Utility
 # -------
-
-function Base.copy(t::BlockTensorMap{E,S,N₁,N₂,N}) where {E,S,N₁,N₂,N}
-    return BlockTensorMap{E,S,N₁,N₂,N}(copy(t.data), codomain(t), domain(t))
+function Base.copy(tsrc::BlockTensorMap{E,S,N1,N2,N}) where {E,S,N1,N2,N}
+    tdst = similar(tsrc)
+     for (key, value) in tsrc.data
+         tdst[key] = copy(value)
+     end
+     return tdst
 end
 
 Base.haskey(t::BlockTensorMap, I::CartesianIndex) = haskey(t.data, I)
