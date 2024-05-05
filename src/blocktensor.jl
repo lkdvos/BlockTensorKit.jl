@@ -1,56 +1,56 @@
 #! format: off
-struct BlockTensorMap{S<:IndexSpace,N₁,N₂,T<:AbstractTensorMap{S,N₁,N₂},N} <:
-       AbstractArray{T,N}
-    data::Dict{CartesianIndex{N},T}
+struct BlockTensorMap{E,S,N₁,N₂,N} <: AbstractArray{AbstractTensorMap{E,S,N₁,N₂},N}
+    data::Dict{CartesianIndex{N},AbstractTensorMap{E,S,N₁,N₂}}
     codom::ProductSumSpace{S,N₁}
     dom::ProductSumSpace{S,N₂}
-    function BlockTensorMap{S,N₁,N₂,T,N}(::UndefInitializer, codom::ProductSumSpace{S,N₁},
+    function BlockTensorMap{E,S,N₁,N₂,N}(::UndefInitializer, codom::ProductSumSpace{S,N₁},
                                        dom::ProductSumSpace{S,N₂}) where {
-                                       S,N₁,N₂,T<:AbstractTensorMap{S,N₁,N₂},N}
+                                       E,S,N₁,N₂,N}
         N₁ + N₂ == N ||
-            throw(TypeError(:BlockTensorMap, BlockTensorMap{S,N₁,N₂,T,N₁+N₂},
-                            BlockTensorMap{S,N₁,N₂,T,N}))
-        return new{S,N₁,N₂,T,N}(Dict{CartesianIndex{N},T}(), codom, dom)
+            throw(TypeError(:BlockTensorMap, BlockTensorMap{E,S,N₁,N₂,N₁+N₂},
+                            BlockTensorMap{E,S,N₁,N₂,N}))
+        return new{E,S,N₁,N₂,N}(Dict{CartesianIndex{N},AbstractTensorMap{E,S,N₁,N₂}}(), codom, dom)
     end
-    function BlockTensorMap{S,N₁,N₂,T}(data::Dict{CartesianIndex{N},T},
+    function BlockTensorMap{E,S,N₁,N₂}(data::Dict{CartesianIndex{N},AbstractTensorMap{E,S,N₁,N₂}},
                                        codom::ProductSumSpace{S,N₁},
                                        dom::ProductSumSpace{S,N₂}) where {
-                                       S,N₁,N₂,T<:AbstractTensorMap{S,N₁,N₂},N}
+                                       E,S,N₁,N₂,N}
         N₁ + N₂ == N ||
-            throw(TypeError(:BlockTensorMap, BlockTensorMap{S,N₁,N₂,T,N₁+N₂},
-                            BlockTensorMap{S,N₁,N₂,T,N}))
-        return new{S,N₁,N₂,T,N}(data, codom, dom)
+            throw(TypeError(:BlockTensorMap, BlockTensorMap{E,S,N₁,N₂,N₁+N₂},
+                            BlockTensorMap{E,S,N₁,N₂,N}))
+        return new{E,S,N₁,N₂,N}(data, codom, dom)
     end
 end
 #! format: on
 
 # alias for switching parameters
-const BlockTensorArray{T,N} = BlockTensorMap{S,N₁,N₂,T,N} where {S,N₁,N₂}
+const BlockTensorArray{E,N} = BlockTensorMap{E,S,N₁,N₂,N} where {S,N₁,N₂}
+# const BlockTensorArray{N} = BlockTensorMap{E,S,N₁,N₂,N} where {E,S,N₁,N₂} # TODO: consider this alias
+
 
 # default type parameters
-function BlockTensorMap{S,N₁,N₂,T}(args...) where {S,N₁,N₂,T<:AbstractTensorMap{S,N₁,N₂}}
-    return BlockTensorMap{S,N₁,N₂,T,N₁ + N₂}(args...)
+function BlockTensorMap{E,S,N₁,N₂}(args...) where {E,S,N₁,N₂}
+    return BlockTensorMap{E,S,N₁,N₂,N₁ + N₂}(args...)
 end
-function BlockTensorMap{S,N₁,N₂,T,N}(::UndefInitializer,
-                                     V::TensorMapSumSpace{S,N₁,N₂}) where {S,N₁,N₂,T,N}
-    return BlockTensorMap{S,N₁,N₂,T,N}(undef, codomain(V), domain(V))
+function BlockTensorMap{E,S,N₁,N₂,N}(::UndefInitializer,
+                                     V::TensorMapSumSpace{S,N₁,N₂}) where {E,S,N₁,N₂,N}
+    return BlockTensorMap{E,S,N₁,N₂,N}(undef, codomain(V), domain(V))
 end
 
-# Constructors
+# Constructors (Used to have a tensortype parameter, changed it to scalartype parameter)
 # ------------
-function BlockTensorMap(::UndefInitializer, ::Type{T}, codom::ProductSumSpace{S,N₁},
-                        dom::ProductSumSpace{S,N₂}) where {T,S,N₁,N₂}
-    T′ = T <: AbstractTensorMap{S,N₁,N₂} ? T : tensormaptype(S, N₁, N₂, T)
-    return BlockTensorMap{S,N₁,N₂,T′}(undef, codom, dom)
+function BlockTensorMap(::UndefInitializer, ::Type{E}, codom::ProductSumSpace{S,N₁},
+                        dom::ProductSumSpace{S,N₂}) where {E<:Number,S,N₁,N₂}
+    return BlockTensorMap{E,S,N₁,N₂}(undef, codom, dom)
 end
-function BlockTensorMap(::UndefInitializer, T::Type, P::TensorMapSumSpace)
-    return BlockTensorMap(undef, T, codomain(P), domain(P))
+function BlockTensorMap(::UndefInitializer, E::Type, P::TensorMapSumSpace)
+    return BlockTensorMap(undef, E, codomain(P), domain(P))
 end
 
 # AbstractArray Interface
 # -----------------------
 Base.size(t::BlockTensorMap) = (length.(t.codom.spaces)..., length.(t.dom.spaces)...)
-function Base.size(t::BlockTensorMap{S,N₁}, i::Int) where {S,N₁}
+function Base.size(t::BlockTensorMap{E,S,N₁}, i::Int) where {E,S,N₁}
     return i > N₁ ? length(t.dom.spaces[i - N₁]) : length(t.codom.spaces[i])
 end
 
@@ -73,27 +73,27 @@ end
     end
 end
 
-@propagate_inbounds function Base.getindex(t::BlockTensorArray{T,N},
-                                           I::Vararg{Int,N}) where {T,N}
+@propagate_inbounds function Base.getindex(t::BlockTensorArray{E,N},
+                                           I::Vararg{Int,N}) where {E,N}
     return getindex(t, CartesianIndex(I))
 end
-@inline function Base.getindex(t::BlockTensorArray{T,N},
-                               I::CartesianIndex{N}) where {T,N}
+@inline function Base.getindex(t::BlockTensorArray{E,N},
+                               I::CartesianIndex{N}) where {E,N}
     return get(t, I)
 end
 
-@propagate_inbounds function Base.setindex!(t::BlockTensorArray{T,N}, v,
-                                            I::Vararg{Int,N}) where {T,N}
+@propagate_inbounds function Base.setindex!(t::BlockTensorArray{E,N}, v,
+                                            I::Vararg{Int,N}) where {E,N}
     return setindex!(t, v, CartesianIndex(I))
 end
-@propagate_inbounds function Base.setindex!(t::BlockTensorArray{T₁,N},
-                                            v::BlockTensorArray{T₂,N},
-                                            I::CartesianIndex{N}) where {T₁,T₂,N}
+@propagate_inbounds function Base.setindex!(t::BlockTensorArray{E₁,N},
+                                            v::BlockTensorArray{E₂,N},
+                                            I::CartesianIndex{N}) where {E₁,E₂,N}
     return setindex!(t, only(v), I)
 end
-@inline function Base.setindex!(t::BlockTensorArray{T,N},
+@inline function Base.setindex!(t::BlockTensorArray{E,N},
                                 v,
-                                I::CartesianIndex{N}) where {T,N}
+                                I::CartesianIndex{N}) where {E,N}
     @boundscheck begin
         checkbounds(t, I)
         checkspaces(t, v, I)
@@ -141,36 +141,36 @@ end
 # specialisations to have `similar` behave with spaces, and disallow undefined options.
 
 # 4 arguments
-function Base.similar(t::BlockTensorMap, T::Type, codomain::VectorSpace,
+function Base.similar(t::BlockTensorMap, E::Type, codomain::VectorSpace,
                       domain::VectorSpace)
-    return similar(t, T, codomain ← domain)
+    return similar(t, E, codomain ← domain)
 end
 # 3 arguments
 function Base.similar(t::BlockTensorMap, codomain::VectorSpace, domain::VectorSpace)
     return similar(t, scalartype(t), codomain ← domain)
 end
-function Base.similar(t::BlockTensorMap, T::Type, codomain::VectorSpace)
-    return similar(t, T, codomain ← one(codomain))
+function Base.similar(t::BlockTensorMap, E::Type, codomain::VectorSpace)
+    return similar(t, E, codomain ← one(codomain))
 end
 # 2 arguments
 function Base.similar(t::BlockTensorMap, codomain::VectorSpace)
     return similar(t, scalartype(t), codomain ← one(codomain))
 end
 Base.similar(t::BlockTensorMap, P::TensorMapSpace) = similar(t, scalartype(t), P)
-Base.similar(t::BlockTensorMap, T::Type) = similar(t, T, space(t))
+Base.similar(t::BlockTensorMap, E::Type) = similar(t, E, space(t))
 # 1 argument
 Base.similar(t::BlockTensorMap) = similar(t, scalartype(t), space(t))
 
 # actual implementation
-function Base.similar(::BlockTensorMap, T::Type, P::TensorMapSumSpace)
-    return BlockTensorMap(undef, T, P)
+function Base.similar(::BlockTensorMap, E::Type, P::TensorMapSumSpace)
+    return BlockTensorMap(undef, E, P)
 end
 
 # Space checking
 # --------------
 
-function checkspaces(t::BlockTensorMap{S,N₁,N₂,T,N}, v::AbstractTensorMap{S,N₁,N₂},
-                     I::CartesianIndex{N}) where {S,N₁,N₂,T,N}
+function checkspaces(t::BlockTensorMap{E,S,N₁,N₂,N}, v::AbstractTensorMap{E,S,N₁,N₂},
+                     I::CartesianIndex{N}) where {E,S,N₁,N₂,N}
     getsubspace(space(t), I) == space(v) ||
         throw(SpaceMismatch("inserting a tensor of space $(space(v)) at index $I into a tensor of space $(getsubspace(space(t), I))"))
     return nothing
@@ -295,31 +295,31 @@ end
 # Converters
 # ----------
 
-function Base.promote_rule(::Type{BlockTensorMap{S,N₁,N₂,T₁,N}},
-                           ::Type{BlockTensorMap{S,N₁,N₂,T₂,N}}) where {S,N₁,N₂,T₁,T₂,N}
-    return BlockTensorMap{S,N₁,N₂,promote_type(T₁, T₂),N}
+function Base.promote_rule(::Type{BlockTensorMap{E₁,S,N₁,N₂,N}},
+                           ::Type{BlockTensorMap{E₂,S,N₁,N₂,N}}) where {E₁,E₂,S,N₁,N₂,N}
+    return BlockTensorMap{promote_type(E₁, E₂),S,N₁,N₂,N}
 end
 
-function Base.convert(::Type{BlockTensorMap{S,N₁,N₂,T₁,N}},
-                      t::BlockTensorMap{S,N₁,N₂,T₂,N}) where {S,N₁,N₂,T₁,T₂,N}
-    T₁ === T₂ && return t
-    tdst = BlockTensorMap{S,N₁,N₂,T₁,N}(undef, codomain(t), domain(t))
+function Base.convert(::Type{BlockTensorMap{E₁,S,N₁,N₂,N}},
+                      t::BlockTensorMap{E₂,S,N₁,N₂,N}) where {E₁,E₂,S,N₁,N₂,N}
+    E₁ === E₂ && return t
+    tdst = BlockTensorMap{E₁,S,N₁,N₂,N}(undef, codomain(t), domain(t))
     for (I, v) in nonzero_pairs(t)
-        tdst[I] = convert(T₁, v)
+        tdst[I] = add!(zerovector(v, E₁), v, One())
     end
     return tdst
 end
 
-function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap{S,N₁,N₂}) where {S,N₁,N₂}
-    tdst = BlockTensorMap{S,N₁,N₂,typeof(t)}(undef,
+function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap{E,S,N₁,N₂}) where {E,S,N₁,N₂}
+    tdst = BlockTensorMap{E,S,N₁,N₂}(undef,
                                              convert(ProductSumSpace{S,N₁}, codomain(t)),
                                              convert(ProductSumSpace{S,N₂}, domain(t)))
     tdst[1] = t
     return tdst
 end
 
-function Base.convert(::Type{<:AbstractTensorMap{S,N₁,N₂}},
-                      t::BlockTensorMap{S,N₁,N₂}) where {S,N₁,N₂}
+function Base.convert(::Type{<:AbstractTensorMap{E,S,N₁,N₂}},
+                      t::BlockTensorMap{E,S,N₁,N₂}) where {E,S,N₁,N₂}
     cod = ProductSpace(join.(codomain(t).spaces))
     dom = ProductSpace(join.(domain(t).spaces))
     tdst = TensorMap(undef, scalartype(t), cod ← dom)
@@ -331,9 +331,12 @@ end
 
 # Utility
 # -------
-
-function Base.copy(t::BlockTensorMap{S,N₁,N₂,T,N}) where {S,N₁,N₂,T,N}
-    return BlockTensorMap{S,N₁,N₂,T,N}(copy(t.data), codomain(t), domain(t))
+function Base.copy(tsrc::BlockTensorMap{E,S,N1,N2,N}) where {E,S,N1,N2,N}
+    tdst = similar(tsrc)
+     for (key, value) in tsrc.data
+         tdst[key] = copy(value)
+     end
+     return tdst
 end
 
 Base.haskey(t::BlockTensorMap, I::CartesianIndex) = haskey(t.data, I)

@@ -1,8 +1,8 @@
 # VectorInterface
 # ---------------
 
-function VI.zerovector(t::BlockTensorMap, ::Type{S}) where {S<:Number}
-    return similar(t, S, space(t))
+function VI.zerovector(t::BlockTensorMap{E₁}, ::Type{E₂}) where {E₁,E₂<:Number}
+    return similar(t, E₂, space(t))
 end
 VI.zerovector!(t::BlockTensorMap) = (empty!(t.data); t)
 VI.zerovector!!(t::BlockTensorMap) = zerovector!(t)
@@ -32,7 +32,6 @@ function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap,
     return ty
 end
 function VI.scale!!(x::BlockTensorMap, α::Number)
-    α === One() && return x
     return VI.promote_scale(x, α) <: scalartype(x) ? scale!(x, α) : scale(x, α)
 end
 function VI.scale!!(y::BlockTensorMap, x::BlockTensorMap,
@@ -72,3 +71,6 @@ function VI.inner(x::BlockTensorMap, y::BlockTensorMap)
     end
     return s
 end
+
+VI.scalartype(::BlockTensorMap{E,S,N₁,N₂,N}) where {E,S,N₁,N₂,N} = E
+VI.scalartype(::Type{<:BlockTensorMap{E}}) where {E} = E

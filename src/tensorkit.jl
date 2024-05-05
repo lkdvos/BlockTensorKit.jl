@@ -1,20 +1,20 @@
 # TensorKit Interface
 # -------------------
 
-TK.spacetype(::Union{T,Type{<:T}}) where {S,T<:BlockTensorMap{S}} = S
-function TK.sectortype(::Union{T,Type{<:T}}) where {S,T<:BlockTensorMap{S}}
+TK.spacetype(::Union{T,Type{<:T}}) where {E,S,T<:BlockTensorMap{E,S}} = S
+function TK.sectortype(::Union{T,Type{<:T}}) where {E,S,T<:BlockTensorMap{E,S}}
     return sectortype(S)
 end
-TK.storagetype(::Union{B,Type{B}}) where {T,B<:BlockTensorArray{T}} = storagetype(T)
+TK.storagetype(::Union{B,Type{B}}) where {E,S,N₁,N₂,N,B<:BlockTensorMap{E,S,N₁,N₂,N}} = AbstractTensorMap{E,S,N₁,N₂}
 TK.storagetype(::Type{Union{A,B}}) where {A,B} = Union{storagetype(A),storagetype(B)}
 function TK.similarstoragetype(TT::Type{<:BlockTensorMap}, ::Type{T}) where {T}
     return Core.Compiler.return_type(similar, Tuple{storagetype(TT),Type{T}})
 end
 TK.similarstoragetype(t::BlockTensorMap, T) = TK.similarstoragetype(typeof(t), T)
 
-TK.numout(::Union{T,Type{T}}) where {S,N₁,T<:BlockTensorMap{S,N₁}} = N₁
-TK.numin(::Union{T,Type{T}}) where {S,N₁,N₂,T<:BlockTensorMap{S,N₁,N₂}} = N₂
-TK.numind(::Union{T,Type{T}}) where {S,N₁,N₂,T<:BlockTensorMap{S,N₁,N₂}} = N₁ + N₂
+TK.numout(::Union{T,Type{T}}) where {E,S,N₁,T<:BlockTensorMap{E,S,N₁}} = N₁
+TK.numin(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}} = N₂
+TK.numind(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}} = N₁ + N₂
 
 TK.codomain(t::BlockTensorMap) = t.codom
 TK.domain(t::BlockTensorMap) = t.dom
@@ -30,17 +30,17 @@ function TK.blocksectors(t::BlockTensorMap)
     end
 end
 
-function TK.codomainind(::Union{T,Type{T}}) where {S,N₁,T<:BlockTensorMap{S,N₁}}
+function TK.codomainind(::Union{T,Type{T}}) where {E,S,N₁,T<:BlockTensorMap{E,S,N₁}}
     return ntuple(n -> n, N₁)
 end
-function TK.domainind(::Union{T,Type{T}}) where {S,N₁,N₂,T<:BlockTensorMap{S,N₁,N₂}}
+function TK.domainind(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}}
     return ntuple(n -> N₁ + n, N₂)
 end
-function TK.allind(::Union{T,Type{T}}) where {S,N₁,N₂,T<:BlockTensorMap{S,N₁,N₂}}
+function TK.allind(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}}
     return ntuple(n -> n, N₁ + N₂)
 end
 
-function TK.adjointtensorindex(::BlockTensorMap{<:IndexSpace,N₁,N₂}, i) where {N₁,N₂}
+function TK.adjointtensorindex(::BlockTensorMap{<:Number,<:IndexSpace,N₁,N₂}, i) where {N₁,N₂}
     return ifelse(i <= N₁, N₂ + i, i - N₁)
 end
 
