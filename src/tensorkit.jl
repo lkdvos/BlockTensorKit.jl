@@ -5,7 +5,10 @@ TK.spacetype(::Union{T,Type{<:T}}) where {E,S,T<:BlockTensorMap{E,S}} = S
 function TK.sectortype(::Union{T,Type{<:T}}) where {E,S,T<:BlockTensorMap{E,S}}
     return sectortype(S)
 end
-TK.storagetype(::Union{B,Type{B}}) where {E,S,N₁,N₂,N,B<:BlockTensorMap{E,S,N₁,N₂,N}} = AbstractTensorMap{E,S,N₁,N₂}
+function TK.storagetype(::Union{B,Type{B}}) where {E,S,N₁,N₂,N,
+                                                   B<:BlockTensorMap{E,S,N₁,N₂,N}}
+    return AbstractTensorMap{E,S,N₁,N₂}
+end
 TK.storagetype(::Type{Union{A,B}}) where {A,B} = Union{storagetype(A),storagetype(B)}
 function TK.similarstoragetype(TT::Type{<:BlockTensorMap}, ::Type{T}) where {T}
     return Core.Compiler.return_type(similar, Tuple{storagetype(TT),Type{T}})
@@ -40,7 +43,8 @@ function TK.allind(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,
     return ntuple(n -> n, N₁ + N₂)
 end
 
-function TK.adjointtensorindex(::BlockTensorMap{<:Number,<:IndexSpace,N₁,N₂}, i) where {N₁,N₂}
+function TK.adjointtensorindex(::BlockTensorMap{<:Number,<:IndexSpace,N₁,N₂},
+                               i) where {N₁,N₂}
     return ifelse(i <= N₁, N₂ + i, i - N₁)
 end
 

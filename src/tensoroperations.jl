@@ -1,10 +1,12 @@
 # TensorOperations
 # ----------------
 
-function TO.tensoradd_type(TC, ::Index2Tuple{N₁,N₂}, ::BlockTensorMap{E,S},
-                           conjA::Symbol) where {E,S,N₁,N₂}
-    newE = promote_type(TC, E)
-    return BlockTensorMap{newE,S,N₁,N₂,N₁ + N₂}
+function TO.tensoradd_type(TC, ::Index2Tuple{N₁,N₂}, A::BlockTensorMap,
+                           conjA::Symbol) where {N₁,N₂}
+    M = similarstoragetype(eltype(A), TC)
+    TT′ = tensormaptype(spacetype(A), N₁, N₂, M)
+    A′ = TK.similarstoragetype(A, TT′)
+    return BlockTensorMap{scalartype(TT′),spacetype(A),N₁,N₂,A′}
 end
 
 function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{E,S},
@@ -175,9 +177,9 @@ function TO.tensortrace!(C::BlockTensorMap{E,S}, pC::Index2Tuple,
     return C
 end
 
-function TO.tensorscalar(C::BlockTensorArray{E,0}) where {E}
-    return isempty(C.data) ? zero(scalartype(E)) : tensorscalar(C[])
-end
+# function TO.tensorscalar(C::BlockTensorMap{E,S,0,0}) where {E,S}
+#     return C[]
+# end
 
 TO.tensorstructure(t::BlockTensorMap) = space(t)
 function TO.tensorstructure(t::BlockTensorMap, iA::Int, conjA::Symbol)

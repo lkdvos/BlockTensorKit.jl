@@ -6,7 +6,7 @@ export undef_blocks
 export getsubspace
 
 using TensorKit
-using TensorKit: OneOrNoneIterator
+using TensorKit: OneOrNoneIterator, HomSpace
 using VectorInterface
 using TensorOperations
 using TensorOperations: dimcheck_tensoradd, dimcheck_tensorcontract, dimcheck_tensortrace,
@@ -26,6 +26,9 @@ import TensorOperations as TO
 # Spaces
 include("sumspace.jl")
 export SumSpace, ProductSumSpace
+
+# Arrays
+include("sparsetensorarray.jl")
 
 # TensorMaps
 include("blocktensor.jl")
