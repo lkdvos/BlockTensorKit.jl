@@ -13,26 +13,26 @@ TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 VectorInterface = "409d34a3-91d5-4945-b6ec-7529ddf182d8"
 
 [compat]
-TensorOperations = "4"
-julia = "1.6"
-LinearAlgebra = "1"
 BlockArrays = "0.16"
-TupleTools = "1"
-VectorInterface = "0.4"
-TensorKit = "0.12"
-Strided = "2"
 Combinatorics = "1"
+LinearAlgebra = "1"
 Random = "1"
+Strided = "2"
+TensorKit = "0.12"
+TensorOperations = "4"
 Test = "1"
 TestExtras = "0.2"
 TestItemRunner = "0.2"
+TupleTools = "1"
+VectorInterface = "0.4"
+julia = "1.6"
 
 [extras]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestExtras = "5ed8adda-3752-4e41-b88a-e8b09835ee3a"
-TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 
 [targets]
-test = ["Test", "TestExtras", "Random", "Combinatorics", "TestItemRunner"]
+test = ["Test", "TestExtras", "Random", "Combinatorics", "SafeTestsets"]
