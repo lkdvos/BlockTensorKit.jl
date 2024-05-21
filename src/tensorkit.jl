@@ -5,24 +5,15 @@ TK.spacetype(::Union{T,Type{<:T}}) where {E,S,T<:BlockTensorMap{E,S}} = S
 function TK.sectortype(::Union{T,Type{<:T}}) where {E,S,T<:BlockTensorMap{E,S}}
     return sectortype(S)
 end
-function TK.storagetype(::Union{B,Type{B}}) where {E,S,N₁,N₂,N,
-                                                   B<:BlockTensorMap{E,S,N₁,N₂,N}}
-    return AbstractTensorMap{E,S,N₁,N₂}
-end
-TK.storagetype(::Type{Union{A,B}}) where {A,B} = Union{storagetype(A),storagetype(B)}
-function TK.similarstoragetype(TT::Type{<:BlockTensorMap}, ::Type{T}) where {T}
-    return Core.Compiler.return_type(similar, Tuple{storagetype(TT),Type{T}})
-end
-TK.similarstoragetype(t::BlockTensorMap, T) = TK.similarstoragetype(typeof(t), T)
 
-TK.numout(::Union{T,Type{T}}) where {E,S,N₁,T<:BlockTensorMap{E,S,N₁}} = N₁
-TK.numin(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}} = N₂
-TK.numind(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}} = N₁ + N₂
+# TK.numout(::Union{T,Type{T}}) where {E,S,N₁,T<:BlockTensorMap{E,S,N₁}} = N₁
+# TK.numin(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}} = N₂
+# TK.numind(::Union{T,Type{T}}) where {E,S,N₁,N₂,T<:BlockTensorMap{E,S,N₁,N₂}} = N₁ + N₂
 
 TK.codomain(t::BlockTensorMap) = t.codom
 TK.domain(t::BlockTensorMap) = t.dom
-TK.space(t::BlockTensorMap) = codomain(t) ← domain(t)
-TK.space(t::BlockTensorMap, i) = space(t)[i]
+# TK.space(t::BlockTensorMap) = codomain(t) ← domain(t)
+# TK.space(t::BlockTensorMap, i) = space(t)[i]
 TK.dim(t::BlockTensorMap) = dim(space(t))
 
 function TK.blocksectors(t::BlockTensorMap)
@@ -58,25 +49,46 @@ end
 
 TK.blocks(t::BlockTensorMap) = ((c, block(t, c)) for c in blocksectors(t))
 
+# Note: this data is not in the same order as you would expect for a regular tensormap!
 function TK.block(t::BlockTensorMap, c::Sector)
     sectortype(t) == typeof(c) || throw(SectorMismatch())
 
     rows = prod(getindices(size(t), codomainind(t)))
     cols = prod(getindices(size(t), domainind(t)))
+    @assert rows != 0 && cols != 0 "to be added"
 
-    if rows == 0 || cols == 0
-        error("to be added")
+    allblocks = map(Base.Fix2(block, c), t.data)
+
+    return mortar(reshape(allblocks, rows, cols))
+end
+
+@inline function Base.getindex(t::BlockTensorMap{E,S,N₁,N₂}, f₁::FusionTree{I,N₁},
+                               f₂::FusionTree{I,N₂}) where {E,S,I,N₁,N₂}
+    sectortype(S) === I || throw(SectorMismatch())
+    allblocks = map(x -> x[f₁, f₂], t.data)
+    return mortar(allblocks)
+end
+
+@inline function Base.getindex(t::BlockTensorMap{E,S,N₁,N₂,<:AbstractArray{T}}, ::Nothing,
+                               ::Nothing) where {E,S,N₁,N₂,T<:TrivialTensorMap{E,S,N₁,N₂}}
+    return mortar(map(x -> x[], t.data))
+end
+
+function Base.convert(::Type{TensorMap}, t::BlockTensorMap)
+    cod = ProductSpace{spacetype(t)}(join.(codomain(t).spaces))
+    dom = ProductSpace{spacetype(t)}(join.(domain(t).spaces))
+    tdst = TensorMap(undef, scalartype(t), cod ← dom)
+
+    for (f₁, f₂) in fusiontrees(tdst)
+        tdst[f₁, f₂] .= t[f₁, f₂]
     end
+    return tdst
+end
 
-    rowdims = subblockdims(codomain(t), c)
-    coldims = subblockdims(domain(t), c)
-
-    b = fill!(BlockArray{scalartype(t)}(undef, rowdims, coldims), zero(scalartype(t)))
-    lin_inds = LinearIndices(parent(t))
-    new_cart_inds = CartesianIndices((rows, cols))
-    for (i, v) in nonzero_pairs(t)
-        b[Block(new_cart_inds[lin_inds[i]].I)] = TK.block(v, c)
-    end
-
-    return b
+function TK.fusiontrees(t::BlockTensorMap)
+    sectortype(t) === Trivial && return ((nothing, nothing),)
+    blocksectoriterator = blocksectors(space(t))
+    rowr, _ = TK._buildblockstructure(codomain(t), blocksectoriterator)
+    colr, _ = TK._buildblockstructure(domain(t), blocksectoriterator)
+    return TK.TensorKeyIterator(rowr, colr)
 end

@@ -2,10 +2,11 @@
 # ----------------
 
 function TO.tensoradd_type(TC, ::Index2Tuple{N₁,N₂}, A::BlockTensorMap,
-                           conjA::Symbol) where {N₁,N₂}
-    M = similarstoragetype(eltype(A), TC)
+                           ::Symbol) where {N₁,N₂}
+    M = TK.similarstoragetype(eltype(A), TC)
     TT′ = tensormaptype(spacetype(A), N₁, N₂, M)
-    A′ = TK.similarstoragetype(A, TT′)
+    A′ = Core.Compiler.return_type(similar,
+                                   Tuple{storagetype(A),Type{TT′},NTuple{N₁ + N₂,Int}})
     return BlockTensorMap{scalartype(TT′),spacetype(A),N₁,N₂,A′}
 end
 
@@ -23,29 +24,38 @@ function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{E,
     return dom → cod
 end
 
-function TO.tensorcontract_type(TC::Type{<:Number}, ::Index2Tuple{N₁,N₂},
+function TO.tensorcontract_type(TC, ::Index2Tuple{N₁,N₂},
                                 A::BlockTensorMap{E₁,S}, pA::Index2Tuple, conjA::Symbol,
                                 B::BlockTensorMap{E₂,S}, pB::Index2Tuple, conjB::Symbol,
                                 istemp=false, backend::Backend...) where {E₁,E₂,S,N₁,N₂}
-    # M = TK.similarstoragetype(A, TC)
-    # M == TK.similarstoragetype(B, TC) ||
-    #     throw(ArgumentError("incompatible storage types"))
-    # check if the scalartypes are compatible
-    newE = try
-        promote_type(TC, E₁, E₂)
-    catch
-        throw(ArgumentError("incompatible scalartypes"))
-    end
-    return BlockTensorMap{newE,S,N₁,N₂,N₁ + N₂}
+    M = TK.similarstoragetype(eltype(A), TC)
+    M == TK.similarstoragetype(eltype(B), TC) || error("incompatible storage types")
+
+    TT = tensormaptype(spacetype(A), N₁, N₂, M)
+    A′ = Core.Compiler.return_type(similar,
+                                   Tuple{storagetype(A),Type{TT},NTuple{N₁ + N₂,Int}})
+    return BlockTensorMap{scalartype(TT),spacetype(A),N₁,N₂,A′}
+end
+
+function TO.tensorcontract_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap,
+                                     pA::Index2Tuple,
+                                     conjA::Symbol, B::BlockTensorMap, pB::Index2Tuple,
+                                     conjB::Symbol) where {N₁,N₂}
+    spacetype(A) == spacetype(B) || throw(SpaceMismatch("incompatible space types"))
+    spaces1 = TO.flag2op(conjA).(space.(Ref(A), pA[1]))
+    spaces2 = TO.flag2op(conjB).(space.(Ref(B), pB[2]))
+    spaces = (spaces1..., spaces2...)
+    cod = ProductSumSpace{spacetype(A),N₁}(getindex.(Ref(spaces), pC[1]))
+    dom = ProductSumSpace{spacetype(A),N₂}(dual.(getindex.(Ref(spaces), pC[2])))
+    return dom → cod
 end
 
 # By default, make "dense" allocations
-function TO.tensoralloc(::Type{BlockTensorMap{E,S,N1,N2,N}}, structure::TensorMapSumSpace,
-                        istemp::Bool, backend::B...) where {E,S,N1,N2,N,B<:Backend}
-    C = BlockTensorMap{E,S,N1,N2,N}(undef, structure)
-    T = tensormaptype(S, N1, N2, E)
-    for I in eachindex(C)
-        C[I] = TO.tensoralloc(T, getsubspace(structure, I), istemp, backend...)
+function TO.tensoralloc(::Type{BlockTensorMap{E,S,N1,N2,A}}, structure::TensorMapSumSpace,
+                        istemp::Bool, backend::B...) where {E,S,N1,N2,A,B<:Backend}
+    C = BlockTensorMap{E,S,N1,N2,A}(undef, structure)
+    for (I, V) in enumerate(eachspace(C))
+        C[I] = TO.tensoralloc(eltype(C), V, istemp, backend...)
     end
     return C
 end
@@ -57,102 +67,41 @@ function TO.tensorfree!(t::BlockTensorMap, backend::Backend...)
     return nothing
 end
 
-# For the moment, enforce all scalartypes to be the same. Possibly change this in the future.
-function TO.tensoradd!(C::BlockTensorMap{E,S}, pC::Index2Tuple,
-                       A::BlockTensorMap{E,S}, conjA::Symbol,
-                       α::Number, β::Number, backend::Backend...) where {E,S}
-    argcheck_tensoradd(C, pC, A)
-    dimcheck_tensoradd(C, pC, A)
+function TO.tensoradd!(C::BlockTensorMap, pC::Index2Tuple,
+                       A::BlockTensorMap, conjA::Symbol,
+                       α::Number, β::Number, backend::Backend...)
+    argcheck_tensoradd(C.data, pC, A.data)
+    dimcheck_tensoradd(C.data, pC, A.data)
 
-    scale!(C, β)
-    indCinA = linearize(pC)
-    for (IA, v) in nonzero_pairs(A)
-        IC = CartesianIndex(TupleTools.getindices(IA.I, indCinA))
-        C[IC] = tensoradd!(C[IC], pC, v, conjA, α, One(), backend...)
+    for IA in eachindex(IndexCartesian(), A)
+        IC = CartesianIndex(TupleTools.getindices(IA.I, linearize(pC)))
+        C[IC] = tensoradd!(C[IC], pC, A[IA], conjA, α, β, backend...)
     end
     return C
 end
 
-function TO.tensorcontract!(C::BlockTensorMap{E,S}, pC::Index2Tuple,
-                            A::BlockTensorMap{E,S}, pA::Index2Tuple, conjA::Symbol,
-                            B::BlockTensorMap{E,S}, pB::Index2Tuple, conjB::Symbol,
-                            α::Number, β::Number, backend::Backend...) where {E,S}
+function TO.tensorcontract!(C::BlockTensorMap, pC::Index2Tuple,
+                            A::BlockTensorMap, pA::Index2Tuple, conjA::Symbol,
+                            B::BlockTensorMap, pB::Index2Tuple, conjB::Symbol,
+                            α::Number, β::Number, backend::Backend...)
     argcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
     dimcheck_tensorcontract(parent(C), pC, parent(A), pA, parent(B), pB)
-
-    scale!(C, β)
-
-    keysA = sort!(collect(nonzero_keys(A));
-                  by=IA -> CartesianIndex(getindices(IA.I, pA[2])))
-    keysB = sort!(collect(nonzero_keys(B));
-                  by=IB -> CartesianIndex(getindices(IB.I, pB[1])))
-
-    iA = iB = 1
-    @inbounds while iA <= length(keysA) && iB <= length(keysB)
-        IA = keysA[iA]
-        IB = keysB[iB]
-        IAc = CartesianIndex(getindices(IA.I, pA[2]))
-        IBc = CartesianIndex(getindices(IB.I, pB[1]))
-        if IAc == IBc
-            Ic = IAc
-            jA = iA
-            while jA < length(keysA)
-                if CartesianIndex(getindices(keysA[jA + 1].I, pA[2])) == Ic
-                    jA += 1
-                else
-                    break
-                end
-            end
-            jB = iB
-            while jB < length(keysB)
-                if CartesianIndex(getindices(keysB[jB + 1].I, pB[1])) == Ic
-                    jB += 1
-                else
-                    break
-                end
-            end
-            rA = iA:jA
-            rB = iB:jB
-            if length(rA) < length(rB)
-                for kB in rB
-                    IB = keysB[kB]
-                    IBo = CartesianIndex(getindices(IB.I, pB[2]))
-                    vB = B[IB]
-                    for kA in rA
-                        IA = keysA[kA]
-                        IAo = CartesianIndex(getindices(IA.I, pA[1]))
-                        IABo = CartesianIndex(IAo, IBo)
-                        IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
-                        vA = A[IA]
-                        C[IC] = tensorcontract!(C[IC], pC, vA, pA, conjA, vB, pB, conjB, α,
-                                                One(), backend...)
-                    end
-                end
-            else
-                for kA in rA
-                    IA = keysA[kA]
-                    IAo = CartesianIndex(getindices(IA.I, pA[1]))
-                    vA = A[IA]
-                    for kB in rB
-                        IB = keysB[kB]
-                        IBo = CartesianIndex(getindices(IB.I, pB[2]))
-                        vB = parent(B).data[IB]
-                        IABo = CartesianIndex(IAo, IBo)
-                        IC = CartesianIndex(getindices(IABo.I, linearize(pC)))
-                        C[IC] = tensorcontract!(C[IC], pC, vA, pA, conjA, vB, pB, conjB, α,
-                                                One(), backend...)
-                    end
-                end
-            end
-            iA = jA + 1
-            iB = jB + 1
-        elseif IAc < IBc
-            iA += 1
-        else
-            iB += 1
+    ipC = invperm(linearize(pC))
+    for IC in eachindex(IndexCartesian(), C)
+        β′ = β
+        IAB = TupleTools.getindices(IC.I, ipC)
+        IAo = TupleTools.getindices(IAB, ntuple(identity, TO.numout(pA)))
+        IBo = TupleTools.getindices(IAB, ntuple(i -> i + TO.numout(pA), TO.numin(pB)))
+        for Ic in Iterators.product(axes.(Ref(A), pA[2])...)
+            IA = CartesianIndex(TupleTools.getindices(linearize((IAo, Ic)),
+                                                      invperm(linearize(pA))))
+            IB = CartesianIndex(TupleTools.getindices(linearize((Ic, IBo)),
+                                                      invperm(linearize(pB))))
+            C[IC] = tensorcontract!(C[IC], pC, A[IA], pA, conjA, B[IB], pB, conjB, α, β′,
+                                    backend...)
+            β′ = one(β)
         end
     end
-
     return C
 end
 
@@ -161,25 +110,21 @@ function TO.tensortrace!(C::BlockTensorMap{E,S}, pC::Index2Tuple,
                          pA::Index2Tuple,
                          conjA::Symbol, α::Number, β::Number,
                          backend::Backend...) where {E,S}
-    argcheck_tensortrace(C, pC, A, pA)
-    dimcheck_tensortrace(C, pC, A, pA)
+    argcheck_tensortrace(C.data, pC, A.data, pA)
+    dimcheck_tensortrace(C.data, pC, A.data, pA)
 
     scale!(C, β)
-
-    for (IA, v) in nonzero_pairs(A)
+    β′ = One()
+    for IA in eachindex(IndexCartesian(), A)
         IAc1 = CartesianIndex(getindices(IA.I, pA[1]))
         IAc2 = CartesianIndex(getindices(IA.I, pA[2]))
         IAc1 == IAc2 || continue
 
         IC = CartesianIndex(getindices(IA.I, linearize(pC)))
-        C[IC] = tensortrace!(C[IC], pC, v, pA, conjA, α, One(), backend...)
+        C[IC] = tensortrace!(C[IC], pC, A[IA], pA, conjA, α, β′, backend...)
     end
     return C
 end
-
-# function TO.tensorscalar(C::BlockTensorMap{E,S,0,0}) where {E,S}
-#     return C[]
-# end
 
 TO.tensorstructure(t::BlockTensorMap) = space(t)
 function TO.tensorstructure(t::BlockTensorMap, iA::Int, conjA::Symbol)
@@ -384,13 +329,17 @@ end
 # methods for automatically working with TensorMap - BlockTensorMaps
 # ------------------------------------------------------------------------
 
+# trick ambiguities by using Union instead of AbstractTensorMap
+const AnyTM = Union{TensorMap,TensorKit.AdjointTensorMap}
+
 for (T1, T2) in
-    ((:AbstractTensorMap, :BlockTensorMap), (:BlockTensorMap, :AbstractTensorMap),
-     (:BlockTensorMap, :BlockTensorMap), (:AbstractTensorMap, :AbstractTensorMap))
-    if T1 !== :AbstractTensorMap && T2 !== :AbstractTensorMap
+    ((:AnyTM, :BlockTensorMap), (:BlockTensorMap, :AnyTM),
+     (:BlockTensorMap, :BlockTensorMap), (:AnyTM, :AnyTM))
+    if T1 !== :AnyTM && T2 !== :AnyTM
         @eval function TO.tensorcontract!(C::AbstractTensorMap, pC::Index2Tuple, A::$T1,
                                           pA::Index2Tuple, conjA::Symbol, B::$T2,
-                                          pB::Index2Tuple, conjB::Symbol, α, β::Number,
+                                          pB::Index2Tuple, conjB::Symbol, α::Number,
+                                          β::Number,
                                           backend::TO.Backend...)
             C′ = convert(BlockTensorMap, C)
             tensorcontract!(C′, pC, A, pA, conjA, B, pB, conjB, α, β, backend...)

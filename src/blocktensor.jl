@@ -4,14 +4,26 @@ struct BlockTensorMap{E,S,N₁,N₂,A<:AbstractArray{<:AbstractTensorMap{E,S,N�
     codom::ProductSumSpace{S,N₁}
     dom::ProductSumSpace{S,N₂}
 
+    function BlockTensorMap{E,S,N1,N2,A}(::UndefInitializer,
+                                         V::HomSpace{SumSpace{S},
+                                                     ProductSpace{SumSpace{S},N1},
+                                                     ProductSpace{SumSpace{S},N2}}) where {E,
+                                                                                           S,
+                                                                                           N1,
+                                                                                           N2,
+                                                                                           A<:AbstractArray}
+        sz = map(length, (codomain(V).spaces..., domain(V).spaces...))
+        data = A(undef, sz)
+        return new{E,S,N1,N2,A}(data, codomain(V), domain(V))
+    end
     # constructor enforces N = N₁ + N₂
-    function BlockTensorMap(data::AbstractArray{<:AbstractTensorMap{<:Any,S,N₁,N₂}},
+    function BlockTensorMap(data::AbstractArray{<:AbstractTensorMap{E,S,N₁,N₂}},
                             codom::ProductSumSpace{S,N₁},
-                            dom::ProductSumSpace{S,N₂}) where {S,N₁,N₂}
+                            dom::ProductSumSpace{S,N₂}) where {E,S,N₁,N₂}
         N₁ + N₂ == ndims(data) || throw(TypeError(:BlockTensorMap,
-                                                  BlockTensorMap{E,S,N₁,N₂,AbstractArray{eltype(data),N₁ + N₂}},
+                                                  BlockTensorMap{E,S,N₁,N₂,AbstractArray{E,N₁ + N₂}},
                                                   BlockTensorMap{E,S,N₁,N₂,typeof(data)}))
-        return new{E,S,N₁,N₂,A}(data, codom, dom)
+        return new{E,S,N₁,N₂,typeof(data)}(data, codom, dom)
     end
 
     # function BlockTensorMap{E,S,N₁,N₂}(data::Dict{CartesianIndex{N},AbstractTensorMap{E,S,N₁,N₂}},
@@ -51,6 +63,29 @@ function BlockTensorMap{E}(::UndefInitializer, P::TensorMapSumSpace) where {E}
     return BlockTensorMap{E}(undef, codomain(P), domain(P))
 end
 
+for f in (:zeros, :ones, :randn, :rand)
+    @eval function Base.$f(::Type{E}, V::TensorMapSumSpace) where {E}
+        t = BlockTensorMap{E}(undef, V)
+        for (I, S) in enumerate(eachspace(t))
+            t[I] = TensorMap($f, E, S)
+        end
+        return t
+    end
+end
+for f in (:randn, :rand)
+    f! = Symbol(f, :!)
+    @eval function Random.$f!(t::BlockTensorMap)
+        for I in eachindex(t)
+            tmp = t[I]
+            for (_, b) in TensorKit.blocks(tmp)
+                Random.$f!(b)
+            end
+            t[I] = tmp
+        end
+        return t
+    end
+end
+
 # AbstractArray Interface
 # -----------------------
 # mostly pass everything through to data
@@ -61,7 +96,20 @@ Base.axes(t::BlockTensorMap, args...) = axes(t.data, args...)
 Base.getindex(t::BlockTensorMap, args...) = getindex(t.data, args...)
 Base.setindex!(t::BlockTensorMap, args...) = (setindex!(t.data, args...); t)
 
+Base.eachindex(t::BlockTensorMap) = eachindex(t.data)
+Base.eachindex(style::IndexStyle, t::BlockTensorMap) = eachindex(style, t.data)
+eachspace(t::BlockTensorMap) = SumSpaceIndices(space(t))
+
 Base.eltype(::Type{BlockTensorMap{E,S,N₁,N₂,A}}) where {E,S,N₁,N₂,A} = eltype(A)
+
+Base.fill!(t::BlockTensorMap, args...) = (fill!(t.data, args...); t)
+
+Base.parent(t::BlockTensorMap) = t.data
+
+# Utility
+# -------
+
+TK.storagetype(::Type{BlockTensorMap{E,S,N1,N2,A}}) where {E,S,N1,N2,A} = A
 
 # # getindex and setindex! using Vararg{Int,N} signature is needed for the AbstractArray
 # # interface, manually dispatch through to CartesianIndex{N} signature to work with Dict.
@@ -171,8 +219,11 @@ Base.similar(t::BlockTensorMap, E::Type) = similar(t, E, space(t))
 Base.similar(t::BlockTensorMap) = similar(t, scalartype(t), space(t))
 
 # actual implementation
-function Base.similar(::BlockTensorMap, E::Type, P::TensorMapSumSpace)
-    return BlockTensorMap(undef, E, P)
+function Base.similar(t::BlockTensorMap, ::Type{E},
+                      P::TensorMapSumSpace{S,N₁,N₂}) where {E,S,N₁,N₂}
+    T = tensormaptype(S, N₁, N₂, E)
+    A = TK.similarstoragetype(t, T)
+    return BlockTensorMap{E,S,N₁,N₂,A}(undef, P)
 end
 
 # Space checking
@@ -202,26 +253,28 @@ nonzero_length(a::BlockTensorMap) = length(a.data)
 
 # Show
 # ----
-function Base.show(io::IO, ::MIME"text/plain", x::BlockTensorMap)
-    compact = get(io, :compact, false)::Bool
-    nnz = nonzero_length(x)
-    print(io, Base.join(size(x), "×"), " BlockTensorMap(", space(x), ")")
-    if !compact && nnz != 0
-        println(io, " with ", nnz, " stored entr", nnz == 1 ? "y" : "ies", ":")
-        show_braille(io, x)
-    end
-    return nothing
-end
-function Base.show(io::IO, x::BlockTensorMap)
-    compact = get(io, :compact, false)::Bool
-    nnz = nonzero_length(x)
-    print(io, Base.join(size(x), "×"), " BlockTensorMap(", space(x), ")")
-    if !compact && nnz != 0
-        println(io, " with ", nnz, " stored entr", nnz == 1 ? "y" : "ies", ":")
-        show_elements(io, x)
-    end
-    return nothing
-end
+# function Base.show(io::IO, ::MIME"text/plain", x::BlockTensorMap)
+
+# function Base.show(io::IO, ::MIME"text/plain", x::BlockTensorMap)
+#     compact = get(io, :compact, false)::Bool
+#     nnz = nonzero_length(x)
+#     print(io, Base.join(size(x), "×"), " BlockTensorMap(", space(x), ")")
+#     if !compact && nnz != 0
+#         println(io, " with ", nnz, " stored entr", nnz == 1 ? "y" : "ies", ":")
+#         show_braille(io, x)
+#     end
+#     return nothing
+# end
+# function Base.show(io::IO, x::BlockTensorMap)
+#     compact = get(io, :compact, false)::Bool
+#     nnz = nonzero_length(x)
+#     print(io, Base.join(size(x), "×"), " BlockTensorMap(", space(x), ")")
+#     if !compact && nnz != 0
+#         println(io, " with ", nnz, " stored entr", nnz == 1 ? "y" : "ies", ":")
+#         show_elements(io, x)
+#     end
+#     return nothing
+# end
 
 function show_elements(io::IO, x::BlockTensorMap)
     nzind = nonzero_keys(x)

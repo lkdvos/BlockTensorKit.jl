@@ -3,7 +3,7 @@ module BlockTensorKit
 export SumSpace
 export BlockTensorMap, SparseBlockTensorMap
 export undef_blocks
-export getsubspace
+export SumSpaceIndices
 
 using TensorKit
 using TensorKit: OneOrNoneIterator, HomSpace
@@ -18,6 +18,7 @@ using TupleTools: getindices, isperm
 using BlockArrays
 using TupleTools
 using Base: @propagate_inbounds
+using Random
 
 import VectorInterface as VI
 import TensorKit as TK

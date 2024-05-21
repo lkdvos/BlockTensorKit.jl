@@ -2,9 +2,13 @@
 # ---------------
 
 function VI.zerovector(t::BlockTensorMap{E₁}, ::Type{E₂}) where {E₁,E₂<:Number}
-    return similar(t, E₂, space(t))
+    tdst = similar(t, E₂, space(t))
+    for (I, V) in enumerate(t.data)
+        tdst[I] = zerovector(V, E₂)
+    end
+    return tdst
 end
-VI.zerovector!(t::BlockTensorMap) = (empty!(t.data); t)
+VI.zerovector!(t::BlockTensorMap) = (zerovector!(t.data); t)
 VI.zerovector!!(t::BlockTensorMap) = zerovector!(t)
 
 function VI.scale(t::BlockTensorMap, α::Number)
@@ -13,9 +17,10 @@ function VI.scale(t::BlockTensorMap, α::Number)
     return t′
 end
 function VI.scale!(t::BlockTensorMap, α::Number)
-    for v in nonzero_values(parent(t))
-        scale!(v, α)
-    end
+    scale!(parent(t), α)
+    # for v in nonzero_values(parent(t))
+    #     scale!(v, α)
+    # end
     return t
 end
 function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap,
@@ -41,7 +46,7 @@ end
 
 function VI.add(y::BlockTensorMap, x::BlockTensorMap, α::Number,
                 β::Number)
-    space(y) == space(x) || throw(SpaceMisMatch())
+    space(y) == space(x) || throw(TK.SpaceMisMatch())
     T = VI.promote_add(y, x, α, β)
     z = zerovector(y, T)
     # TODO: combine these operations where possible
