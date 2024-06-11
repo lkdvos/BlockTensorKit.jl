@@ -4,18 +4,23 @@ struct BlockTensorMap{E,S,N₁,N₂,A<:AbstractArray{<:AbstractTensorMap{E,S,N�
     codom::ProductSumSpace{S,N₁}
     dom::ProductSumSpace{S,N₂}
 
-    function BlockTensorMap{E,S,N1,N2,A}(::UndefInitializer,
-                                         V::HomSpace{SumSpace{S},
-                                                     ProductSpace{SumSpace{S},N1},
-                                                     ProductSpace{SumSpace{S},N2}}) where {E,
-                                                                                           S,
-                                                                                           N1,
-                                                                                           N2,
-                                                                                           A<:AbstractArray}
-        sz = map(length, (codomain(V).spaces..., domain(V).spaces...))
-        data = A(undef, sz)
-        return new{E,S,N1,N2,A}(data, codomain(V), domain(V))
+    # uninitiliazed constructor: initialize blocks with uninitialized tensors
+    function BlockTensorMap{E,S,N₁,N₂,A}(::UndefInitializer,
+                                         codom::ProductSumSpace{S,N₁},
+                                         dom::ProductSumSpace{S,N₂}) where {E,S,N₁,N₂,
+                                                                            A<:AbtractArray{<:AbstractTensorMap{E,
+                                                                                                                S,
+                                                                                                                N₁,
+                                                                                                                N₂}}}
+        allspaces = SumSpaceIndices(codom ← dom)
+        data = similar(A, size(allspaces))
+        map!(data, allspaces) do v
+            return eltype(A)(undef, codomain(v), domain(v))
+        end
+        return new{E,S,N₁,N₂,A}(data, codom, dom)
     end
+
+    # constructor from data
     # constructor enforces N = N₁ + N₂
     function BlockTensorMap(data::AbstractArray{<:AbstractTensorMap{E,S,N₁,N₂}},
                             codom::ProductSumSpace{S,N₁},
@@ -25,17 +30,27 @@ struct BlockTensorMap{E,S,N₁,N₂,A<:AbstractArray{<:AbstractTensorMap{E,S,N�
                                                   BlockTensorMap{E,S,N₁,N₂,typeof(data)}))
         return new{E,S,N₁,N₂,typeof(data)}(data, codom, dom)
     end
-
-    # function BlockTensorMap{E,S,N₁,N₂}(data::Dict{CartesianIndex{N},AbstractTensorMap{E,S,N₁,N₂}},
-    #                                    codom::ProductSumSpace{S,N₁},
-    #                                    dom::ProductSumSpace{S,N₂}) where {
-    #                                    E,S,N₁,N₂,N}
-    #     N₁ + N₂ == N ||
-    #         throw(TypeError(:BlockTensorMap, BlockTensorMap{E,S,N₁,N₂,N₁+N₂},
-    #                         BlockTensorMap{E,S,N₁,N₂,N}))
-    #     return new{E,S,N₁,N₂,N}(data, codom, dom)
-    # end
 end
+
+function TensorKit.tensormaptype(::Type{SumSpace{S}}, N₁, N₂,
+                                 ::Type{T}) where {S<:SumSpace,
+                                                   T<:Union{TensorKit.MatOrNumber,
+                                                            AbstractTensorMap,
+                                                            AbstractArray{<:AbstractTensorMap}}}
+    A = if T <: TensorKit.MatOrNumber
+        TT = TensorKit.tensormaptype(S, N₁, N₂, T)
+        Array{TT,N₁ + N₂}
+    elseif T <: AbstractTensorMap
+        Array{T,N₁ + N₂}
+    elseif T <: AbstractArray{<:AbstractTensorMap}
+        T
+    else
+        throw(ArgumentError("tensormaptype: invalid type $T"))
+    end
+    return BlockTensorMap{scalartype(T),S,N₁,N₂,A}
+end
+
+const BlockTensor{E,S,N,A} = BlockTensorMap{E,S,N,0,A}
 
 # alias for switching parameters
 # const BlockTensorArray{E,N} = BlockTensorMap{E,S,N₁,N₂,N} where {S,N₁,N₂}
@@ -52,37 +67,45 @@ end
 
 # Constructors (Used to have a tensortype parameter, changed it to scalartype parameter)
 # ------------
-function BlockTensorMap{E}(::UndefInitializer, codom::ProductSumSpace{S,N₁},
-                           dom::ProductSumSpace{S,N₂}) where {E<:Number,S,N₁,N₂}
-    data = Array{tensormaptype(S, N₁, N₂, E)}(undef, length.(codom.spaces)...,
-                                              length.(dom.spaces)...)
-    return BlockTensorMap(data, codom, dom)
+function BlockTensorMap{E}(::UndefInitializer,
+                           V::TensorMapSumSpace{S,N₁,N₂}) where {E,S,N₁,N₂}
+    TT = tensormaptype(SumSpace{S}, N₁, N₂, E)
+    return TT(undef, codom, dom)
+end
+function BlockTensorMap{E}(::UndefInitializer, codomain::TensorSumSpace{S},
+                           domain::TensorSumSpace{S}) where {E,S}
+    return BlockTensorMap{E}(undef, codomain ← domain)
+end
+function BlockTensor{E}(::UndefInitializer, V::TensorSumSpace{S}) where {E,S}
+    return BlockTensorMap{E}(undef, V, one(V))
 end
 
-function BlockTensorMap{E}(::UndefInitializer, P::TensorMapSumSpace) where {E}
-    return BlockTensorMap{E}(undef, codomain(P), domain(P))
-end
+# TODO: the following can probably be avoided by a careful definition change in TensorKit
 
-for f in (:zeros, :ones, :randn, :rand)
-    @eval function Base.$f(::Type{E}, V::TensorMapSumSpace) where {E}
-        t = BlockTensorMap{E}(undef, V)
-        for (I, S) in enumerate(eachspace(t))
-            t[I] = TensorMap($f, E, S)
+for (fname, felt) in ((:zeros, :zero), (:ones, :one))
+    @eval begin
+        function Base.$fname(::Type{T}, V::TensorMapSumSpace) where {T}
+            t = BlockTensorMap{T}(undef, V)
+            fill!(t, $felt(T))
+            return t
         end
-        return t
     end
 end
-for f in (:randn, :rand)
-    f! = Symbol(f, :!)
-    @eval function Random.$f!(t::BlockTensorMap)
-        for I in eachindex(t)
-            tmp = t[I]
-            for (_, b) in TensorKit.blocks(tmp)
-                Random.$f!(b)
-            end
-            t[I] = tmp
+
+for randfun in (:rand, :randn, :randexp)
+    randfun! = Symbol(randfun, :!)
+    @eval begin
+        function Random.$randfun(rng::Random.AbstractRNG, ::Type{T},
+                                 V::TensorMapSpace) where {T}
+            t = BlockTensorMap{T}(undef, V)
+            Random.$randfun!(rng, t)
+            return t
         end
-        return t
+
+        function Random.$randfun!(rng::Random.AbstractRNG, t::BlockTensorMap)
+            foreach(b -> Random.$randfun!(rng, b), parent(t))
+            return t
+        end
     end
 end
 
@@ -197,47 +220,30 @@ TK.storagetype(::Type{BlockTensorMap{E,S,N1,N2,A}}) where {E,S,N1,N2,A} = A
 # ------------
 # specialisations to have `similar` behave with spaces, and disallow undefined options.
 
-# 4 arguments
-function Base.similar(t::BlockTensorMap, E::Type, codomain::VectorSpace,
-                      domain::VectorSpace)
-    return similar(t, E, codomain ← domain)
-end
-# 3 arguments
-function Base.similar(t::BlockTensorMap, codomain::VectorSpace, domain::VectorSpace)
-    return similar(t, scalartype(t), codomain ← domain)
-end
-function Base.similar(t::BlockTensorMap, E::Type, codomain::VectorSpace)
-    return similar(t, E, codomain ← one(codomain))
-end
-# 2 arguments
-function Base.similar(t::BlockTensorMap, codomain::VectorSpace)
-    return similar(t, scalartype(t), codomain ← one(codomain))
-end
-Base.similar(t::BlockTensorMap, P::TensorMapSpace) = similar(t, scalartype(t), P)
-Base.similar(t::BlockTensorMap, E::Type) = similar(t, E, space(t))
-# 1 argument
-Base.similar(t::BlockTensorMap) = similar(t, scalartype(t), space(t))
-
 # actual implementation
-function Base.similar(t::BlockTensorMap, ::Type{E},
-                      P::TensorMapSumSpace{S,N₁,N₂}) where {E,S,N₁,N₂}
-    T = tensormaptype(S, N₁, N₂, E)
-    A = TK.similarstoragetype(t, T)
-    return BlockTensorMap{E,S,N₁,N₂,A}(undef, P)
+function Base.similar(::AbstractTensorMap, ::Type{TorA},
+                      P::TensorMapSpace{S}) where {TorA,S}
+    N₁ = length(codomain(P))
+    N₂ = length(domain(P))
+    TT = tensormaptype(S, N₁, N₂, TorA)
+    return TT(undef, codomain(P), domain(P))
 end
 
 # Space checking
 # --------------
 
-function checkspaces(t::BlockTensorMap{E,S,N₁,N₂,N}, v::AbstractTensorMap{E,S,N₁,N₂},
-                     I::CartesianIndex{N}) where {E,S,N₁,N₂,N}
-    getsubspace(space(t), I) == space(v) ||
-        throw(SpaceMismatch("inserting a tensor of space $(space(v)) at index $I into a tensor of space $(getsubspace(space(t), I))"))
+function checkspaces(t::BlockTensorMap{E,S,N₁,N₂,A}, v::AbstractTensorMap{E,S,N₁,N₂},
+                     I::CartesianIndex{N}) where {E,S,N₁,N₂,N,A<:AbstractArray{<:Any,N}}
+    iter = SumSpaceIndices(space(t))
+    iter[I] == space(v) ||
+        throw(SpaceMismatch("inserting a tensor of space $(space(v)) at index $I into a tensor of space $(iter[I])"))
     return nothing
 end
 function checkspaces(t::BlockTensorMap)
-    for (I, v) in nonzero_pairs(t)
-        checkspaces(t, v, I)
+    iter = SumSpaceIndices(space(t))
+    for I in eachindex(iter)
+        iter[I] == space(t[I]) ||
+            throw(SpaceMismatch("index $I has space $(iter[I]) but tensor has space $(space(t[I]))"))
     end
     return nothing
 end
