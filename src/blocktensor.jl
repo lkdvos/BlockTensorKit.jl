@@ -8,10 +8,10 @@ struct BlockTensorMap{E,S,N₁,N₂,A<:AbstractArray{<:AbstractTensorMap{E,S,N�
     function BlockTensorMap{E,S,N₁,N₂,A}(::UndefInitializer,
                                          codom::ProductSumSpace{S,N₁},
                                          dom::ProductSumSpace{S,N₂}) where {E,S,N₁,N₂,
-                                                                            A<:AbtractArray{<:AbstractTensorMap{E,
-                                                                                                                S,
-                                                                                                                N₁,
-                                                                                                                N₂}}}
+                                                                            A<:AbstractArray{<:AbstractTensorMap{E,
+                                                                                                                 S,
+                                                                                                                 N₁,
+                                                                                                                 N₂}}}
         allspaces = SumSpaceIndices(codom ← dom)
         data = similar(A, size(allspaces))
         map!(data, allspaces) do v
@@ -70,7 +70,7 @@ const BlockTensor{E,S,N,A} = BlockTensorMap{E,S,N,0,A}
 function BlockTensorMap{E}(::UndefInitializer,
                            V::TensorMapSumSpace{S,N₁,N₂}) where {E,S,N₁,N₂}
     TT = tensormaptype(SumSpace{S}, N₁, N₂, E)
-    return TT(undef, codom, dom)
+    return TT(undef, codomain(V), domain(V))
 end
 function BlockTensorMap{E}(::UndefInitializer, codomain::TensorSumSpace{S},
                            domain::TensorSumSpace{S}) where {E,S}
@@ -96,7 +96,7 @@ for randfun in (:rand, :randn, :randexp)
     randfun! = Symbol(randfun, :!)
     @eval begin
         function Random.$randfun(rng::Random.AbstractRNG, ::Type{T},
-                                 V::TensorMapSpace) where {T}
+                                 V::TensorMapSumSpace) where {T}
             t = BlockTensorMap{T}(undef, V)
             Random.$randfun!(rng, t)
             return t
