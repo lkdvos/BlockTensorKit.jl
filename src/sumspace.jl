@@ -93,6 +93,8 @@ function join(S::SumSpace)
     end
 end
 
+TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
+
 # this conflicts with the definition in TensorKit, so users always need to specify
 # ⊕(Vs::IndexSpace...) = SumSpace(Vs...)
 
@@ -107,6 +109,10 @@ function Base.promote_rule(::Type{<:ProductSpace{S1}},
                                                               S2<:ElementarySpace}
     return ProductSpace{promote_type(S1, S2)}
 end
+function Base.promote_rule(::Type{<:TensorMapSumSpace{S}},
+                           ::Type{<:TensorMapSpace{S}}) where {S}
+    return TensorMapSumSpace{S}
+end
 
 Base.convert(::Type{I}, S::SumSpace{I}) where {I} = join(S)
 Base.convert(::Type{SumSpace{S}}, V::S) where {S} = SumSpace(V)
@@ -118,6 +124,11 @@ function Base.convert(::Type{<:ProductSumSpace{S}}, V::ProductSpace{S,N}) where 
 end
 function Base.convert(::Type{<:ProductSpace{S,N}}, V::ProductSumSpace{S,N}) where {S,N}
     return ProductSpace{S,N}(join.(V.spaces)...)
+end
+function Base.convert(::Type{<:TensorMapSumSpace{S}},
+                      V::TensorMapSpace{S,N₁,N₂}) where {S,N₁,N₂}
+    return convert(ProductSumSpace{S,N₁}, codomain(V)) ←
+           convert(ProductSumSpace{S,N₂}, domain(V))
 end
 
 function Base.show(io::IO, V::SumSpace)
@@ -177,6 +188,7 @@ function SumSpaceIndices{S,N₁,N₂}(spaces::Tuple) where {S,N₁,N₂}
 end
 
 Base.size(I::SumSpaceIndices) = map(length, I.sumspaces)
+Base.IndexStyle(::Type{<:SumSpaceIndices}) = IndexCartesian()
 
 # simple scalar indexing
 function Base.getindex(iter::SumSpaceIndices{S,N₁,N₂,N}, I::Vararg{Int,N}) where {S,N₁,N₂,N}
@@ -193,6 +205,19 @@ end
     @boundscheck checkbounds(iter, I...)
     return SumSpaceIndices{S,N₁,N₂}(map(getindex, iter.sumspaces, I))
 end
+@inline function Base._getindex(::IndexCartesian, iter::SumSpaceIndices{S,N₁,N₂},
+                                I::Union{Real,AbstractVector}) where {S,N₁,N₂}
+    @boundscheck checkbounds(iter, I)
+    nontrivial_sizes = findall(>(1), size(iter))
+    if isempty(nontrivial_sizes)
+        I′ = ntuple(i -> i == 1 ? I : 1, ndims(iter))
+    elseif length(nontrivial_sizes) == 1
+        I′ = ntuple(i -> i in nontrivial_sizes ? I : 1, ndims(iter))
+    else
+        throw(ArgumentError("Invalid indexing"))
+    end
+    return Base._getindex(IndexCartesian(), iter, I′...)
+end
 
 # disambiguation of base methods
 function Base._getindex(::IndexCartesian, A::SumSpaceIndices{S,N₁,N₂,N},
@@ -208,6 +233,11 @@ function Base._getindex(::IndexCartesian, A::SumSpaceIndices{S,N₁,N₂,N},
     return getindex(A, I...)
 end
 
+function TensorKit.space(I::SumSpaceIndices{S,N₁,N₂,N}) where {S,N₁,N₂,N}
+    cod = prod(I.sumspaces[1:N₁]; init=one(sumspacetype(S)))
+    dom = prod(I.sumspaces[(N₁ + 1):end]; init=one(sumspacetype(S)))
+    return cod ← dom
+end
 # # scalar indexing yields ProductSpace
 # function getsubspace(V::ProductSumSpace{S,N}, I::CartesianIndex{N}) where {S,N}
 #     return getsubspace(V, I.I...)

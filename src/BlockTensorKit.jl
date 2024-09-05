@@ -1,9 +1,9 @@
 module BlockTensorKit
 
-export SumSpace
+export SumSpace, ProductSumSpace
+export eachspace, SumSpaceIndices, sumspacetype
 export BlockTensorMap, SparseBlockTensorMap
 export undef_blocks
-export SumSpaceIndices
 
 using TensorKit
 using TensorKit: OneOrNoneIterator, HomSpace
@@ -26,7 +26,6 @@ import TensorOperations as TO
 
 # Spaces
 include("sumspace.jl")
-export SumSpace, ProductSumSpace
 
 # Arrays
 include("sparsetensorarray.jl")
