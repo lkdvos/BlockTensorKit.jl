@@ -1,17 +1,39 @@
 struct SparseTensorArray{S,N₁,N₂,T<:AbstractTensorMap{<:Any,S,N₁,N₂},N} <:
        AbstractArray{T,N}
     data::Dict{CartesianIndex{N},T}
-    space::HomSpace{SumSpace{S},N₁,N₂}
+    space::TensorMapSumSpace{S,N₁,N₂}
     function SparseTensorArray{S,N₁,N₂,T,N}(data::Dict{CartesianIndex{N},T},
-                                            space::HomSpace{SumSpace{S},N₁,N₂}) where {S,N₁,
-                                                                                       N₂,T,
-                                                                                       N}
+                                            space::TensorMapSumSpace{S,N₁,N₂}) where {S,N₁,
+                                                                                      N₂,T,
+                                                                                      N}
         N₁ + N₂ == N ||
             throw(TypeError(:SparseTensorArray, SparseTensorArray{S,N₁,N₂,T,N₁ + N₂},
                             SparseTensorArray{S,N₁,N₂,T,N}))
         return new{S,N₁,N₂,T,N}(data, space)
     end
 end
+
+function SparseTensorArray{S,N₁,N₂,T,N}(::UndefInitializer,
+                                        space::TensorMapSumSpace{S,N₁,N₂}) where {S,N₁,
+                                                                                  N₂,
+                                                                                  T<:AbstractTensorMap{<:Any,
+                                                                                                       S,
+                                                                                                       N₁,
+                                                                                                       N₂},
+                                                                                  N}
+    return SparseTensorArray{S,N₁,N₂,T,N}(Dict{CartesianIndex{N},T}(), space)
+end
+
+function SparseTensorArray(data::Dict{CartesianIndex{N},T},
+                           space::TensorMapSumSpace{S,N₁,N₂}) where {S,N₁,N₂,T,N}
+    return SparseTensorArray{S,N₁,N₂,T,N}(data, space)
+end
+
+Base.pairs(A::SparseTensorArray) = pairs(A.data)
+Base.keys(A::SparseTensorArray) = keys(A.data)
+Base.values(A::SparseTensorArray) = values(A.data)
+
+TensorKit.space(A::SparseTensorArray) = A.space
 
 # AbstractArray interface
 # -----------------------
@@ -22,25 +44,30 @@ end
 function Base.getindex(A::SparseTensorArray{S,N₁,N₂,T,N},
                        I::Vararg{Int,N}) where {S,N₁,N₂,T,N}
     @boundscheck checkbounds(A, I...)
-    return get(t.data, CartesianIndex(I)) do
-        return similar(T, getsubspace(A.space, CartesianIndex(I)))
+    return get(A.data, CartesianIndex(I)) do
+        return fill!(similar(T, eachspace(A)[I...]), zero(scalartype(T)))
     end
 end
 function Base.setindex!(A::SparseTensorArray{S,N₁,N₂,T,N}, v,
                         I::Vararg{Int,N}) where {S,N₁,N₂,T,N}
     @boundscheck begin
         checkbounds(A, I...)
-        checkspaces(t, v, I)
+        checkspaces(A, v, I...)
     end
-    t.data[I] = v # implicit converter
-    return t
+    A.data[CartesianIndex(I)] = v # implicit converter
+    return A
 end
 
+function Base.delete!(A::SparseTensorArray, I::Vararg{Int,N}) where {N}
+    return delete!(A.data, CartesianIndex(I))
+end
+Base.delete!(A::SparseTensorArray, I::CartesianIndex) = delete!(A.data, I)
+
 function Base.similar(::SparseTensorArray, ::Type{T},
-                      spaces::HomSpace{SumSpace{S},N₁,N₂}) where {S,N₁,N₂,
-                                                                  T<:AbstractTensorMap{<:Any,
-                                                                                       S,N₁,
-                                                                                       N₂}}
+                      spaces::TensorMapSumSpace{S,N₁,N₂}) where {S,N₁,N₂,
+                                                                 T<:AbstractTensorMap{<:Any,
+                                                                                      S,N₁,
+                                                                                      N₂}}
     N = N₁ + N₂
     return SparseTensorArray{S,N₁,N₂,T,N}(Dict{CartesianIndex{N},T}(), spaces)
 end
@@ -64,7 +91,7 @@ end
 
 function Base._unsafe_getindex(::IndexCartesian, t::SparseTensorArray{S,N₁,N₂,T,N},
                                I::Vararg{Union{Real,AbstractArray},N}) where {S,N₁,N₂,T,N}
-    dest = similar(t, getsubspace(space(t), I...)) # hook into similar to have proper space
+    dest = similar(t, eltype(t), space(eachspace(t)[I...]))
     indices = Base.to_indices(t, I)
     for (k, v) in t.data
         newI = _newindices(k.I, indices)
@@ -73,4 +100,13 @@ function Base._unsafe_getindex(::IndexCartesian, t::SparseTensorArray{S,N₁,N�
         end
     end
     return dest
+end
+
+# Space checking
+# --------------
+eachspace(A::SparseTensorArray) = SumSpaceIndices(A.space)
+function checkspaces(A::SparseTensorArray, v::AbstractTensorMap, I...)
+    return space(v) == eachspace(A)[I...] ||
+           throw(SpaceMismatch("inserting a tensor of space $(space(v)) at $(I) into a SparseTensorArray with space $(eachspace(A))"))
+    return nothing
 end

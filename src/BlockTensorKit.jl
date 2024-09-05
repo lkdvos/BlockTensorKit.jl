@@ -3,15 +3,17 @@ module BlockTensorKit
 export SumSpace, ProductSumSpace
 export eachspace, SumSpaceIndices, sumspacetype
 export BlockTensorMap, SparseBlockTensorMap
+export SparseTensorArray
+export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
 export undef_blocks
 
 using TensorKit
-using TensorKit: OneOrNoneIterator, HomSpace
+using TensorKit: OneOrNoneIterator, HomSpace, MatrixAlgebra, SectorDict
 using VectorInterface
 using TensorOperations
 using TensorOperations: dimcheck_tensoradd, dimcheck_tensorcontract, dimcheck_tensortrace,
                         argcheck_tensoradd, argcheck_tensorcontract, argcheck_tensortrace,
-                        Backend
+                        AbstractBackend
 using LinearAlgebra
 using Strided
 using TupleTools: getindices, isperm
@@ -34,11 +36,12 @@ include("sparsetensorarray.jl")
 include("blocktensor.jl")
 
 # various interfaces
+include("matrixalgebra.jl")
 include("linalg.jl")
+include("factorizations.jl")
 include("tensorkit.jl")
 include("vectorinterface.jl")
 include("tensoroperations.jl")
-export BlockTensorMap
-export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
+include("indexmanipulations.jl")
 
 end

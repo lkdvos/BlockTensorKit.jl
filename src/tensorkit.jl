@@ -69,15 +69,14 @@ end
     return mortar(allblocks)
 end
 
-@inline function Base.getindex(t::BlockTensorMap{E,S,N₁,N₂,<:AbstractArray{T}}, ::Nothing,
-                               ::Nothing) where {E,S,N₁,N₂,T<:TrivialTensorMap{E,S,N₁,N₂}}
-    return mortar(map(x -> x[], t.data))
+@inline function Base.getindex(t::BlockTensorMap, ::Nothing, ::Nothing)
+    return mortar(map(x -> x[nothing, nothing], t.data))
 end
 
 function Base.convert(::Type{TensorMap}, t::BlockTensorMap)
     cod = ProductSpace{spacetype(t)}(join.(codomain(t).spaces))
     dom = ProductSpace{spacetype(t)}(join.(domain(t).spaces))
-    tdst = TensorMap(undef, scalartype(t), cod ← dom)
+    tdst = TensorMap{scalartype(t)}(undef, cod ← dom)
 
     for (f₁, f₂) in fusiontrees(tdst)
         tdst[f₁, f₂] .= t[f₁, f₂]
@@ -92,3 +91,15 @@ function TK.fusiontrees(t::BlockTensorMap)
     colr, _ = TK._buildblockstructure(domain(t), blocksectoriterator)
     return TK.TensorKeyIterator(rowr, colr)
 end
+
+function similarblocktype(::Type{TT},
+                          ::Type{T}) where {TT<:BlockTensorMap,T<:AbstractTensorMap}
+    return Core.Compiler.return_type(similar, Tuple{blocktype(TT),Type{T}})
+end
+
+# function similarstoragetype(TT::Type{<:BlockTensorMap}, ::Type{T}) where {T<:Number}
+#     TT′ = tensormaptype(spacetype(TT), numout(TT), numin(TT), T)
+#     return Core.Compiler.return_type(similar,
+#                                      Tuple{storagetype(TT),Type{TT′},
+#                                            NTuple{numind(TT),Int}})
+# end

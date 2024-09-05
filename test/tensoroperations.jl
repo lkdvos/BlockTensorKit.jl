@@ -29,7 +29,7 @@ end
         @test convert(TensorMap, C1) ≈ C2
 
         D = randn(T, W)
-        E = TensorOperations.tensoralloc_add(T, ((3, 2, 1, 5, 4), ()), D, :C, false)
+        E = TensorOperations.tensoralloc_add(T, D, ((3, 2, 1, 5, 4), ()), true, Val(false))
         E = Random.randn!(E)
         @tensor F1[a, b, c, d, e] := E[a, b, c, d, e] + α * conj(D[c, b, a, e, d])
         @tensor F2[a, b, c, d, e] := convert(TensorMap, E)[a, b, c, d, e] +
@@ -74,15 +74,3 @@ end
         @test convert(TensorMap, F1) ≈ F2
     end
 end
-
-# @testset "tensoradd" begin
-V = (SumSpace(ℂ^2, ℂ^3, ℂ^2), SumSpace(ℂ^3, ℂ^2), SumSpace(ℂ^2))
-A = randn(Float64, V[1] ⊗ V[2] ← V[3])
-tA = convert(TensorMap, A)
-B = randn(Float64, V[1] ⊗ V[2] ← V[3])
-tB = convert(TensorMap, B)
-
-convert(TensorMap, tensoradd(A, ["a", "b", "c"], B, ["a", "b", "c"])) ≈
-tensoradd(convert(TensorMap, A), ["a", "b", "c"], convert(TensorMap, B), ["a", "b", "c"])
-
-TensorOperations.tensoradd_type(Float64, ((1, 2, 3), ()), A, :N)
