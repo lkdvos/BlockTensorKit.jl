@@ -28,6 +28,7 @@ import TensorOperations as TO
 
 # Spaces
 include("sumspace.jl")
+include("sumspaceindices.jl")
 
 # Arrays
 include("sparsetensorarray.jl")
