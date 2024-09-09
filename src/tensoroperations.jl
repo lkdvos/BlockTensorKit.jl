@@ -39,7 +39,8 @@ function TO.tensorcontract_type(
     ::Bool,
     ::Index2Tuple{N₁,N₂},
 ) where {N₁,N₂}
-    spacetype(A) == spacetype(B) || throw(SpaceMismatch("incompatible space types"))
+    spacetype(A) == spacetype(B) ||
+        throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
     M = promote_storagetype(TC, eltype(A), eltype(B))
 
     return if issparse(A) && issparse(B)
@@ -58,7 +59,8 @@ function TO.tensorcontract_type(
     conjB::Bool,
     pAB::Index2Tuple{N₁,N₂},
 ) where {N₁,N₂}
-    spacetype(A) == spacetype(B) || throw(SpaceMismatch("incompatible space types"))
+    spacetype(A) == spacetype(B) ||
+        throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
     M = promote_storagetype(TC, typeof(A), eltype(B))
     return if issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
@@ -76,7 +78,8 @@ function TO.tensorcontract_type(
     ::Bool,
     ::Index2Tuple{N₁,N₂},
 ) where {N₁,N₂}
-    spacetype(A) == spacetype(B) || throw(SpaceMismatch("incompatible space types"))
+    spacetype(A) == spacetype(B) ||
+        throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
     M = promote_storagetype(TC, eltype(A), typeof(B))
     return if issparse(A)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
