@@ -206,6 +206,18 @@ function Base.convert(::Type{T}, t::AbstractBlockTensorMap) where {T<:TensorMap}
 
     return convert(T, tdst)
 end
+# disambiguate
+function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
+    cod = ProductSpace{spacetype(t),numout(t)}(join.(codomain(t).spaces))
+    dom = ProductSpace{spacetype(t),numin(t)}(join.(domain(t).spaces))
+
+    tdst = similar(t, cod ← dom)
+    for (f₁, f₂) in fusiontrees(tdst)
+        tdst[f₁, f₂] .= t[f₁, f₂]
+    end
+
+    return tdst
+end
 
 # Sparsity
 # --------
