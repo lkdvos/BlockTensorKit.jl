@@ -105,7 +105,13 @@ function join(S::SumSpace)
 end
 
 TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
-
+# bit of a hack to make spacechecks happy?
+Base.:(==)(V::TensorMapSumSpace, W::TensorMapSpace) = ==(promote(V, W)...)
+Base.:(==)(V::TensorMapSpace, W::TensorMapSumSpace) = ==(promote(V, W)...)
+# disambiguate
+function Base.:(==)(V::TensorMapSumSpace, W::TensorMapSumSpace)
+    @invoke ==(V::HomSpace, W::HomSpace)
+end
 # this conflicts with the definition in TensorKit, so users always need to specify
 # ⊕(Vs::IndexSpace...) = SumSpace(Vs...)
 
@@ -123,18 +129,19 @@ Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
 # Promotion and conversion
 # ------------------------
 Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S} = SumSpace{S}
-function Base.promote_rule(::Type{S1},
-                           ::Type{<:ProductSpace{S2}}) where {S1<:ElementarySpace,
-                                                              S2<:ElementarySpace}
+function Base.promote_rule(
+    ::Type{S1}, ::Type{<:ProductSpace{S2}}
+) where {S1<:ElementarySpace,S2<:ElementarySpace}
     return ProductSpace{promote_type(S1, S2)}
 end
-function Base.promote_rule(::Type{<:ProductSpace{S1}},
-                           ::Type{<:ProductSpace{S2}}) where {S1<:ElementarySpace,
-                                                              S2<:ElementarySpace}
+function Base.promote_rule(
+    ::Type{<:ProductSpace{S1}}, ::Type{<:ProductSpace{S2}}
+) where {S1<:ElementarySpace,S2<:ElementarySpace}
     return ProductSpace{promote_type(S1, S2)}
 end
-function Base.promote_rule(::Type{<:TensorMapSumSpace{S}},
-                           ::Type{<:TensorMapSpace{S}}) where {S}
+function Base.promote_rule(
+    ::Type{<:TensorMapSumSpace{S}}, ::Type{<:TensorMapSpace{S}}
+) where {S}
     return TensorMapSumSpace{S}
 end
 
@@ -149,8 +156,9 @@ end
 function Base.convert(::Type{<:ProductSpace{S,N}}, V::ProductSumSpace{S,N}) where {S,N}
     return ProductSpace{S,N}(join.(V.spaces)...)
 end
-function Base.convert(::Type{<:TensorMapSumSpace{S}},
-                      V::TensorMapSpace{S,N₁,N₂}) where {S,N₁,N₂}
+function Base.convert(
+    ::Type{<:TensorMapSumSpace{S}}, V::TensorMapSpace{S,N₁,N₂}
+) where {S,N₁,N₂}
     return convert(ProductSumSpace{S,N₁}, codomain(V)) ←
            convert(ProductSumSpace{S,N₂}, domain(V))
 end
