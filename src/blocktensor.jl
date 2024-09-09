@@ -27,6 +27,10 @@ function blocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S
     TT = tensormaptype(S, N₁, N₂, T)
     return BlockTensorMap{TT}
 end
+function blocktensormaptype(::Type{SumSpace{S}}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}
+    TT = tensormaptype(S, N₁, N₂, T)
+    return BlockTensorMap{TT}
+end
 
 # Undef constructors
 # ------------------

@@ -28,6 +28,12 @@ function sparseblocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) wh
     TT = tensormaptype(S, N₁, N₂, T)
     return SparseBlockTensorMap{TT}
 end
+function sparseblocktensormaptype(
+    ::Type{SumSpace{S}}, N₁::Int, N₂::Int, ::Type{T}
+) where {S,T}
+    TT = tensormaptype(S, N₁, N₂, T)
+    return SparseBlockTensorMap{TT}
+end
 
 # Undef constructors
 # ------------------
