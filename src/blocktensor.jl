@@ -554,22 +554,22 @@ function Base.promote_rule(
     return BlockTensorMap{promote_type(E₁, E₂),S,N₁,N₂,N}
 end
 
-function Base.convert(
-    ::Type{BlockTensorMap{E₁,S,N₁,N₂,N}}, t::BlockTensorMap{E₂,S,N₁,N₂,N}
-) where {E₁,E₂,S,N₁,N₂,N}
-    E₁ === E₂ && return t
-    tdst = BlockTensorMap{E₁,S,N₁,N₂,N}(undef, codomain(t), domain(t))
-    for (I, v) in nonzero_pairs(t)
-        tdst[I] = add!(zerovector(v, E₁), v, One())
+function Base.convert(::Type{<:BlockTensorMap{TT₁}}, t::BlockTensorMap{TT₂}) where {TT₁,TT₂}
+    TT₁ === TT₂ && return t
+    tdst = BlockTensorMap{TT₁}(undef, codomain(t), domain(t))
+    for I in eachindex(t)
+        tdst[I] = t[I]
     end
     return tdst
 end
 
-function Base.convert(
-    ::Type{BlockTensorMap}, t::AbstractTensorMap{E,S,N₁,N₂}
-) where {E,S,N₁,N₂}
+function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap)
     t isa BlockTensorMap && return t
-    tdst = BlockTensorMap{E,S,N₁,N₂,Array{typeof(t),N₁ + N₂}}(
+    S = spacetype(t)
+    N₁ = numout(t)
+    N₂ = numin(t)
+    TT = blocktensormaptype(S, N₁, N₂, storagetype(t))
+    tdst = TT(
         undef,
         convert(ProductSumSpace{S,N₁}, codomain(t)),
         convert(ProductSumSpace{S,N₂}, domain(t)),
