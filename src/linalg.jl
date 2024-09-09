@@ -7,17 +7,6 @@ Base.:(*)(α::Number, t::BlockTensorMap) = scale(t, α)
 Base.:(/)(t::BlockTensorMap, α::Number) = scale(t, inv(α))
 Base.:(\)(α::Number, t::BlockTensorMap) = scale(t, inv(α))
 
-# TODO: make this lazy?
-function Base.adjoint(t::BlockTensorMap)
-    tdst = similar(t, domain(t) ← codomain(t))
-    adjoint_inds = TO.linearize((domainind(t), codomainind(t)))
-    for I in eachindex(IndexCartesian(), t)
-        I′ = CartesianIndex(getindices(I.I, adjoint_inds)...)
-        tdst[I′] = adjoint(t[I])
-    end
-    return tdst
-end
-
 function LinearAlgebra.axpy!(α::Number, t1::BlockTensorMap, t2::BlockTensorMap)
     space(t1) == space(t2) || throw(SpaceMismatch())
     for (i, v) in nonzero_pairs(t1)
@@ -65,6 +54,7 @@ function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractBlockTenso
     V = codomain(A) ← domain(B)
     return similar(issparse(A) ? B : A, T, V)
 end
+
 # function LinearAlgebra.mul!(
 #     C::BlockTensorMap, A::BlockTensorMap, B::BlockTensorMap, α::Number, β::Number
 # )
