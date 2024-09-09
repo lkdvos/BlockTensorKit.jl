@@ -80,4 +80,4 @@ function TK.add_transform!(
         tdst, only(tsrc), (p₁, p₂), fusiontreetransform, α, β, backend...
     )
 end
-TK.has_shared_permute(::BlockTensorMap, args...) = false
+TK.has_shared_permute(::AbstractBlockTensorMap, args...) = false
