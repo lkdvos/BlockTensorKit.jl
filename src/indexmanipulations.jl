@@ -23,7 +23,7 @@ function TK.add_transform!(
     return tdst
 end
 function TK.add_transform!(
-    tdst::SparseBlockTensorMap,
+    tdst::AbstractBlockTensorMap,
     tsrc::SparseBlockTensorMap,
     (p₁, p₂)::Index2Tuple{N₁,N₂},
     fusiontreetransform,
