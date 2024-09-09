@@ -70,6 +70,16 @@ end
     return t
 end
 
+function Base.copyto!(
+    tdst::AbstractBlockTensorMap,
+    Rdest::CartesianIndices,
+    tsrc::AbstractBlockTensorMap,
+    Rsrc::CartesianIndices,
+)
+    copyto!(parent(tdst), Rdest, parent(tsrc), Rsrc)
+    return tdst
+end
+
 # generic implementation for AbstractTensorMap with Sumspace -> returns `BlockTensorMap`
 # function Base.similar(
 #     ::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
