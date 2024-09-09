@@ -65,17 +65,38 @@ end
 end
 
 # generic implementation for AbstractTensorMap with Sumspace -> returns `BlockTensorMap`
+# function Base.similar(
+#     ::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
+# ) where {TorA<:TensorKit.MatOrNumber,S}
+#     N₁ = length(codomain(P))
+#     N₂ = length(domain(P))
+#     TT = blocktensormaptype(S, N₁, N₂, TorA)
+#     return TT(undef, codomain(P), domain(P))
+# end
+# disambiguate
+# function Base.similar(
+#     t::TensorKit.AdjointTensorMap, T::Type{TorA}, P::TensorMapSumSpace{S}
+# ) where {TorA<:TensorKit.MatOrNumber,S}
+#     @invoke Base.similar(t::TensorKit.AdjointTensorMap, T::Type{TorA}, P::TensorMapSpace)
+# end
+
+# make sure tensormap specializations are not used for sumspaces:
 function Base.similar(
-    ::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
+    t::TensorMap, T::Type{TorA}, P::TensorMapSumSpace{S}
 ) where {TorA<:TensorKit.MatOrNumber,S}
-    N₁ = length(codomain(P))
-    N₂ = length(domain(P))
-    TT = blocktensormaptype(S, N₁, N₂, TorA)
-    return TT(undef, codomain(P), domain(P))
+    @invoke Base.similar(t::AbstractTensorMap, T::Type{TorA}, P)
 end
 
 # AbstractTensorMap Interface
 # ---------------------------
+# TODO: do we really want this:
+# note: this goes along with the specializations of Base.similar above...
+function TensorKit.tensormaptype(
+    ::Type{SumSpace{S}}, N₁::Int, N₂::Int, ::Type{TorA}
+) where {S,TorA<:TensorKit.MatOrNumber}
+    return blocktensormaptype(S, N₁, N₂, TorA)
+end
+
 eachspace(t::AbstractBlockTensorMap) = SumSpaceIndices(space(t))
 
 # TODO: delete this method
