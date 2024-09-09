@@ -6,7 +6,7 @@
 #     return BlockTensorMap{E,spacetype(t),numout(t),numin(t),typeof(data)}(data, codomain(t), domain(t))
 # end
 VI.zerovector!(t::BlockTensorMap) = (zerovector!(parent(t)); t)
-VI.zerovector!(t::SparseBlockTensorMap) = (empty!(t.data.data); t)
+# VI.zerovector!(t::SparseBlockTensorMap) = (empty!(t.data.data); t)
 # VI.zerovector!!(t::BlockTensorMap) = zerovector!(t)
 
 # function VI.scale(t::BlockTensorMap, α::Number)
@@ -18,16 +18,16 @@ function VI.scale!(t::BlockTensorMap, α::Number)
     scale!(parent(t), α)
     return t
 end
-function VI.scale!(t::SparseBlockTensorMap, α::Number)
-    if iszero(α)
-        return zerovector!(t)
-    else
-        for v in nonzero_values(t)
-            scale!(v, α)
-        end
-    end
-    return t
-end
+# function VI.scale!(t::SparseBlockTensorMap, α::Number)
+#     if iszero(α)
+#         return zerovector!(t)
+#     else
+#         for v in nonzero_values(t)
+#             scale!(v, α)
+#         end
+#     end
+#     return t
+# end
 
 function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap, α::Number)
     space(ty) == space(tx) || throw(SpaceMismatch("$(space(ty)) ≠ $(space(tx))"))
@@ -90,4 +90,4 @@ function VI.inner(x::BlockTensorMap, y::BlockTensorMap)
     return inner(parent(x), parent(y))
 end
 
-VI.scalartype(::Type{<:BlockTensorMap{E}}) where {E} = E
+# VI.scalartype(::Type{<:BlockTensorMap{E}}) where {E} = E

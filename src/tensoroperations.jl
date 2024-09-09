@@ -1,13 +1,19 @@
 # TensorOperations
 # ----------------
 
-function TO.tensoradd_type(TC, A::BlockTensorMap, ::Index2Tuple{N₁,N₂},
-                           ::Bool) where {N₁,N₂}
+function TO.tensoradd_type(
+    TC, A::BlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
+) where {N₁,N₂}
     M = TK.similarstoragetype(eltype(A), TC)
-    TT′ = tensormaptype(spacetype(A), N₁, N₂, M)
-    N = similarblocktype(blocktype(A), TT′)
-    return tensormaptype(sumspacetype(spacetype(A)), N₁, N₂, N)
+    return blocktensormaptype(spacetype(A), N₁, N₂, M)
 end
+function TO.tensoradd_type(
+    TC, A::SparseBlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
+) where {N₁,N₂}
+    M = TK.similarstoragetype(eltype(A), TC)
+    return sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
+end
+
 #
 # function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{E,S},
 #                                 conjA::Symbol) where {E,S,N₁,N₂}
@@ -23,36 +29,60 @@ end
 #     return dom → cod
 # end
 #
-function TO.tensorcontract_type(TC,
-                                A::BlockTensorMap, pA::Index2Tuple, conjA::Bool,
-                                B::BlockTensorMap, pB::Index2Tuple, conjB::Bool,
-                                pAB::Index2Tuple{N₁,N₂}) where {N₁,N₂}
+function TO.tensorcontract_type(
+    TC,
+    A::AbstractBlockTensorMap,
+    ::Index2Tuple,
+    ::Bool,
+    B::AbstractBlockTensorMap,
+    ::Index2Tuple,
+    ::Bool,
+    ::Index2Tuple{N₁,N₂},
+) where {N₁,N₂}
     spacetype(A) == spacetype(B) || throw(SpaceMismatch("incompatible space types"))
     M = promote_storagetype(TC, eltype(A), eltype(B))
-    TT = tensormaptype(spacetype(A), N₁, N₂, M)
-    N = promote_blocktype(TT, blocktype(A), blocktype(B))
-    return tensormaptype(sumspacetype(spacetype(A)), N₁, N₂, N)
-    # A′ = Core.Compiler.return_type(similar,
-    #                                Tuple{storagetype(A),Type{TT},NTuple{N₁ + N₂,Int}})
-    # return BlockTensorMap{scalartype(TT),spacetype(A),N₁,N₂,A′}
+
+    return if issparse(A) && issparse(B)
+        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
+    else
+        blocktensormaptype(spacetype(A), N₁, N₂, M)
+    end
 end
-function TO.tensorcontract_type(TC,
-                                A::AbstractTensorMap, pA::Index2Tuple, conjA::Bool,
-                                B::BlockTensorMap, pB::Index2Tuple, conjB::Bool,
-                                pAB::Index2Tuple{N₁,N₂}) where {N₁,N₂}
+function TO.tensorcontract_type(
+    TC,
+    A::AbstractTensorMap,
+    pA::Index2Tuple,
+    conjA::Bool,
+    B::AbstractBlockTensorMap,
+    pB::Index2Tuple,
+    conjB::Bool,
+    pAB::Index2Tuple{N₁,N₂},
+) where {N₁,N₂}
     spacetype(A) == spacetype(B) || throw(SpaceMismatch("incompatible space types"))
     M = promote_storagetype(TC, typeof(A), eltype(B))
-    TT = tensormaptype(spacetype(A), N₁, N₂, M)
-    return tensormaptype(sumspacetype(spacetype(A)), N₁, N₂, TT)
+    return if issparse(B)
+        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
+    else
+        blocktensormaptype(spacetype(A), N₁, N₂, M)
+    end
 end
-function TO.tensorcontract_type(TC,
-                                A::BlockTensorMap, pA::Index2Tuple, conjA::Bool,
-                                B::AbstractTensorMap, pB::Index2Tuple, conjB::Bool,
-                                pAB::Index2Tuple{N₁,N₂}) where {N₁,N₂}
+function TO.tensorcontract_type(
+    TC,
+    A::AbstractBlockTensorMap,
+    ::Index2Tuple,
+    ::Bool,
+    B::AbstractTensorMap,
+    ::Index2Tuple,
+    ::Bool,
+    ::Index2Tuple{N₁,N₂},
+) where {N₁,N₂}
     spacetype(A) == spacetype(B) || throw(SpaceMismatch("incompatible space types"))
     M = promote_storagetype(TC, eltype(A), typeof(B))
-    TT = tensormaptype(spacetype(A), N₁, N₂, M)
-    return tensormaptype(sumspacetype(spacetype(A)), N₁, N₂, TT)
+    return if issparse(A)
+        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
+    else
+        blocktensormaptype(spacetype(A), N₁, N₂, M)
+    end
 end
 
 function promote_storagetype(::Type{T}, ::Type{T₁}, ::Type{T₂}) where {T,T₁,T₂}
@@ -90,8 +120,9 @@ end
 # end
 
 # By default, make "dense" allocations
-function TO.tensoralloc(::Type{BT}, structure::TensorMapSumSpace, istemp::Val,
-                        allocator=TO.DefaultAllocator()) where {BT<:BlockTensorMap}
+function TO.tensoralloc(
+    ::Type{BT}, structure::TensorMapSumSpace, istemp::Val, allocator=TO.DefaultAllocator()
+) where {BT<:AbstractBlockTensorMap}
     C = BT(undef, structure)
     blockallocator(V) = TO.tensoralloc(eltype(C), V, istemp, allocator)
     map!(blockallocator, parent(C), eachspace(C))
@@ -99,6 +130,10 @@ function TO.tensoralloc(::Type{BT}, structure::TensorMapSumSpace, istemp::Val,
 end
 
 function TO.tensorfree!(t::BlockTensorMap, allocator=TO.DefaultAllocator())
+    foreach(Base.Fix2(TO.tensorfree!, allocator), parent(t))
+    return nothing
+end
+function TO.tensorfree!(t::SparseBlockTensorMap, allocator=TO.DefaultAllocator())
     foreach(Base.Fix2(TO.tensorfree!, allocator), nonzero_values(t))
     return nothing
 end
@@ -140,12 +175,15 @@ end
 #     return C
 # end
 
-function TK.trace_permute!(tdst::BlockTensorMap,
-                           tsrc::BlockTensorMap,
-                           (p₁, p₂)::Index2Tuple,
-                           (q₁, q₂)::Index2Tuple,
-                           α::Number, β::Number,
-                           backend::AbstractBackend=TO.DefaultBackend())
+function TK.trace_permute!(
+    tdst::BlockTensorMap,
+    tsrc::BlockTensorMap,
+    (p₁, p₂)::Index2Tuple,
+    (q₁, q₂)::Index2Tuple,
+    α::Number,
+    β::Number,
+    backend::AbstractBackend=TO.DefaultBackend(),
+)
     @boundscheck begin
         space(tdst) == permute(space(tsrc), (p₁, p₂)) ||
             throw(SpaceMismatch("trace: tsrc = $(codomain(tsrc))←$(domain(tsrc)),
@@ -247,8 +285,7 @@ end
 # ----------------
 
 function TK.BraidingTensor(V1::SumSpace{S}, V2::SumSpace{S}) where {S}
-    tdst = BlockTensorMap{ComplexF64,S,2,2}(undef, V2 ⊗ V1,
-                                            V1 ⊗ V2)
+    tdst = BlockTensorMap{ComplexF64,S,2,2}(undef, V2 ⊗ V1, V1 ⊗ V2)
     for I in CartesianIndices(tdst)
         if I[1] == I[4] && I[2] == I[3]
             V = getsubspace(space(tdst), I)
@@ -398,9 +435,12 @@ end
 # trick ambiguities by using Union instead of AbstractTensorMap
 const AnyTM = Union{TensorMap,TensorKit.AdjointTensorMap}
 
-for (T1, T2) in
-    ((:AnyTM, :BlockTensorMap), (:BlockTensorMap, :AnyTM),
-     (:BlockTensorMap, :BlockTensorMap), (:AnyTM, :AnyTM))
+for (T1, T2) in (
+    (:AnyTM, :BlockTensorMap),
+    (:BlockTensorMap, :AnyTM),
+    (:BlockTensorMap, :BlockTensorMap),
+    (:AnyTM, :AnyTM),
+)
     if T1 !== :AnyTM && T2 !== :AnyTM
         # @eval function TO.tensorcontract!(C::AnyTM, A::$T1, pA::Index2Tuple,
         #                                   conjA::Symbol, B::$T2, pB::Index2Tuple,
