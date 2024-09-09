@@ -22,7 +22,8 @@ Base.last(t::AbstractBlockTensorMap) = last(parent(t))
 Base.lastindex(t::AbstractBlockTensorMap, args...) = lastindex(parent(t), args...)
 Base.firstindex(t::AbstractBlockTensorMap, args...) = firstindex(parent(t), args...)
 
-Base.keys(l::IndexStyle, t::AbstractBlockTensorMap) = keys(l, parent(t))
+Base.keys(l::Base.IndexStyle, t::AbstractBlockTensorMap) = keys(l, parent(t))
+Base.haskey(t::AbstractBlockTensorMap, args...) = haskey(parent(t), args...)
 
 Base.only(t::AbstractBlockTensorMap) = only(parent(t))
 Base.isempty(t::AbstractBlockTensorMap) = isempty(parent(t))
