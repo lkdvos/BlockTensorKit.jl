@@ -80,6 +80,9 @@ function Base.similar(
     TT = sparseblocktensormaptype(S, N₁, N₂, TorA)
     return TT(undef, codomain(P), domain(P))
 end
+function Base.similar(::Type{<:SparseBlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
+    return SparseBlockTensorMap{TT}(undef, codomain(P), domain(P))
+end
 
 # Properties
 # ----------
