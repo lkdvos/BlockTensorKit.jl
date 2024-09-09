@@ -256,9 +256,10 @@ end
 # ----------
 
 function Base.promote_rule(
-    ::Type{BlockTensorMap{E₁,S,N₁,N₂,N}}, ::Type{BlockTensorMap{E₂,S,N₁,N₂,N}}
-) where {E₁,E₂,S,N₁,N₂,N}
-    return BlockTensorMap{promote_type(E₁, E₂),S,N₁,N₂,N}
+    ::Type{<:BlockTensorMap{TT₁}}, ::Type{<:BlockTensorMap{TT₂}}
+) where {TT₁,TT₂}
+    TT = promote_type(TT₁, TT₂)
+    return BlockTensorMap{TT}
 end
 
 function Base.convert(::Type{<:BlockTensorMap{TT₁}}, t::BlockTensorMap{TT₂}) where {TT₁,TT₂}
@@ -285,33 +286,12 @@ function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap)
     return tdst
 end
 
-function Base.convert(::Type{TT}, t::BlockTensorMap) where {TT<:TensorMap}
-    cod = ProductSpace(join.(codomain(t).spaces))
-    dom = ProductSpace(join.(domain(t).spaces))
-    tdst = TensorMap{scalartype(t)}(undef, cod ← dom)
-    for (c, b) in TK.blocks(t)
-        TK.block(tdst, c) .= b
-    end
-    return convert(TT, tdst)
-end
 function Base.convert(::Type{TT}, t::BlockTensorMap) where {TT<:BlockTensorMap}
     t isa TT && return t
 
     tdst = TT(undef, space(t))
     for (I, v) in nonzero_pairs(t)
         tdst[I] = v
-    end
-    return tdst
-end
-
-function Base.convert(
-    ::Type{<:AbstractTensorMap{E,S,N₁,N₂}}, t::BlockTensorMap{E,S,N₁,N₂}
-) where {E,S,N₁,N₂}
-    cod = ProductSpace(join.(codomain(t).spaces))
-    dom = ProductSpace(join.(domain(t).spaces))
-    tdst = TensorMap{scalartype(t)}(undef, cod ← dom)
-    for (c, b) in TK.blocks(t)
-        TK.block(tdst, c) .= b
     end
     return tdst
 end
