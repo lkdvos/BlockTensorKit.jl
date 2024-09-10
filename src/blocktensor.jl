@@ -92,6 +92,15 @@ for randfun in (:rand, :randn, :randexp)
     end
 end
 
+function BlockTensorMap(t::AbstractBlockTensorMap)
+    t isa BlockTensorMap && return t # TODO: should this copy?
+    tdst = BlockTensorMap{eltype(t)}(undef_blocks, codomain(t), domain(t))
+    for I in eachindex(t)
+        tdst[I] = t[I]
+    end
+    return tdst
+end
+
 # Properties
 # ----------
 Base.eltype(::Type{<:BlockTensorMap{TT}}) where {TT} = TT
@@ -257,14 +266,6 @@ end
 
 # Converters
 # ----------
-
-function SparseBlockTensorMap(t::BlockTensorMap)
-    tdst = SparseBlockTensorMap{eltype(t)}(undef, codomain(t), domain(t))
-    for (I, v) in nonzero_pairs(t)
-        tdst[I] = v
-    end
-    return tdst
-end
 
 function Base.promote_rule(
     ::Type{<:BlockTensorMap{TT₁}}, ::Type{<:BlockTensorMap{TT₂}}

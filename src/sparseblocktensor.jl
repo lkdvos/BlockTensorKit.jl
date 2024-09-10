@@ -59,6 +59,15 @@ end
 
 # Utility constructors
 # --------------------
+function SparseBlockTensorMap(t::AbstractBlockTensorMap)
+    t isa SparseBlockTensorMap && return t # TODO: should this copy?
+    tdst = SparseBlockTensorMap{eltype(t)}(undef_blocks, codomain(t), domain(t))
+    for (I, v) in nonzero_pairs(t)
+        tdst[I] = v
+    end
+    return tdst
+end
+
 sprand(V::VectorSpace, p::Real) = sprand(Float64, V, p)
 function sprand(::Type{T}, V::TensorMapSumSpace, p::Real) where {T<:Number}
     TT = sparseblocktensormaptype(spacetype(V), numout(V), numin(V), T)
@@ -112,16 +121,6 @@ function Base.delete!(t::SparseBlockTensorMap{TT}, I::CartesianIndex) where {TT}
 end
 function Base.delete!(t::SparseBlockTensorMap{TT}, I::Vararg{Int,N}) where {TT,N}
     return delete!(t, CartesianIndex(I...))
-end
-
-# Conversion
-# ----------
-function BlockTensorMap(t::SparseBlockTensorMap)
-    tdst = BlockTensorMap{eltype(t)}(undef, codomain(t), domain(t))
-    for (i, v) in nonzero_pairs(t)
-        tdst[i] = v
-    end
-    return tdst
 end
 
 # SparseBlockTensorMap parent array
