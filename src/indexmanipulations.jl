@@ -24,7 +24,7 @@ function TK.add_transform!(
 end
 function TK.add_transform!(
     tdst::AbstractBlockTensorMap,
-    tsrc::SparseBlockTensorMap,
+    tsrc::AbstractBlockTensorMap,
     (p₁, p₂)::Index2Tuple{N₁,N₂},
     fusiontreetransform,
     α::Number,
