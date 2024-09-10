@@ -1,7 +1,7 @@
 """
     struct BlockTensorMap{TT<:AbstractTensorMap{E,S,N₁,N₂}} <: AbstractTensorMap{E,S,N₁,N₂}
 
-
+Dense `BlockTensorMap` type that stores tensors of type `TT` in a dense array.
 """
 struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
        AbstractBlockTensorMap{E,S,N₁,N₂}
@@ -19,8 +19,11 @@ struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
 end
 
 # hack to avoid too many type parameters, which are enforced by inner constructor
-function Base.show(io::IO, ::Type{<:BlockTensorMap{TT}}) where {TT}
-    return print(io, "BlockTensorMap{", TT, "}")
+function Base.show(io::IO, ::Type{TT}) where {TT<:BlockTensorMap}
+    return print(io, "BlockTensorMap{", eltype(TT), "}")
+end
+function Base.show(io::IO, ::Type{BlockTensorMap})
+    return print(io, "BlockTensorMap")
 end
 
 function blocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}
@@ -45,7 +48,9 @@ end
 function BlockTensorMap{TT}(
     ::UndefInitializer, codom::ProductSumSpace{S,N₁}, dom::ProductSumSpace{S,N₂}
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    data = map(Base.Fix1(TT, undef), SumSpaceIndices(codom ← dom))
+    # preallocate data to ensure correct eltype
+    data = Array{TT,N₁ + N₂}(undef, size(SumSpaceIndices(codom ← dom)))
+    map!(Base.Fix1(similar, TT), data, SumSpaceIndices(codom ← dom))
     return BlockTensorMap{TT}(data, codom, dom)
 end
 

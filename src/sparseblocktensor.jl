@@ -1,7 +1,7 @@
 """
     struct SparseBlockTensorMap{TT<:AbstractTensorMap{E,S,N₁,N₂}} <: AbstractBlockTensorMap{E,S,N₁,N₂}
 
-A `SparseBlockTensorMap` is a block tensor map with a sparse data representation.
+Sparse `SparseBlockTensorMap` type that stores tensors of type `TT` in a sparse dictionary.
 """
 struct SparseBlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
        AbstractBlockTensorMap{E,S,N₁,N₂}
@@ -97,6 +97,22 @@ nonzero_keys(t::SparseBlockTensorMap) = keys(t.data)
 nonzero_values(t::SparseBlockTensorMap) = values(t.data)
 nonzero_pairs(t::SparseBlockTensorMap) = pairs(t.data)
 nonzero_length(t::SparseBlockTensorMap) = length(t.data)
+
+# Utility
+# -------
+function Base.copy(t::SparseBlockTensorMap{TT}) where {TT}
+    return SparseBlockTensorMap{TT}(deepcopy(t.data), t.codom, t.dom)
+end
+
+# Conversion
+# ----------
+function BlockTensorMap(t::SparseBlockTensorMap{TT}) where {TT}
+    tdst = BlockTensorMap{TT}(undef, codomain(t), domain(t))
+    for (i, v) in nonzero_pairs(t)
+        tdst[i] = v
+    end
+    return tdst
+end
 
 # SparseBlockTensorMap parent array
 # ---------------------------------
