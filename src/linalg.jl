@@ -54,6 +54,16 @@ function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractBlockTenso
     V = codomain(A) ← domain(B)
     return similar(issparse(A) ? B : A, T, V)
 end
+function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractTensorMap)
+    T = Base.promote_op(LinearAlgebra.matprod, scalartype(A), scalartype(B))
+    V = codomain(A) ← domain(B)
+    return similar(issparse(A) ? B : A, T, V)
+end
+function TensorKit.compose_dest(A::AbstractTensorMap, B::AbstractBlockTensorMap)
+    T = Base.promote_op(LinearAlgebra.matprod, scalartype(A), scalartype(B))
+    V = codomain(A) ← domain(B)
+    return similar(issparse(A) ? B : A, T, V)
+end
 
 # function LinearAlgebra.mul!(
 #     C::BlockTensorMap, A::BlockTensorMap, B::BlockTensorMap, α::Number, β::Number
