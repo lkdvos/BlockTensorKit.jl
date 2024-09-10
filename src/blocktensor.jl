@@ -118,6 +118,8 @@ issparse(::BlockTensorMap) = false
 # # getindex and setindex! using Vararg{Int,N} signature is needed for the AbstractArray
 # # interface, manually dispatch through to CartesianIndex{N} signature to work with Dict.
 
+Base.delete!(t::BlockTensorMap, I...) = (zerovector!(getindex(t, I...)); t)
+
 # Base.delete!(t::BlockTensorMap, I::CartesianIndex) = delete!(t.data, I)
 
 # @inline function Base.get!(t::BlockTensorMap, I::CartesianIndex)

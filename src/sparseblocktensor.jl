@@ -103,6 +103,13 @@ nonzero_length(t::SparseBlockTensorMap) = length(t.data)
 function Base.copy(t::SparseBlockTensorMap{TT}) where {TT}
     return SparseBlockTensorMap{TT}(deepcopy(t.data), t.codom, t.dom)
 end
+function Base.delete!(t::SparseBlockTensorMap{TT}, I::CartesianIndex) where {TT}
+    delete!(t.data, I)
+    return t
+end
+function Base.delete!(t::SparseBlockTensorMap{TT}, I::Vararg{Int,N}) where {TT,N}
+    return delete!(t, CartesianIndex(I...))
+end
 
 # Conversion
 # ----------
