@@ -46,8 +46,10 @@ function TK.leftorth!(
         block(Q, c) .= Qdata[c]
         block(R, c) .= Rdata[c]
     end
-
     return Q, R
+end
+function TK.leftorth!(t::SparseBlockTensorMap; kwargs...)
+    return leftorth!(BlockTensorMap(t); kwargs...)
 end
 
 function TK.rightorth!(
@@ -96,6 +98,9 @@ function TK.rightorth!(
         block(Q, c) .= Qdata[c]
     end
     return L, Q
+end
+function TK.rightorth!(t::SparseBlockTensorMap; kwargs...)
+    return rightorth!(BlockTensorMap(t); kwargs...)
 end
 
 function TK.tsvd!(t::AbstractBlockTensorMap; trunc=NoTruncation(), p::Real=2, alg=SDD())
