@@ -288,10 +288,16 @@ end
 # ----------------
 
 function TK.BraidingTensor(V1::SumSpace{S}, V2::SumSpace{S}) where {S}
-    tdst = BlockTensorMap{ComplexF64,S,2,2}(undef, V2 ⊗ V1, V1 ⊗ V2)
+    τtype = if BraidingStyle(sectortype(S)) isa SymmetricBraiding
+        BraidingTensor{Float64,S}
+    else
+        BraidingTensor{ComplexF64,S}
+    end
+    tdst = BlockTensorMap{τtype}(undef, V2 ⊗ V1, V1 ⊗ V2)
+    Vs = eachspace(tdst)
     for I in CartesianIndices(tdst)
         if I[1] == I[4] && I[2] == I[3]
-            V = getsubspace(space(tdst), I)
+            V = Vs[I]
             @assert domain(V)[2] == codomain(V)[1] && domain(V)[1] == codomain(V)[2]
             tdst[I] = TK.BraidingTensor(V[2], V[1])
         end
