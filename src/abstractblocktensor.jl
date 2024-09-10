@@ -70,6 +70,11 @@ end
     return t
 end
 
+@inline function Base.get(t::AbstractBlockTensorMap, key, default)
+    @boundscheck checkbounds(t, key)
+    return get(parent(t), key, default)
+end
+
 function Base.copyto!(
     tdst::AbstractBlockTensorMap,
     Rdest::CartesianIndices,

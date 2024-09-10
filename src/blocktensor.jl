@@ -120,10 +120,6 @@ issparse(::BlockTensorMap) = false
 
 # Base.delete!(t::BlockTensorMap, I::CartesianIndex) = delete!(t.data, I)
 
-@inline function Base.get(t::BlockTensorMap, key, default)
-    @boundscheck checkbounds(t, key)
-    return get(t.data, key, default)
-end
 # @inline function Base.get!(t::BlockTensorMap, I::CartesianIndex)
 #     @boundscheck checkbounds(t, I)
 #     return get!(t.data, I) do
