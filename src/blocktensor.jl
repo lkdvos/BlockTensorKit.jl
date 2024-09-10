@@ -258,6 +258,14 @@ end
 # Converters
 # ----------
 
+function SparseBlockTensorMap(t::BlockTensorMap)
+    tdst = SparseBlockTensorMap{eltype(t)}(undef, codomain(t), domain(t))
+    for (I, v) in nonzero_pairs(t)
+        tdst[I] = v
+    end
+    return tdst
+end
+
 function Base.promote_rule(
     ::Type{<:BlockTensorMap{TT₁}}, ::Type{<:BlockTensorMap{TT₂}}
 ) where {TT₁,TT₂}

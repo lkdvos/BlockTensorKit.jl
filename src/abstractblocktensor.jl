@@ -234,6 +234,16 @@ function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
     return tdst
 end
 
+function Base.convert(
+    ::Type{TT}, t::AbstractBlockTensorMap
+) where {TT<:AbstractBlockTensorMap}
+    tdst = similar(TT, space(t))
+    for (I, v) in nonzero_pairs(t)
+        tdst[I] = v
+    end
+    return tdst
+end
+
 # Sparsity
 # --------
 nonzero_pairs(t::AbstractBlockTensorMap) = nonzero_pairs(parent(t))

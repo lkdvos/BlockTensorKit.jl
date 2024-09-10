@@ -113,8 +113,8 @@ end
 
 # Conversion
 # ----------
-function BlockTensorMap(t::SparseBlockTensorMap{TT}) where {TT}
-    tdst = BlockTensorMap{TT}(undef, codomain(t), domain(t))
+function BlockTensorMap(t::SparseBlockTensorMap)
+    tdst = BlockTensorMap{eltype(t)}(undef, codomain(t), domain(t))
     for (i, v) in nonzero_pairs(t)
         tdst[i] = v
     end
