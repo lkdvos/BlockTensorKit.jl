@@ -12,7 +12,13 @@ export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
 export undef_blocks
 
 using TensorKit
-using TensorKit: OneOrNoneIterator, HomSpace, MatrixAlgebra, SectorDict
+using TensorKit:
+    OneOrNoneIterator,
+    HomSpace,
+    MatrixAlgebra,
+    SectorDict,
+    AdjointTensorMap,
+    adjointtensorindices
 using VectorInterface
 using TensorOperations
 using TensorOperations:
@@ -44,6 +50,7 @@ include("sumspaceindices.jl")
 include("abstractblocktensor.jl")
 include("blocktensor.jl")
 include("sparseblocktensor.jl")
+include("adjointblocktensor.jl")
 include("pseudoblocktensor.jl")
 
 # various interfaces
