@@ -244,6 +244,8 @@ function Base.convert(
     return tdst
 end
 
+TensorKit.TensorMap(t::AbstractBlockTensorMap) = convert(TensorMap, t)
+
 # Sparsity
 # --------
 nonzero_pairs(t::AbstractBlockTensorMap) = nonzero_pairs(parent(t))
