@@ -13,6 +13,9 @@ function TO.tensoradd_type(
     M = TK.similarstoragetype(eltype(A), TC)
     return sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
 end
+function TO.tensoradd_type(TC, A::AdjointBlockTensorMap, pA::Index2Tuple, conjA::Bool)
+    return TO.tensoradd_type(TC, A', adjointtensorindices(A, pA), !conjA)
+end
 
 #
 # function TO.tensoradd_structure(pC::Index2Tuple{N₁,N₂}, A::BlockTensorMap{E,S},
