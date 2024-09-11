@@ -123,6 +123,15 @@ function Base.delete!(t::SparseBlockTensorMap{TT}, I::Vararg{Int,N}) where {TT,N
     return delete!(t, CartesianIndex(I...))
 end
 
+# Show
+# ----
+function Base.summary(io::IO, t::SparseBlockTensorMap)
+    szstring = Base.dims2string(size(t))
+    TT = eltype(t)
+    V = space(t)
+    return print(io, "$szstring SparseBlockTensorMap{$TT}($V)")
+end
+
 # SparseBlockTensorMap parent array
 # ---------------------------------
 struct SparseTensorArray{S,N₁,N₂,T<:AbstractTensorMap{<:Any,S,N₁,N₂},N} <:
