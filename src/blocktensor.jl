@@ -126,13 +126,6 @@ issparse(::BlockTensorMap) = false
 
 Base.delete!(t::BlockTensorMap, I...) = (zerovector!(getindex(t, I...)); t)
 
-# @inline function Base.get!(t::BlockTensorMap, I::CartesianIndex)
-#     @boundscheck checkbounds(t, I)
-#     return get!(t.data, I) do
-#         return TensorMap(zeros, scalartype(t), getsubspace(space(t), I))
-#     end
-# end
-
 # Show
 # ----
 function Base.summary(io::IO, t::BlockTensorMap)

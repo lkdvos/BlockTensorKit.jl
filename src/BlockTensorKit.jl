@@ -40,10 +40,7 @@ import TensorOperations as TO
 include("sumspace.jl")
 include("sumspaceindices.jl")
 
-# Arrays
-# include("sparsetensorarray.jl")
-
-# TensorMaps
+# BlockTensorMaps
 include("abstractblocktensor.jl")
 include("blocktensor.jl")
 include("sparseblocktensor.jl")
@@ -53,7 +50,6 @@ include("pseudoblocktensor.jl")
 include("matrixalgebra.jl")
 include("linalg.jl")
 include("factorizations.jl")
-# include("tensorkit.jl")
 include("vectorinterface.jl")
 include("tensoroperations.jl")
 include("indexmanipulations.jl")

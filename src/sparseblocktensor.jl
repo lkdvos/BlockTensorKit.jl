@@ -74,7 +74,7 @@ function sprand(::Type{T}, V::TensorMapSumSpace, p::Real) where {T<:Number}
     t = TT(undef, V)
     for (I, v) in enumerate(eachspace(t))
         if rand() < p
-            t[I] = rand(T, space(v), p)
+            t[I] = rand(T, v)
         end
     end
     return t
