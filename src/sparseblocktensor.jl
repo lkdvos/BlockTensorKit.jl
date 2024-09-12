@@ -110,6 +110,13 @@ nonzero_values(t::SparseBlockTensorMap) = values(t.data)
 nonzero_pairs(t::SparseBlockTensorMap) = pairs(t.data)
 nonzero_length(t::SparseBlockTensorMap) = length(t.data)
 
+function dropzeros!(t::SparseBlockTensorMap)
+    for (k, v) in nonzero_pairs(t)
+        iszero(norm(v)) && delete!(t, k)
+    end
+    return t
+end
+
 # Utility
 # -------
 function Base.copy(t::SparseBlockTensorMap{TT}) where {TT}

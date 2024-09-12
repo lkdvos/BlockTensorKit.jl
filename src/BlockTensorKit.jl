@@ -9,6 +9,7 @@ export blocktensormaptype, sparseblocktensormaptype
 export SparseTensorArray
 
 export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
+export dropzeros!
 export undef_blocks
 
 using TensorKit
