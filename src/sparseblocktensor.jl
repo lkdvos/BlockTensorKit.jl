@@ -128,8 +128,14 @@ end
 function Base.summary(io::IO, t::SparseBlockTensorMap)
     szstring = Base.dims2string(size(t))
     TT = eltype(t)
+    typeinfo = get(io, :typeinfo, Any)
+    if typeinfo <: typeof(t) || typeinfo <: TT
+        typestring = ""
+    else
+        typestring = "{$TT}"
+    end
     V = space(t)
-    return print(io, "$szstring SparseBlockTensorMap{$TT}($V)")
+    return print(io, "$szstring SparseBlockTensorMap$typestring($V)")
 end
 
 # SparseBlockTensorMap parent array

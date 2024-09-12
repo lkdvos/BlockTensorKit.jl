@@ -131,8 +131,14 @@ Base.delete!(t::BlockTensorMap, I...) = (zerovector!(getindex(t, I...)); t)
 function Base.summary(io::IO, t::BlockTensorMap)
     szstring = Base.dims2string(size(t))
     TT = eltype(t)
+    typeinfo = get(io, :typeinfo, Any)
+    if typeinfo <: typeof(t) || typeinfo <: TT
+        typestring = ""
+    else
+        typestring = "{$TT}"
+    end
     V = space(t)
-    return print(io, "$szstring BlockTensorMap{$TT}($V)")
+    return print(io, "$szstring BlockTensorMap$typestring($V)")
 end
 
 # Converters
