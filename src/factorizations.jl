@@ -106,6 +106,9 @@ end
 function TK.tsvd!(t::AbstractBlockTensorMap; trunc=NoTruncation(), p::Real=2, alg=SDD())
     return TK._tsvd!(t, alg, trunc, p)
 end
+function TK.tsvd!(t::SparseBlockTensorMap; kwargs...)
+    return tsvd!(BlockTensorMap(t); kwargs...)
+end
 
 function TK._compute_svddata!(t::AbstractBlockTensorMap, alg::Union{SVD,SDD})
     InnerProductStyle(t) === EuclideanProduct() || throw_invalid_innerproduct(:tsvd!)
@@ -134,11 +137,11 @@ function TK._empty_svdtensors(t::AbstractBlockTensorMap)
     A = storagetype(t)
     Ar = similarstoragetype(t, real(scalartype(t)))
     W = S(dims)
-    TU = tensormaptype(sumspacetype(S), numout(t), 1, A)
+    TU = blocktensormaptype(S, numout(t), 1, A)
     U = TU(undef, codomain(t) ← W)
-    TΣ = tensormaptype(sumspacetype(S), 1, 1, Ar)
+    TΣ = blocktensormaptype(S, 1, 1, Ar)
     Σ = TΣ(undef, W ← W)
-    TV = tensormaptype(sumspacetype(S), 1, numin(t), A)
+    TV = blocktensormaptype(S, 1, numin(t), A)
     V = TV(undef, W ← domain(t))
 
     return U, Σ, V
