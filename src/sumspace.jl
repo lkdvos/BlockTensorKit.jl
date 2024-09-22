@@ -106,6 +106,8 @@ end
 
 TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
 # bit of a hack to make spacechecks happy?
+Base.:(==)(V::SumSpace{S}, W::S) where {S} = ==(promote(V, W)...)
+Base.:(==)(V::S, W::SumSpace{S}) where {S} = ==(promote(V, W)...)
 Base.:(==)(V::TensorMapSumSpace, W::TensorMapSpace) = ==(promote(V, W)...)
 Base.:(==)(V::TensorMapSpace, W::TensorMapSumSpace) = ==(promote(V, W)...)
 # disambiguate
