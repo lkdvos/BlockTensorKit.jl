@@ -130,6 +130,15 @@ function Base.delete!(t::SparseBlockTensorMap{TT}, I::Vararg{Int,N}) where {TT,N
     return delete!(t, CartesianIndex(I...))
 end
 
+function Base.copyto!(t::SparseTensorArray, v::SubArray{T,N,A}) where {T,N,A<:SparseTensorArray}
+    for (i, j) in zip(eachindex(t), CartesianIndices(parentindices(v)))
+        if j ∈ nonzero_keys(parent(v))
+            t[i] = deepcopy(parent(v)[j])
+        end
+    end
+    return t
+end
+
 # Show
 # ----
 function Base.summary(io::IO, t::SparseBlockTensorMap)
