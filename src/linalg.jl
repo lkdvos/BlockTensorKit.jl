@@ -1,11 +1,11 @@
 # Linear Algebra
 # --------------
-Base.:(+)(t::BlockTensorMap, t2::BlockTensorMap) = add(t, t2)
-Base.:(-)(t::BlockTensorMap, t2::BlockTensorMap) = add(t, t2, -one(scalartype(t)))
-Base.:(*)(t::BlockTensorMap, α::Number) = scale(t, α)
-Base.:(*)(α::Number, t::BlockTensorMap) = scale(t, α)
-Base.:(/)(t::BlockTensorMap, α::Number) = scale(t, inv(α))
-Base.:(\)(α::Number, t::BlockTensorMap) = scale(t, inv(α))
+Base.:(+)(t::AbstractBlockTensorMap, t2::AbstractBlockTensorMap) = add(t, t2)
+Base.:(-)(t::AbstractBlockTensorMap, t2::AbstractBlockTensorMap) = add(t, t2, -one(scalartype(t)))
+Base.:(*)(t::AbstractBlockTensorMap, α::Number) = scale(t, α)
+Base.:(*)(α::Number, t::AbstractBlockTensorMap) = scale(t, α)
+Base.:(/)(t::AbstractBlockTensorMap, α::Number) = scale(t, inv(α))
+Base.:(\)(α::Number, t::AbstractBlockTensorMap) = scale(t, inv(α))
 
 function LinearAlgebra.axpy!(α::Number, t1::BlockTensorMap, t2::BlockTensorMap)
     space(t1) == space(t2) || throw(SpaceMismatch())

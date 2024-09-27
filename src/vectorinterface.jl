@@ -35,7 +35,13 @@ function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap, α::Number)
     scale!(parent(ty), parent(tx), α)
     return ty
 end
-
+function VI.scale!(ty::SparseBlockTensorMap, tx::SparseBlockTensorMap, α::Number)
+    space(ty) == space(tx) || throw(SpaceMismatch("$(space(ty)) ≠ $(space(tx))"))
+    for (k, v) in nonzero_pairs(tx)
+        ty[k] = scale(v, α)
+    end
+    return ty
+end
 # function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap,
 #                    α::Number)
 #     space(ty) == space(tx) || throw(SpaceMismatch())
