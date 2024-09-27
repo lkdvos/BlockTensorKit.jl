@@ -90,7 +90,7 @@ end
 function VI.add!(ty::SparseBlockTensorMap, tx::SparseBlockTensorMap, α::Number, β::Number)
     space(ty) == space(tx) || throw(SpaceMismatch("$(space(ty)) ≠ $(space(tx))"))
     for (k, v) in nonzero_pairs(tx)
-        ty[k] = α*ty[k] + β*v
+        ty[k] = α * ty[k] + β * v
     end
     return ty
 end
