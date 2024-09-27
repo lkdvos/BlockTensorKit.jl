@@ -87,6 +87,13 @@ function VI.add!(ty::BlockTensorMap, tx::BlockTensorMap, α::Number, β::Number)
     add!(parent(ty), parent(tx), α, β)
     return ty
 end
+function VI.add!(ty::SparseBlockTensorMap, tx::SparseBlockTensorMap, α::Number, β::Number)
+    space(ty) == space(tx) || throw(SpaceMismatch("$(space(ty)) ≠ $(space(tx))"))
+    for (k, v) in nonzero_pairs(tx)
+        ty[k] = α*ty[k] + β*v
+    end
+    return ty
+end
 # function VI.add!!(y::BlockTensorMap, x::BlockTensorMap, α::Number,
 #                   β::Number)
 #     return promote_add(y, x, α, β) <: scalartype(y) ? add!(y, x, α, β) : add(y, x, α, β)
