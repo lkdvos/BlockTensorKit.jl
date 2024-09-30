@@ -117,6 +117,11 @@ function dropzeros!(t::SparseBlockTensorMap)
     return t
 end
 
+function droptol!(t::SparseBlockTensorMap, tol=eps(real(scalartype(t)))^(3 / 4))
+    for (k, v) in nonzero_pairs(t)
+        norm(v) < tol && delete!(t, k)
+    end
+end
 # Utility
 # -------
 function Base.copy(t::SparseBlockTensorMap{TT}) where {TT}
