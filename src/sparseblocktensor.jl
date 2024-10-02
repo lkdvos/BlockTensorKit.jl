@@ -95,7 +95,9 @@ end
 function Base.similar(::Type{<:SparseBlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
     return SparseBlockTensorMap{TT}(undef, codomain(P), domain(P))
 end
-
+function Base.similar(t::SparseBlockTensorMap)
+    return similar(typeof(t), space(t))
+end
 # Properties
 # ----------
 TensorKit.domain(t::SparseBlockTensorMap) = t.dom
