@@ -38,15 +38,9 @@ function sparseblocktensormaptype(
     return SparseBlockTensorMap{TT}
 end
 function sparseblocktensormaptype(
-    ::Type{<:AbstractTensorMap{E,S}}, N₁::Int, N₂::Int, ::Type{T}
+    TT::Type{<:AbstractTensorMap{E,S}}, N₁::Int, N₂::Int, ::Type{T}
 ) where {E,S,T}
-    TT′ = tensormaptype(S, N₁, N₂, T)
-    return SparseBlockTensorMap{TT′}
-end
-function sparseblocktensormaptype(
-    ::Type{AbstractTensorMap{E,S}}, N₁::Int, N₂::Int, ::Type{T}
-) where {E,S,T}
-    TT′ = AbstractTensorMap{E,S,N₁,N₂}
+    TT′ = isabstracttype(TT) ? AbstractTensorMap{E,S,N₁,N₂} : tensormaptype(S, N₁, N₂, T)
     return SparseBlockTensorMap{TT′}
 end
 # Undef constructors
@@ -98,6 +92,8 @@ end
 function Base.similar(
     ::SparseBlockTensorMap{TT}, ::Type{TorA}, P::TensorMapSumSpace{S}
 ) where {TT,TorA<:TensorKit.MatOrNumber,S}
+    N₁ = length(codomain(P))
+    N₂ = length(domain(P))
     TT′ = sparseblocktensormaptype(TT, N₁, N₂, TorA)
     return TT′(undef, codomain(P), domain(P))
 end
