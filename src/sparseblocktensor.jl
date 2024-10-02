@@ -85,18 +85,12 @@ end
 
 # specific implementation for SparseBlockTensorMap with Sumspace -> returns `SparseBlockTensorMap`
 function Base.similar(
-    ::SparseBlockTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
-) where {TorA<:TensorKit.MatOrNumber,S}
-    N₁ = length(codomain(P))
-    N₂ = length(domain(P))
-    TT = sparseblocktensormaptype(S, N₁, N₂, TorA)
-    return TT(undef, codomain(P), domain(P))
+    ::SparseBlockTensorMap{TT}, ::Type{TorA}, P::TensorMapSumSpace{S}
+) where {TT,TorA<:TensorKit.MatOrNumber,S}
+    return SparseBlockTensorMap{TT}(undef, codomain(P), domain(P))
 end
 function Base.similar(::Type{<:SparseBlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
     return SparseBlockTensorMap{TT}(undef, codomain(P), domain(P))
-end
-function Base.similar(t::SparseBlockTensorMap)
-    return similar(typeof(t), space(t))
 end
 # Properties
 # ----------

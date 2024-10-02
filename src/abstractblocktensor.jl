@@ -40,7 +40,7 @@ Base.isempty(t::AbstractBlockTensorMap) = isempty(parent(t))
 # slicing getindex needs to correctly allocate output blocktensor:
 Base.@propagate_inbounds function Base.getindex(t::AbstractBlockTensorMap, I...)
     V = space(eachspace(t)[I...])
-    tdst = similar(typeof(t), V)
+    tdst = similar(t, V)
     copyto!(parent(tdst), view(parent(t), I...))
     return tdst
 end
