@@ -34,6 +34,12 @@ function blocktensormaptype(::Type{SumSpace{S}}, N₁::Int, N₂::Int, ::Type{T}
     TT = tensormaptype(S, N₁, N₂, T)
     return BlockTensorMap{TT}
 end
+function blocktensormaptype(
+    TT::Type{<:AbstractTensorMap{E,S}}, N₁::Int, N₂::Int, ::Type{T}
+) where {E,S,T}
+    TT′ = isabstracttype(TT) ? AbstractTensorMap{E,S,N₁,N₂} : tensormaptype(S, N₁, N₂, T)
+    return BlockTensorMap{TT′}
+end
 
 # Undef constructors
 # ------------------
@@ -125,6 +131,10 @@ issparse(::BlockTensorMap) = false
 # -------
 
 Base.delete!(t::BlockTensorMap, I...) = (zerovector!(getindex(t, I...)); t)
+
+function Base.similar(::Type{<:BlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
+    return BlockTensorMap{TT}(undef, codomain(P), domain(P))
+end
 
 # Show
 # ----

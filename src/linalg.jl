@@ -49,10 +49,16 @@ function LinearAlgebra.mul!(C::BlockTensorMap, α::Number, A::BlockTensorMap)
     return C
 end
 
-function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractBlockTensorMap)
+function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractBlockTensorMap) # also check tensortype.
     T = Base.promote_op(LinearAlgebra.matprod, scalartype(A), scalartype(B))
     V = codomain(A) ← domain(B)
-    return similar(issparse(A) ? B : A, T, V)
+
+    if issparse(A) && issparse(B)
+        BTT = sparseblocktensormaptype(promote_type(eltype(A), eltype(B)), numout(V), numin(V), storagetype(A))
+    else
+        BTT = blocktensormaptype(promote_type(eltype(A), eltype(B)), numout(V), numin(V), storagetype(A))
+    end
+    return similar(BTT, V)
 end
 function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractTensorMap)
     T = Base.promote_op(LinearAlgebra.matprod, scalartype(A), scalartype(B))
