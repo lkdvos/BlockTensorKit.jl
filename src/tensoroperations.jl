@@ -150,6 +150,29 @@ function TK.trace_permute!(
     return tdst
 end
 
+function TO.tensoralloc_contract(TC,
+    A::AbstractBlockTensorMap, pA::Index2Tuple, conjA::Bool,
+    B::AbstractBlockTensorMap, pB::Index2Tuple, conjB::Bool,
+    pAB::Index2Tuple, istemp::Val=Val(false),
+    allocator=TO.DefaultAllocator())
+
+    ttype = TO.tensorcontract_type(TC, A, pA, conjA, B, pB, conjB, pAB)
+    structure = TO.tensorcontract_structure(A, pA, conjA, B, pB, conjB, pAB)
+    TT = promote_type(eltype(A), eltype(B))
+
+    if isabstracttype(TT)
+        # do not allocate, use undef allocator
+        E, S, N1, N2 = scalartype(TT), spacetype(TT), numout(structure), numin(structure)
+        if issparse(A) && issparse(B)
+            return SparseBlockTensorMap{AbstractTensorMap{E, S, N1, N2}}(undef, codomain(structure), domain(structure))
+        else
+            return BlockTensorMap{AbstractTensorMap{E, S, N1, N2}}(undef, codomain(structure), domain(structure))
+        end
+    else
+        return tensoralloc(ttype, structure, istemp, allocator)
+    end
+end
+
 # PlanarOperations
 # ----------------
 
