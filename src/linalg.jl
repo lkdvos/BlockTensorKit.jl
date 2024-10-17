@@ -71,157 +71,157 @@ function TensorKit.compose_dest(A::AbstractTensorMap, B::AbstractBlockTensorMap)
     return similar(issparse(A) ? B : A, T, V)
 end
 
-function LinearAlgebra.mul!(
-    C::BlockTensorMap, A::BlockTensorMap, B::BlockTensorMap, α::Number, β::Number
-)
-    # @assert !(C isa SparseBlockTensorMap)
-    szA = size(A)
-    szB = size(B)
-    csizeA = TupleTools.getindices(szA, domainind(A))
-    csizeB = TupleTools.getindices(szB, codomainind(B))
-    osizeA = TupleTools.getindices(szA, codomainind(A))
-    osizeB = TupleTools.getindices(szB, domainind(B))
+# function LinearAlgebra.mul!(
+#     C::BlockTensorMap, A::BlockTensorMap, B::BlockTensorMap, α::Number, β::Number
+# )
+#     # @assert !(C isa SparseBlockTensorMap)
+#     szA = size(A)
+#     szB = size(B)
+#     csizeA = TupleTools.getindices(szA, domainind(A))
+#     csizeB = TupleTools.getindices(szB, codomainind(B))
+#     osizeA = TupleTools.getindices(szA, codomainind(A))
+#     osizeB = TupleTools.getindices(szB, domainind(B))
 
-    AS = sreshape(StridedView(parent(A)), prod(osizeA), prod(csizeA))
-    BS = sreshape(StridedView(parent(B)), prod(csizeB), prod(osizeB))
-    CS = sreshape(StridedView(parent(C)), prod(osizeA), prod(osizeB))
+#     AS = sreshape(StridedView(parent(A)), prod(osizeA), prod(csizeA))
+#     BS = sreshape(StridedView(parent(B)), prod(csizeB), prod(osizeB))
+#     CS = sreshape(StridedView(parent(C)), prod(osizeA), prod(osizeB))
 
-    for i in axes(AS, 1), j in axes(BS, 2)
-        for k in axes(AS, 2)
-            if k == 1
-                mul!(CS[i, j], AS[i, k], BS[k, j], α, β)
-            else
-                mul!(CS[i, j], AS[i, k], BS[k, j], α, One())
-            end
-        end
-    end
-    return C
-end
-function LinearAlgebra.mul!(C::BlockTensorMap, A::BlockTensorMap, B::SparseBlockTensorMap,
-                            α::Number, β::Number)
-    @assert !(C isa SparseBlockTensorMap)
-    KB = collect(nonzero_keys(B))
-    for I in eachindex(IndexCartesian(), C)
-        allk = findall(KB) do J
-            return getindices(J.I, domainind(B)) == getindices(I.I, domainind(C))
-        end
-        if isempty(allk)
-            C[I] = scale!(C[I], β)
-            continue
-        end
-        for (ik, k) in enumerate(KB[allk])
-            IA = (getindices(I.I, codomainind(C))..., getindices(k.I, codomainind(B))...)
-            # IB = (getindices(k.I, domainind(B))..., getindices(I.I, domainind(C))...)
-            C[I] = mul!(C[I], A[IA...], B[k], α, ik == 1 ? β : One())
-        end
-    end
-    return C
-end
-function LinearAlgebra.mul!(C::BlockTensorMap, A::SparseBlockTensorMap, B::BlockTensorMap,
-                            α::Number, β::Number)
-    @assert !(C isa SparseBlockTensorMap)
-    KA = collect(nonzero_keys(A))
-    for I in eachindex(IndexCartesian(), C)
-        allk = findall(KA) do J
-            return getindices(J.I, codomainind(A)) == getindices(I.I, codomainind(C))
-        end
-        if isempty(allk)
-            C[I] = scale!(C[I], β)
-            continue
-        end
-        for (ik, k) in enumerate(KA[allk])
-            IB = (getindices(k.I, domainind(A))..., getindices(I.I, domainind(C))...)
-            C[I] = mul!(C[I], A[k], B[IB...], α, ik == 1 ? β : One())
-        end
-    end
-    return C
-end
-function LinearAlgebra.mul!(C::BlockTensorMap, A::SparseBlockTensorMap,
-                            B::SparseBlockTensorMap, α::Number, β::Number)
-    KA = collect(nonzero_keys(A))
-    KB = collect(nonzero_keys(B))
-    for I in eachindex(IndexCartesian(), C)
-        allka = findall(KA) do J
-            return getindices(J.I, codomainind(A)) == getindices(I.I, codomainind(C))
-        end
-        if isempty(allka)
-            C[I] = scale!(C[I], β)
-            continue
-        end
+#     for i in axes(AS, 1), j in axes(BS, 2)
+#         for k in axes(AS, 2)
+#             if k == 1
+#                 mul!(CS[i, j], AS[i, k], BS[k, j], α, β)
+#             else
+#                 mul!(CS[i, j], AS[i, k], BS[k, j], α, One())
+#             end
+#         end
+#     end
+#     return C
+# end
+# function LinearAlgebra.mul!(C::BlockTensorMap, A::BlockTensorMap, B::SparseBlockTensorMap,
+#                             α::Number, β::Number)
+#     @assert !(C isa SparseBlockTensorMap)
+#     KB = collect(nonzero_keys(B))
+#     for I in eachindex(IndexCartesian(), C)
+#         allk = findall(KB) do J
+#             return getindices(J.I, domainind(B)) == getindices(I.I, domainind(C))
+#         end
+#         if isempty(allk)
+#             C[I] = scale!(C[I], β)
+#             continue
+#         end
+#         for (ik, k) in enumerate(KB[allk])
+#             IA = (getindices(I.I, codomainind(C))..., getindices(k.I, codomainind(B))...)
+#             # IB = (getindices(k.I, domainind(B))..., getindices(I.I, domainind(C))...)
+#             C[I] = mul!(C[I], A[IA...], B[k], α, ik == 1 ? β : One())
+#         end
+#     end
+#     return C
+# end
+# function LinearAlgebra.mul!(C::BlockTensorMap, A::SparseBlockTensorMap, B::BlockTensorMap,
+#                             α::Number, β::Number)
+#     @assert !(C isa SparseBlockTensorMap)
+#     KA = collect(nonzero_keys(A))
+#     for I in eachindex(IndexCartesian(), C)
+#         allk = findall(KA) do J
+#             return getindices(J.I, codomainind(A)) == getindices(I.I, codomainind(C))
+#         end
+#         if isempty(allk)
+#             C[I] = scale!(C[I], β)
+#             continue
+#         end
+#         for (ik, k) in enumerate(KA[allk])
+#             IB = (getindices(k.I, domainind(A))..., getindices(I.I, domainind(C))...)
+#             C[I] = mul!(C[I], A[k], B[IB...], α, ik == 1 ? β : One())
+#         end
+#     end
+#     return C
+# end
+# function LinearAlgebra.mul!(C::BlockTensorMap, A::SparseBlockTensorMap,
+#                             B::SparseBlockTensorMap, α::Number, β::Number)
+#     KA = collect(nonzero_keys(A))
+#     KB = collect(nonzero_keys(B))
+#     for I in eachindex(IndexCartesian(), C)
+#         allka = findall(KA) do J
+#             return getindices(J.I, codomainind(A)) == getindices(I.I, codomainind(C))
+#         end
+#         if isempty(allka)
+#             C[I] = scale!(C[I], β)
+#             continue
+#         end
 
-        allkb = findall(KB) do J
-            return getindices(J.I, domainind(B)) == getindices(I.I, domainind(C))
-        end
-        if isempty(allkb)
-            C[I] = scale!(C[I], β)
-            continue
-        end
+#         allkb = findall(KB) do J
+#             return getindices(J.I, domainind(B)) == getindices(I.I, domainind(C))
+#         end
+#         if isempty(allkb)
+#             C[I] = scale!(C[I], β)
+#             continue
+#         end
 
-        allk = CartesianIndex.(intersect(map(x -> getindices(x.I, domainind(A)),
-                                             KA[allka]),
-                                         map(x -> getindices(x.I, codomainind(B)),
-                                             KB[allkb])))
-        if isempty(allk)
-            C[I] = scale!(C[I], β)
-            continue
-        end
-        for (ik, k) in enumerate(allk)
-            IA = (getindices(I.I, codomainind(C))..., k.I...)
-            IB = (k.I..., getindices(I.I, domainind(C))...)
-            C[I] = mul!(C[I], A[IA...], B[IB...], α, ik == 1 ? β : One())
-        end
-    end
-    return C
-end
-function LinearAlgebra.mul!(
-    C::BlockTensorMap, A::AbstractTensorMap, B::BlockTensorMap, α::Number, β::Number
-)
-    # @assert !(C isa SparseBlockTensorMap)
-    szB = size(B)
-    csizeB = TupleTools.getindices(szB, codomainind(B))
-    osizeB = TupleTools.getindices(szB, domainind(B))
+#         allk = CartesianIndex.(intersect(map(x -> getindices(x.I, domainind(A)),
+#                                              KA[allka]),
+#                                          map(x -> getindices(x.I, codomainind(B)),
+#                                              KB[allkb])))
+#         if isempty(allk)
+#             C[I] = scale!(C[I], β)
+#             continue
+#         end
+#         for (ik, k) in enumerate(allk)
+#             IA = (getindices(I.I, codomainind(C))..., k.I...)
+#             IB = (k.I..., getindices(I.I, domainind(C))...)
+#             C[I] = mul!(C[I], A[IA...], B[IB...], α, ik == 1 ? β : One())
+#         end
+#     end
+#     return C
+# end
+# function LinearAlgebra.mul!(
+#     C::BlockTensorMap, A::AbstractTensorMap, B::BlockTensorMap, α::Number, β::Number
+# )
+#     # @assert !(C isa SparseBlockTensorMap)
+#     szB = size(B)
+#     csizeB = TupleTools.getindices(szB, codomainind(B))
+#     osizeB = TupleTools.getindices(szB, domainind(B))
 
-    BS = sreshape(StridedView(parent(B)), prod(csizeB), prod(osizeB))
-    CS = sreshape(StridedView(parent(C)), 1, prod(osizeB))
-    for j in axes(BS, 2)
-        for k in axes(BS, 1)
-            if k == 1
-                mul!(CS[1, j], A, BS[k, j], α, β)
-            else
-                mul!(CS[1, j], A, BS[k, j], α, One())
-            end
-        end
-    end
-    return C
-end
-function LinearAlgebra.mul!(
-    C::BlockTensorMap, A::BlockTensorMap, B::AbstractTensorMap, α::Number, β::Number
-)
-    # @assert !(C isa SparseBlockTensorMap)
-    szA = size(A)
-    csizeA = TupleTools.getindices(szA, domainind(A))
-    osizeA = TupleTools.getindices(szA, codomainind(A))
+#     BS = sreshape(StridedView(parent(B)), prod(csizeB), prod(osizeB))
+#     CS = sreshape(StridedView(parent(C)), 1, prod(osizeB))
+#     for j in axes(BS, 2)
+#         for k in axes(BS, 1)
+#             if k == 1
+#                 mul!(CS[1, j], A, BS[k, j], α, β)
+#             else
+#                 mul!(CS[1, j], A, BS[k, j], α, One())
+#             end
+#         end
+#     end
+#     return C
+# end
+# function LinearAlgebra.mul!(
+#     C::BlockTensorMap, A::BlockTensorMap, B::AbstractTensorMap, α::Number, β::Number
+# )
+#     # @assert !(C isa SparseBlockTensorMap)
+#     szA = size(A)
+#     csizeA = TupleTools.getindices(szA, domainind(A))
+#     osizeA = TupleTools.getindices(szA, codomainind(A))
 
-    AS = sreshape(StridedView(parent(A)), prod(osizeA), prod(csizeA))
-    CS = sreshape(StridedView(parent(C)), prod(osizeA), 1)
-    for i in axes(AS, 1)
-        for k in axes(AS, 2)
-            if k == 1
-                mul!(CS[i, 1], AS[i, k], B, α, β)
-            else
-                mul!(CS[i, 1], AS[i, k], B, α, One())
-            end
-        end
-    end
-    return C
-end
-function LinearAlgebra.mul!(
-    C::TensorMap, A::BlockTensorMap, B::BlockTensorMap, α::Number, β::Number
-)
-    C′ = convert(BlockTensorMap, C)
-    mul!(C′, A, B, α, β)
-    return C
-end
+#     AS = sreshape(StridedView(parent(A)), prod(osizeA), prod(csizeA))
+#     CS = sreshape(StridedView(parent(C)), prod(osizeA), 1)
+#     for i in axes(AS, 1)
+#         for k in axes(AS, 2)
+#             if k == 1
+#                 mul!(CS[i, 1], AS[i, k], B, α, β)
+#             else
+#                 mul!(CS[i, 1], AS[i, k], B, α, One())
+#             end
+#         end
+#     end
+#     return C
+# end
+# function LinearAlgebra.mul!(
+#     C::TensorMap, A::BlockTensorMap, B::BlockTensorMap, α::Number, β::Number
+# )
+#     C′ = convert(BlockTensorMap, C)
+#     mul!(C′, A, B, α, β)
+#     return C
+# end
 function LinearAlgebra.lmul!(α::Number, t::BlockTensorMap)
     for v in nonzero_values(t)
         lmul!(α, v)
