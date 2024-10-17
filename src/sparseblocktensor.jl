@@ -232,7 +232,7 @@ end
 function Base.copyto!(t::SparseTensorArray, v::SubArray{T,N,A}) where {T,N,A<:SparseTensorArray}
     for (i, j) in zip(eachindex(t), collect(eachindex(parent(v)))[v.indices...])
         if j ∈ nonzero_keys(parent(v))
-            t[i] = deepcopy(parent(v)[j])
+            t[i] = parent(v)[j]
         end
     end
     return t
