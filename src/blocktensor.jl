@@ -19,12 +19,12 @@ struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
 end
 
 # hack to avoid too many type parameters, which are enforced by inner constructor
-function Base.show(io::IO, ::Type{TT}) where {TT<:BlockTensorMap}
-    return print(io, "BlockTensorMap{", eltype(TT), "}")
-end
-function Base.show(io::IO, ::Type{BlockTensorMap})
-    return print(io, "BlockTensorMap")
-end
+# function Base.show(io::IO, ::Type{TT}) where {TT<:BlockTensorMap}
+#     return print(io, "BlockTensorMap{", eltype(TT), "}")
+# end
+# function Base.show(io::IO, ::Type{BlockTensorMap})
+#     return print(io, "BlockTensorMap")
+# end
 
 function blocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}
     TT = tensormaptype(S, N₁, N₂, T)

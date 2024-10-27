@@ -20,12 +20,12 @@ struct SparseBlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
 end
 
 # hack to avoid too many type parameters, enforced by inner constructor
-function Base.show(io::IO, ::Type{TT}) where {TT<:SparseBlockTensorMap}
-    return print(io, "SparseBlockTensorMap{", eltype(TT), "}")
-end
-function Base.show(io::IO, ::Type{SparseBlockTensorMap})
-    return print(io, "SparseBlockTensorMap")
-end
+# function Base.show(io::IO, ::Type{TT}) where {TT<:SparseBlockTensorMap}
+#     return print(io, "SparseBlockTensorMap{", eltype(TT), "}")
+# end
+# function Base.show(io::IO, ::Type{SparseBlockTensorMap})
+#     return print(io, "SparseBlockTensorMap")
+# end
 
 function sparseblocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}
     TT = tensormaptype(S, N₁, N₂, T)
