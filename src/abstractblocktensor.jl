@@ -38,10 +38,12 @@ Base.isempty(t::AbstractBlockTensorMap) = isempty(parent(t))
     getindex(parent(t), I)
 
 # slicing getindex needs to correctly allocate output blocktensor:
-Base.@propagate_inbounds function Base.getindex(t::AbstractBlockTensorMap, I...)
-    V = space(eachspace(t)[I...])
+Base.@propagate_inbounds function Base.getindex(
+    t::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
+)
+    V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
-    copyto!(parent(tdst), view(parent(t), I...))
+    copyto!(parent(tdst), view(parent(t), indices...))
     return tdst
 end
 
@@ -51,22 +53,26 @@ end
 )
 
 # setindex verifies structure is correct
-@inline function Base.setindex!(t::AbstractBlockTensorMap, v::AbstractTensorMap, I...)
+@inline function Base.setindex!(
+    t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{SliceIndex}
+)
     @boundscheck begin
-        checkbounds(t, I...)
-        checkspaces(t, v, I...)
+        checkbounds(t, indices...)
+        checkspaces(t, v, indices...)
     end
-    @inbounds parent(t)[I...] = v
+    @inbounds parent(t)[indices...] = v
     return t
 end
 # setindex with blocktensor needs to correctly slice-assign
-@inline function Base.setindex!(t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, I...)
+@inline function Base.setindex!(
+    t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
+)
     @boundscheck begin
-        checkbounds(t, I...)
-        checkspaces(t, v, I...)
+        checkbounds(t, indices...)
+        checkspaces(t, v, indices...)
     end
 
-    copyto!(view(parent(t), I...), parent(v))
+    copyto!(view(parent(t), indices...), parent(v))
     return t
 end
 
