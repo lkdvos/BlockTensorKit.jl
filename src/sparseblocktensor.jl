@@ -6,16 +6,13 @@ Sparse `SparseBlockTensorMap` type that stores tensors of type `TT` in a sparse 
 struct SparseBlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
        AbstractBlockTensorMap{E,S,N₁,N₂}
     data::Dict{CartesianIndex{N},TT}
-    codom::ProductSumSpace{S,N₁}
-    dom::ProductSumSpace{S,N₂}
+    space::TensorMapSumSpace{S,N₁,N₂}
 
     function SparseBlockTensorMap{TT}(
-        data::Dict{CartesianIndex{N},TT},
-        codom::ProductSumSpace{S,N₁},
-        dom::ProductSumSpace{S,N₂},
+        data::Dict{CartesianIndex{N},TT}, space::TensorMapSumSpace{S,N₁,N₂}
     ) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
         @assert N₁ + N₂ == N "SparseBlockTensorMap: data has wrong number of dimensions"
-        return new{TT,E,S,N₁,N₂,N}(data, codom, dom)
+        return new{TT,E,S,N₁,N₂,N}(data, space)
     end
 end
 
@@ -47,26 +44,26 @@ end
 # ------------------
 # no difference between UndefInitializer and UndefBlocksInitializer
 function SparseBlockTensorMap{TT}(
-    ::Union{UndefBlocksInitializer,UndefInitializer},
-    codom::ProductSumSpace{S,N₁},
-    dom::ProductSumSpace{S,N₂},
+    ::Union{UndefBlocksInitializer,UndefInitializer}, space::TensorMapSumSpace{S,N₁,N₂}
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
     N = N₁ + N₂
     data = Dict{CartesianIndex{N},TT}()
-    return SparseBlockTensorMap{TT}(data, codom, dom)
+    return SparseBlockTensorMap{TT}(data, space)
 end
 
 function SparseBlockTensorMap{TT}(
-    ::Union{UndefInitializer,UndefBlocksInitializer}, V::TensorMapSumSpace{S,N₁,N₂}
+    ::Union{UndefInitializer,UndefBlocksInitializer},
+    codom::ProductSumSpace{S,N₁},
+    dom::ProductSumSpace{S,N₂},
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    return SparseBlockTensorMap{TT}(undef, codomain(V), domain(V))
+    return SparseBlockTensorMap{TT}(undef, codom ← dom)
 end
 
 # Utility constructors
 # --------------------
 function SparseBlockTensorMap(t::AbstractBlockTensorMap)
     t isa SparseBlockTensorMap && return t # TODO: should this copy?
-    tdst = SparseBlockTensorMap{eltype(t)}(undef_blocks, codomain(t), domain(t))
+    tdst = SparseBlockTensorMap{eltype(t)}(undef_blocks, space(t))
     for (I, v) in nonzero_pairs(t)
         tdst[I] = v
     end
@@ -95,15 +92,14 @@ function Base.similar(
     N₁ = length(codomain(P))
     N₂ = length(domain(P))
     TT′ = sparseblocktensormaptype(TT, N₁, N₂, TorA)
-    return TT′(undef, codomain(P), domain(P))
+    return TT′(undef, P)
 end
 function Base.similar(::Type{<:SparseBlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
-    return SparseBlockTensorMap{TT}(undef, codomain(P), domain(P))
+    return SparseBlockTensorMap{TT}(undef, P)
 end
 # Properties
 # ----------
-TensorKit.domain(t::SparseBlockTensorMap) = t.dom
-TensorKit.codomain(t::SparseBlockTensorMap) = t.codom
+TK.space(t::SparseBlockTensorMap) = t.space
 
 Base.parent(t::SparseBlockTensorMap) = SparseTensorArray(t.data, space(t))
 Base.eltype(::Type{<:SparseBlockTensorMap{TT}}) where {TT} = TT
@@ -129,7 +125,7 @@ end
 # Utility
 # -------
 function Base.copy(t::SparseBlockTensorMap{TT}) where {TT}
-    return SparseBlockTensorMap{TT}(deepcopy(t.data), t.codom, t.dom)
+    return SparseBlockTensorMap{TT}(deepcopy(t.data), space(t))
 end
 function Base.delete!(t::SparseBlockTensorMap{TT}, I::CartesianIndex) where {TT}
     delete!(t.data, I)

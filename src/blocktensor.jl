@@ -6,15 +6,14 @@ Dense `BlockTensorMap` type that stores tensors of type `TT` in a dense array.
 struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
        AbstractBlockTensorMap{E,S,N₁,N₂}
     data::Array{TT,N}
-    codom::ProductSumSpace{S,N₁}
-    dom::ProductSumSpace{S,N₂}
+    space::TensorMapSumSpace{S,N₁,N₂}
 
     # constructor from data
     function BlockTensorMap{TT}(
-        data::Array{TT,N}, codom::ProductSumSpace{S,N₁}, dom::ProductSumSpace{S,N₂}
+        data::Array{TT,N}, space::TensorMapSumSpace{S,N₁,N₂}
     ) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
         @assert N₁ + N₂ == N "BlockTensorMap: data has wrong number of dimensions"
-        return new{TT,E,S,N₁,N₂,N}(data, codom, dom)
+        return new{TT,E,S,N₁,N₂,N}(data, space)
     end
 end
 
@@ -44,26 +43,28 @@ end
 # Undef constructors
 # ------------------
 function BlockTensorMap{TT}(
-    ::UndefBlocksInitializer, codom::ProductSumSpace{S,N₁}, dom::ProductSumSpace{S,N₂}
+    ::UndefBlocksInitializer, V::TensorMapSumSpace{S,N₁,N₂}
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
     N = N₁ + N₂
-    data = Array{TT,N}(undef, size(SumSpaceIndices(codom ← dom)))
-    return BlockTensorMap{TT}(data, codom, dom)
+    data = Array{TT,N}(undef, size(SumSpaceIndices(V)))
+    return BlockTensorMap{TT}(data, V)
 end
 
 function BlockTensorMap{TT}(
-    ::UndefInitializer, codom::ProductSumSpace{S,N₁}, dom::ProductSumSpace{S,N₂}
+    ::UndefInitializer, V::TensorMapSumSpace{S,N₁,N₂}
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
     # preallocate data to ensure correct eltype
-    data = Array{TT,N₁ + N₂}(undef, size(SumSpaceIndices(codom ← dom)))
-    map!(Base.Fix1(similar, TT), data, SumSpaceIndices(codom ← dom))
-    return BlockTensorMap{TT}(data, codom, dom)
+    data = Array{TT,N₁ + N₂}(undef, size(SumSpaceIndices(V)))
+    map!(Base.Fix1(similar, TT), data, SumSpaceIndices(V))
+    return BlockTensorMap{TT}(data, V)
 end
 
 function BlockTensorMap{TT}(
-    ::Union{UndefInitializer,UndefBlocksInitializer}, V::TensorMapSumSpace{S,N₁,N₂}
+    ::Union{UndefInitializer,UndefBlocksInitializer},
+    codom::ProductSumSpace{S,N₁},
+    dom::ProductSumSpace{S,N₂},
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    return BlockTensorMap{TT}(undef, codomain(V), domain(V))
+    return BlockTensorMap{TT}(undef, codom ← dom)
 end
 
 # Convenience constructors
@@ -122,8 +123,7 @@ function Base.copyto!(
     return dest
 end
 
-TK.codomain(t::BlockTensorMap) = t.codom
-TK.domain(t::BlockTensorMap) = t.dom
+TK.space(t::BlockTensorMap) = t.space
 
 issparse(::BlockTensorMap) = false
 
@@ -133,7 +133,7 @@ issparse(::BlockTensorMap) = false
 Base.delete!(t::BlockTensorMap, I...) = (zerovector!(getindex(t, I...)); t)
 
 function Base.similar(::Type{<:BlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
-    return BlockTensorMap{TT}(undef, codomain(P), domain(P))
+    return BlockTensorMap{TT}(undef, P)
 end
 
 # Show
@@ -163,7 +163,7 @@ end
 
 function Base.convert(::Type{<:BlockTensorMap{TT₁}}, t::BlockTensorMap{TT₂}) where {TT₁,TT₂}
     TT₁ === TT₂ && return t
-    tdst = BlockTensorMap{TT₁}(undef, codomain(t), domain(t))
+    tdst = BlockTensorMap{TT₁}(undef, space(t))
     for I in eachindex(t)
         tdst[I] = t[I]
     end
