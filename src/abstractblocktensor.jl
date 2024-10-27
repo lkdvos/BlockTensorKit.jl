@@ -103,9 +103,21 @@ end
 
 # make sure tensormap specializations are not used for sumspaces:
 function Base.similar(
-    t::TensorMap, T::Type{TorA}, P::TensorMapSumSpace{S}
-) where {TorA<:TensorKit.MatOrNumber,S}
-    @invoke Base.similar(t::AbstractTensorMap, T::Type{TorA}, P)
+    t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
+) where {S,TorA}
+    if TorA <: Number
+        T = TorA
+        A = TensorKit.similarstoragetype(t, T)
+    elseif TorA <: DenseVector
+        A = TorA
+        T = scalartype(A)
+    else
+        throw(ArgumentError("Type $TorA not supported for similar"))
+    end
+    N₁ = length(codomain(P))
+    N₂ = length(domain(P))
+    TT = TensorMap{T,S,N₁,N₂,A}
+    return BlockTensorMap{TT}(undef, P)
 end
 
 # AbstractTensorMap Interface
@@ -113,8 +125,8 @@ end
 # TODO: do we really want this:
 # note: this goes along with the specializations of Base.similar above...
 function TensorKit.tensormaptype(
-    ::Type{SumSpace{S}}, N₁::Int, N₂::Int, ::Type{TorA}
-) where {S,TorA<:TensorKit.MatOrNumber}
+    ::Type{SumSpace{S}}, N₁::Int, N₂::Int, TorA::Type
+) where {S}
     return blocktensormaptype(S, N₁, N₂, TorA)
 end
 
@@ -145,14 +157,14 @@ end
 
 # TODO: this might get fixed once new tensormap is implemented
 TensorKit.blocks(t::AbstractBlockTensorMap) = ((c, block(t, c)) for c in blocksectors(t))
-TensorKit.blocksectors(t) = blocksectors(space(t))
+TensorKit.blocksectors(t::AbstractBlockTensorMap) = blocksectors(space(t))
 TensorKit.hasblock(t::AbstractBlockTensorMap, c::Sector) = c in blocksectors(t)
 
 function TensorKit.storagetype(::Type{TT}) where {TT<:AbstractBlockTensorMap}
     return if isconcretetype(eltype(TT))
         storagetype(eltype(TT))
     else
-        Matrix{scalartype(TT)}
+        Vector{scalartype(TT)}
     end
 end
 

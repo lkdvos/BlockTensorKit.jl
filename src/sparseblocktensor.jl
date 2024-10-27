@@ -90,8 +90,8 @@ end
 
 # specific implementation for SparseBlockTensorMap with Sumspace -> returns `SparseBlockTensorMap`
 function Base.similar(
-    ::SparseBlockTensorMap{TT}, ::Type{TorA}, P::TensorMapSumSpace{S}
-) where {TT,TorA<:TensorKit.MatOrNumber,S}
+    ::SparseBlockTensorMap{TT}, TorA::Type, P::TensorMapSumSpace{S}
+) where {TT,S}
     N₁ = length(codomain(P))
     N₂ = length(domain(P))
     TT′ = sparseblocktensormaptype(TT, N₁, N₂, TorA)
@@ -229,7 +229,9 @@ function Base.similar(
     return SparseTensorArray{S,N₁,N₂,T,N}(Dict{CartesianIndex{N},T}(), spaces)
 end
 
-function Base.copyto!(t::SparseTensorArray, v::SubArray{T,N,A}) where {T,N,A<:SparseTensorArray}
+function Base.copyto!(
+    t::SparseTensorArray, v::SubArray{T,N,A}
+) where {T,N,A<:SparseTensorArray}
     for (i, j) in zip(eachindex(t), collect(eachindex(parent(v)))[v.indices...])
         if j ∈ nonzero_keys(parent(v))
             t[i] = parent(v)[j]

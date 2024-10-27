@@ -82,8 +82,9 @@ function promote_storagetype(::Type{T}, ::Type{T₁}, ::Type{T₂}) where {T,T�
     # TODO: actually make this work, probably with some promotion rules?
     return M
 end
+# evil hack???
 function TK.storagetype(::Type{AbstractTensorMap{E,S,N1,N2}}) where {E,S,N1,N2}
-    return Matrix{E}
+    return Vector{E}
 end
 
 function promote_blocktype(::Type{TT}, ::Type{A₁}, ::Type{A₂}) where {TT,A₁,A₂}
@@ -150,12 +151,18 @@ function TK.trace_permute!(
     return tdst
 end
 
-function TO.tensoralloc_contract(TC,
-    A::AbstractBlockTensorMap, pA::Index2Tuple, conjA::Bool,
-    B::AbstractBlockTensorMap, pB::Index2Tuple, conjB::Bool,
-    pAB::Index2Tuple, istemp::Val=Val(false),
-    allocator=TO.DefaultAllocator())
-
+function TO.tensoralloc_contract(
+    TC,
+    A::AbstractBlockTensorMap,
+    pA::Index2Tuple,
+    conjA::Bool,
+    B::AbstractBlockTensorMap,
+    pB::Index2Tuple,
+    conjB::Bool,
+    pAB::Index2Tuple,
+    istemp::Val=Val(false),
+    allocator=TO.DefaultAllocator(),
+)
     ttype = TO.tensorcontract_type(TC, A, pA, conjA, B, pB, conjB, pAB)
     structure = TO.tensorcontract_structure(A, pA, conjA, B, pB, conjB, pAB)
     TT = promote_type(eltype(A), eltype(B))
@@ -164,9 +171,13 @@ function TO.tensoralloc_contract(TC,
         # do not allocate, use undef allocator
         E, S, N1, N2 = scalartype(TT), spacetype(TT), numout(structure), numin(structure)
         if issparse(A) && issparse(B)
-            return SparseBlockTensorMap{AbstractTensorMap{E, S, N1, N2}}(undef, codomain(structure), domain(structure))
+            return SparseBlockTensorMap{AbstractTensorMap{E,S,N1,N2}}(
+                undef, codomain(structure), domain(structure)
+            )
         else
-            return BlockTensorMap{AbstractTensorMap{E, S, N1, N2}}(undef, codomain(structure), domain(structure))
+            return BlockTensorMap{AbstractTensorMap{E,S,N1,N2}}(
+                undef, codomain(structure), domain(structure)
+            )
         end
     else
         return tensoralloc(ttype, structure, istemp, allocator)

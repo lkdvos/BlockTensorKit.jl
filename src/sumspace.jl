@@ -108,8 +108,8 @@ TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
 # bit of a hack to make spacechecks happy?
 Base.:(==)(V::SumSpace{S}, W::S) where {S} = ==(promote(V, W)...)
 Base.:(==)(V::S, W::SumSpace{S}) where {S} = ==(promote(V, W)...)
-Base.:(==)(V::TensorMapSumSpace, W::TensorMapSpace) = ==(promote(V, W)...)
-Base.:(==)(V::TensorMapSpace, W::TensorMapSumSpace) = ==(promote(V, W)...)
+Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSpace{S}) where {S} = ==(promote(V, W)...)
+Base.:(==)(V::TensorMapSpace{S}, W::TensorMapSumSpace{S}) where {S} = ==(promote(V, W)...)
 # disambiguate
 function Base.:(==)(V::TensorMapSumSpace, W::TensorMapSumSpace)
     @invoke ==(V::HomSpace, W::HomSpace)
@@ -164,6 +164,11 @@ function Base.convert(
     return convert(ProductSumSpace{S,N₁}, codomain(V)) ←
            convert(ProductSumSpace{S,N₂}, domain(V))
 end
+function Base.convert(
+    ::Type{<:TensorMapSpace{S,N₁,N₂}}, V::TensorMapSumSpace{S,N₁,N₂}
+) where {S,N₁,N₂}
+    return convert(ProductSpace{S,N₁}, codomain(V)) ← convert(ProductSpace{S,N₂}, domain(V))
+end
 
 # Show
 # ----
@@ -177,3 +182,11 @@ function Base.show(io::IO, V::SumSpace)
     end
     return nothing
 end
+
+# TensorMapSumSpace
+# -----------------
+# function TensorKit.fusionblockstructure(
+#     W::TensorMapSumSpace{S,N₁,N₂}, cachestyle::TensorKit.CacheStyle
+# ) where {S,N₁,N₂}
+#     return TensorKit.fusionblockstructure(convert(TensorMapSpace{S,N₁,N₂}, W), cachestyle)
+# end

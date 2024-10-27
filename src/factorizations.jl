@@ -10,23 +10,26 @@ function TK.leftorth!(
         eps(real(float(one(scalartype(t))))) * iszero(atol)
     end,
 )
-    InnerProductStyle(t) === EuclideanProduct() || throw_invalid_innerproduct(:leftorth!)
+    InnerProductStyle(t) === EuclideanInnerProduct() ||
+        throw_invalid_innerproduct(:leftorth!)
     if !iszero(rtol)
         atol = max(atol, rtol * norm(t))
     end
     I = sectortype(t)
-    S = spacetype(t)
-    A = storagetype(t)
-    Qdata = TK.SectorDict{I,A}()
-    Rdata = TK.SectorDict{I,A}()
     dims = TK.SectorDict{I,Int}()
-    for c in blocksectors(domain(t))
-        isempty(block(t, c)) && continue
-        Q, R = TK.MatrixAlgebra.leftorth!(block(t, c), alg, atol)
-        Qdata[c] = Q
-        Rdata[c] = R
-        dims[c] = size(Q, 2)
+
+    # compute QR factorization for each block
+    if !isempty(TK.blocks(t))
+        generator = Base.Iterators.map(TK.blocks(t)) do (c, b)
+            Qc, Rc = TK.MatrixAlgebra.leftorth!(b, alg, atol)
+            dims[c] = size(Qc, 2)
+            return c => (Qc, Rc)
+        end
+        QRdata = SectorDict(generator)
     end
+
+    # construct new space
+    S = spacetype(t)
     V = S(dims)
     if alg isa Polar
         @assert V ≅ domain(t)
@@ -39,12 +42,15 @@ function TK.leftorth!(
         W = ProductSpace(V)
     end
 
-    Q = similar(t, codomain(t) ← W)
-    R = similar(t, W ← domain(t))
-
-    for c in blocksectors(domain(t))
-        block(Q, c) .= Qdata[c]
-        block(R, c) .= Rdata[c]
+    # construct output tensors
+    T = float(scalartype(t))
+    Q = similar(t, T, codomain(t) ← W)
+    R = similar(t, T, W ← domain(t))
+    if !isempty(blocksectors(domain(t)))
+        for (c, (Qc, Rc)) in QRdata
+            block(Q, c) .= Qc
+            block(R, c) .= Rc
+        end
     end
     return Q, R
 end
@@ -62,23 +68,26 @@ function TK.rightorth!(
         eps(real(float(one(scalartype(t))))) * iszero(atol)
     end,
 )
-    InnerProductStyle(t) === EuclideanProduct() || throw_invalid_innerproduct(:rightorth!)
+    InnerProductStyle(t) === EuclideanInnerProduct() ||
+        throw_invalid_innerproduct(:rightorth!)
     if !iszero(rtol)
         atol = max(atol, rtol * norm(t))
     end
     I = sectortype(t)
-    S = spacetype(t)
-    A = storagetype(t)
-    Ldata = TK.SectorDict{I,A}()
-    Qdata = TK.SectorDict{I,A}()
     dims = TK.SectorDict{I,Int}()
-    for c in blocksectors(codomain(t))
-        isempty(block(t, c)) && continue
-        L, Q = TK.MatrixAlgebra.rightorth!(block(t, c), alg, atol)
-        Ldata[c] = L
-        Qdata[c] = Q
-        dims[c] = size(Q, 1)
+
+    # compute LQ factorization for each block
+    if !isempty(TK.blocks(t))
+        generator = Base.Iterators.map(TK.blocks(t)) do (c, b)
+            Lc, Qc = TK.MatrixAlgebra.rightorth!(b, alg, atol)
+            dims[c] = size(Qc, 1)
+            return c => (Lc, Qc)
+        end
+        LQdata = SectorDict(generator)
     end
+
+    # construct new space
+    S = spacetype(t)
     V = S(dims)
     if alg isa Polar
         @assert V ≅ codomain(t)
@@ -91,11 +100,15 @@ function TK.rightorth!(
         W = ProductSpace(V)
     end
 
-    L = similar(t, codomain(t) ← W)
-    Q = similar(t, W ← domain(t))
-    for c in blocksectors(codomain(t))
-        block(L, c) .= Ldata[c]
-        block(Q, c) .= Qdata[c]
+    # construct output tensors
+    T = float(scalartype(t))
+    L = similar(t, T, codomain(t) ← W)
+    Q = similar(t, T, W ← domain(t))
+    if !isempty(blocksectors(codomain(t)))
+        for (c, (Lc, Qc)) in LQdata
+            block(L, c) .= Lc
+            block(Q, c) .= Qc
+        end
     end
     return L, Q
 end
@@ -111,69 +124,30 @@ function TK.tsvd!(t::SparseBlockTensorMap; kwargs...)
 end
 
 function TK._compute_svddata!(t::AbstractBlockTensorMap, alg::Union{SVD,SDD})
-    InnerProductStyle(t) === EuclideanProduct() || throw_invalid_innerproduct(:tsvd!)
+    InnerProductStyle(t) === EuclideanInnerProduct() || throw_invalid_innerproduct(:tsvd!)
     I = sectortype(t)
-    A = storagetype(t)
-    Udata = TK.SectorDict{I,A}()
-    Vdata = TK.SectorDict{I,A}()
-    dims = TK.SectorDict{I,Int}()
-    local Σdata
-    for (c, b) in TK.blocks(t)
-        U, Σ, V = MatrixAlgebra.svd!(b, alg)
-        Udata[c] = U
-        Vdata[c] = V
-        if @isdefined Σdata # cannot easily infer the type of Σ, so use this construction
-            Σdata[c] = Σ
-        else
-            Σdata = TK.SectorDict(c => Σ)
-        end
+    dims = SectorDict{I,Int}()
+    generator = Base.Iterators.map(TK.blocks(t)) do (c, b)
+        U, Σ, V = TK.MatrixAlgebra.svd!(b, alg)
         dims[c] = length(Σ)
+        return c => (U, Σ, V)
     end
-    return Udata, Σdata, Vdata, dims
+    SVDdata = SectorDict(generator)
+    return SVDdata, dims
 end
 
-function TK._empty_svdtensors(t::AbstractBlockTensorMap)
+function TK._create_svdtensors(t::AbstractBlockTensorMap, SVDdata, dims)
     S = spacetype(t)
-    A = storagetype(t)
-    Ar = similarstoragetype(t, real(scalartype(t)))
     W = S(dims)
-    TU = blocktensormaptype(S, numout(t), 1, A)
-    U = TU(undef, codomain(t) ← W)
-    TΣ = blocktensormaptype(S, 1, 1, Ar)
-    Σ = TΣ(undef, W ← W)
-    TV = blocktensormaptype(S, 1, numin(t), A)
-    V = TV(undef, W ← domain(t))
-
-    return U, Σ, V
-end
-
-function TK._create_svdtensors(t::AbstractBlockTensorMap, Udata, Σdata, Vdata, W)
-    I = sectortype(t)
-    S = spacetype(t)
-    A = storagetype(t)
-    Ar = TK.similarstoragetype(t, real(scalartype(t)))
-    Σmdata = SectorDict{I,Ar}() # this will contain the singular values as matrix
-    for (c, Σ) in Σdata
-        Σmdata[c] = copyto!(similar(Σ, length(Σ), length(Σ)), Diagonal(Σ))
+    T = float(scalartype(t))
+    U = similar(t, T, codomain(t) ← W)
+    Σ = similar(t, real(T), W ← W)
+    V⁺ = similar(t, T, W ← domain(t))
+    for (c, (Uc, Σc, V⁺c)) in SVDdata
+        r = Base.OneTo(dims[c])
+        block(U, c) .= view(Uc, :, r)
+        block(Σ, c) .= Diagonal(view(Σc, r))
+        block(V⁺, c) .= view(V⁺c, r, :)
     end
-
-    TU = tensormaptype(sumspacetype(S), numout(t), 1, A)
-    U = TU(undef, codomain(t) ← W)
-    for (key, value) in Udata
-        block(U, key) .= value
-    end
-
-    TΣ = tensormaptype(sumspacetype(S), 1, 1, Ar)
-    Σ = TΣ(undef, W ← W)
-    for (key, value) in Σdata
-        block(Σ, key) .= value
-    end
-
-    TV = tensormaptype(sumspacetype(S), 1, numin(t), A)
-    V = TV(undef, W ← domain(t))
-    for (key, value) in Vdata
-        block(V, key) .= value
-    end
-
-    return U, Σ, V
+    return U, Σ, V⁺
 end
