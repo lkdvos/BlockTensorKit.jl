@@ -17,6 +17,12 @@ struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     end
 end
 
+function BlockTensorMap{TT}(
+    data::Array{TT}, codom::ProductSumSpace{S,N₁}, dom::ProductSumSpace{S,N₂}
+) where {TT,S,N₁,N₂}
+    return BlockTensorMap{TT}(data, codom ← dom)
+end
+
 # hack to avoid too many type parameters, which are enforced by inner constructor
 # function Base.show(io::IO, ::Type{TT}) where {TT<:BlockTensorMap}
 #     return print(io, "BlockTensorMap{", eltype(TT), "}")

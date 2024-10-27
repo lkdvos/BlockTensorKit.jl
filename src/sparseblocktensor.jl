@@ -16,6 +16,14 @@ struct SparseBlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     end
 end
 
+function SparseBlockTensorMap{TT}(
+    data::Dict{CartesianIndex{N},TT},
+    codom::ProductSumSpace{S,N₁},
+    dom::ProductSumSpace{S,N₂},
+) where {TT,S,N₁,N₂,N}
+    return SparseBlockTensorMap{TT}(data, codom ← dom)
+end
+
 # hack to avoid too many type parameters, enforced by inner constructor
 # function Base.show(io::IO, ::Type{TT}) where {TT<:SparseBlockTensorMap}
 #     return print(io, "SparseBlockTensorMap{", eltype(TT), "}")
