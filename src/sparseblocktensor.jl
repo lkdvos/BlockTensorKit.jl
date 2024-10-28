@@ -105,9 +105,11 @@ end
 function Base.similar(::Type{<:SparseBlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
     return SparseBlockTensorMap{TT}(undef, P)
 end
+
 # Properties
 # ----------
 TK.space(t::SparseBlockTensorMap) = t.space
+VI.scalartype(::Type{<:SparseBlockTensorMap{TT}}) where {TT} = scalartype(TT)
 
 Base.parent(t::SparseBlockTensorMap) = SparseTensorArray(t.data, space(t))
 Base.eltype(::Type{<:SparseBlockTensorMap{TT}}) where {TT} = TT
@@ -130,6 +132,7 @@ function droptol!(t::SparseBlockTensorMap, tol=eps(real(scalartype(t)))^(3 / 4))
         norm(v) < tol && delete!(t, k)
     end
 end
+
 # Utility
 # -------
 function Base.copy(t::SparseBlockTensorMap{TT}) where {TT}

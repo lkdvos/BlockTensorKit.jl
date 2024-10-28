@@ -130,6 +130,7 @@ function Base.copyto!(
 end
 
 TK.space(t::BlockTensorMap) = t.space
+VI.scalartype(::Type{<:BlockTensorMap{TT}}) where {TT} = scalartype(TT)
 
 issparse(::BlockTensorMap) = false
 
