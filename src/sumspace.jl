@@ -15,10 +15,8 @@ const ProductSumSpace{S,N} = ProductSpace{SumSpace{S},N}
 const TensorSumSpace{S} = TensorSpace{SumSpace{S}}
 const TensorMapSumSpace{S,N₁,N₂} = TensorMapSpace{SumSpace{S},N₁,N₂}
 
-TensorKit.InnerProductStyle(S::Type{<:SumSpace}) = InnerProductStyle(eltype(S))
-TensorKit.sectortype(S::Type{<:SumSpace}) = sectortype(eltype(S))
-TensorKit.field(::Type{SumSpace{S}}) where {S} = field(S)
-
+# AbstractArray behavior
+# ----------------------
 Base.size(S::SumSpace) = size(S.spaces)
 Base.length(S::SumSpace) = length(S.spaces)
 
@@ -49,6 +47,19 @@ end
 Base.hash(S::SumSpace, h::UInt) = hash(S.spaces, h)
 Base.:(==)(S1::SumSpace, S2::SumSpace) = S1.spaces == S2.spaces
 @inline Base.isassigned(S::SumSpace, i::Int) = isassigned(S.spaces, i)
+
+# VectorSpace behavior
+# --------------------
+TensorKit.InnerProductStyle(S::Type{<:SumSpace}) = InnerProductStyle(eltype(S))
+TensorKit.sectortype(S::Type{<:SumSpace}) = sectortype(eltype(S))
+TensorKit.field(::Type{SumSpace{S}}) where {S} = field(S)
+
+"""
+    sumspacetype(::Union{S,Type{S}}) where {S<:ElementarySpace}
+
+Return the type of a `SumSpace` with elements of type `S`.
+"""
+sumspacetype(::Type{S}) where {S<:ElementarySpace} = SumSpace{S}
 
 TensorKit.dims(S::SumSpace) = map(dim, S.spaces)
 TensorKit.dim(S::SumSpace, n::Int) = dim(S.spaces[n])
@@ -93,16 +104,47 @@ function join(S::SumSpace)
     end
 end
 
+TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
+# bit of a hack to make spacechecks happy?
+Base.:(==)(V::SumSpace{S}, W::S) where {S} = ==(promote(V, W)...)
+Base.:(==)(V::S, W::SumSpace{S}) where {S} = ==(promote(V, W)...)
+Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSpace{S}) where {S} = ==(promote(V, W)...)
+Base.:(==)(V::TensorMapSpace{S}, W::TensorMapSumSpace{S}) where {S} = ==(promote(V, W)...)
+# disambiguate
+function Base.:(==)(V::TensorMapSumSpace, W::TensorMapSumSpace)
+    @invoke ==(V::HomSpace, W::HomSpace)
+end
+# this conflicts with the definition in TensorKit, so users always need to specify
+# ⊕(Vs::IndexSpace...) = SumSpace(Vs...)
+
+TensorKit.:⊕(S::ElementarySpace) = S
+function TensorKit.:⊕(S1::SumSpace{I}, S2::SumSpace{I}) where {I}
+    return SumSpace(vcat(S1.spaces, S2.spaces))
+end
+
+function TensorKit.fuse(V1::S, V2::S) where {S<:SumSpace}
+    return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
+end
+
+Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
+
+# Promotion and conversion
+# ------------------------
 Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S} = SumSpace{S}
-function Base.promote_rule(::Type{S1},
-                           ::Type{<:ProductSpace{S2}}) where {S1<:ElementarySpace,
-                                                              S2<:ElementarySpace}
+function Base.promote_rule(
+    ::Type{S1}, ::Type{<:ProductSpace{S2}}
+) where {S1<:ElementarySpace,S2<:ElementarySpace}
     return ProductSpace{promote_type(S1, S2)}
 end
-function Base.promote_rule(::Type{<:ProductSpace{S1}},
-                           ::Type{<:ProductSpace{S2}}) where {S1<:ElementarySpace,
-                                                              S2<:ElementarySpace}
+function Base.promote_rule(
+    ::Type{<:ProductSpace{S1}}, ::Type{<:ProductSpace{S2}}
+) where {S1<:ElementarySpace,S2<:ElementarySpace}
     return ProductSpace{promote_type(S1, S2)}
+end
+function Base.promote_rule(
+    ::Type{<:TensorMapSumSpace{S}}, ::Type{<:TensorMapSpace{S}}
+) where {S}
+    return TensorMapSumSpace{S}
 end
 
 Base.convert(::Type{I}, S::SumSpace{I}) where {I} = join(S)
@@ -116,7 +158,20 @@ end
 function Base.convert(::Type{<:ProductSpace{S,N}}, V::ProductSumSpace{S,N}) where {S,N}
     return ProductSpace{S,N}(join.(V.spaces)...)
 end
+function Base.convert(
+    ::Type{<:TensorMapSumSpace{S}}, V::TensorMapSpace{S,N₁,N₂}
+) where {S,N₁,N₂}
+    return convert(ProductSumSpace{S,N₁}, codomain(V)) ←
+           convert(ProductSumSpace{S,N₂}, domain(V))
+end
+function Base.convert(
+    ::Type{<:TensorMapSpace{S,N₁,N₂}}, V::TensorMapSumSpace{S,N₁,N₂}
+) where {S,N₁,N₂}
+    return convert(ProductSpace{S,N₁}, codomain(V)) ← convert(ProductSpace{S,N₂}, domain(V))
+end
 
+# Show
+# ----
 function Base.show(io::IO, V::SumSpace)
     if length(V) == 1
         print(io, "⨁(", V[1], ")")
@@ -128,74 +183,10 @@ function Base.show(io::IO, V::SumSpace)
     return nothing
 end
 
-TensorKit.:⊕(S::ElementarySpace) = S
-function TensorKit.:⊕(S1::SumSpace{I}, S2::SumSpace{I}) where {I}
-    return SumSpace(vcat(S1.spaces, S2.spaces))
-end
-
-function TensorKit.fuse(V1::S, V2::S) where {S<:SumSpace}
-    return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
-end
-
-Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
-
-"""
-    sumspacetype(::Union{S,Type{S}}) where {S<:ElementarySpace}
-
-Return the type of a `SumSpace` with elements of type `S`.
-"""
-sumspacetype(::Type{S}) where {S<:ElementarySpace} = SumSpace{S}
-
-@doc """
-    getsubspace(V, I)
-
-Return the subspace of `V` indexed by `I`.
-""" getsubspace
-
-# scalar indexing yields ProductSpace
-function getsubspace(V::ProductSumSpace{S,N}, I::CartesianIndex{N}) where {S,N}
-    return getsubspace(V, I.I...)
-end
-# ambiguity fix
-function getsubspace(V::ProductSumSpace{S,1}, I::CartesianIndex{1}) where {S}
-    return getsubspace(V, I.I...)
-end
-function getsubspace(V::ProductSumSpace{S,N}, I::Vararg{Int,N}) where {S,N}
-    return ProductSpace{S,N}(map(getindex, V.spaces, I))
-end
-
-# non-scalar indexing yields ProductSumSpace
-function getsubspace(V::ProductSumSpace{S,N}, I::Vararg{Any,N}) where {S,N}
-    return ProductSumSpace{S,N}(map(getindex, V.spaces, I))
-end
-
-function getsubspace(V::TensorKit.HomSpace{<:SumSpace}, I::CartesianIndex{N}) where {N}
-    N₁ = length(codomain(V))
-    N₂ = length(domain(V))
-    N₁ + N₂ == N || throw(ArgumentError("Invalid indexing"))
-    return getsubspace(V.codomain, I.I[1:N₁]...) ← getsubspace(V.domain, I.I[(N₁ + 1):N]...)
-end
-function getsubspace(V::TensorKit.HomSpace{<:SumSpace}, I::Vararg{Int,N}) where {N}
-    return getsubspace(V, CartesianIndex(I...))
-end
-function getsubspace(V::TensorKit.HomSpace{S,P₁,P₂}, I::Vararg{Any,N}) where {S,P₁,P₂,N}
-    N₁ = length(codomain(V))
-    N₂ = length(domain(V))
-    N₁ + N₂ == N || throw(ArgumentError("Invalid indexing"))
-    codomain′ = getsubspace(V.codomain, I[1:N₁]...)
-    domain′ = getsubspace(V.domain, I[(N₁ + 1):N]...)
-    return TensorKit.HomSpace{S,P₁,P₂}(codomain′, domain′)
-end
-
-function _getsubspace_scalar(V::ProductSumSpace{S,N}, I::Vararg{Int,N}) where {S,N}
-    return ProductSpace{S,N}(map(getindex, V.spaces, I))
-end
-function _getsubspace_nonscalar(V::ProductSumSpace{S,N}, I::Vararg{Any,N}) where {S,N}
-    return ProductSumSpace{S,N}(map(getindex, V.spaces, I))
-end
-
-function subblockdims(V::ProductSumSpace{S,N}, c::Sector) where {S,N}
-    return N == 0 ? [1] :
-           vec(map(I -> blockdim(getsubspace(V, I), c),
-                   CartesianIndices(map(length, V.spaces))))
-end
+# TensorMapSumSpace
+# -----------------
+# function TensorKit.fusionblockstructure(
+#     W::TensorMapSumSpace{S,N₁,N₂}, cachestyle::TensorKit.CacheStyle
+# ) where {S,N₁,N₂}
+#     return TensorKit.fusionblockstructure(convert(TensorMapSpace{S,N₁,N₂}, W), cachestyle)
+# end

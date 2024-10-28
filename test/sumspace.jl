@@ -1,11 +1,12 @@
+using Test, TestExtras
 using TensorKit
 
-@testitem "CartesianSpace" begin
+@testset "CartesianSpace" begin
     using TensorKit, BlockTensorKit
     using Test, TestExtras
-    
+
     using TensorKit: hassector
-    
+
     ds = [2, 3, 2]
     d = sum(ds)
 
@@ -51,16 +52,16 @@ using TensorKit
     @test !(V ≻ ⊕(V, V))
 end
 
-@testitem "ComplexSpace" begin
+@testset "ComplexSpace" begin
     using TensorKit, BlockTensorKit
     using Test, TestExtras
-    
+
     using TensorKit: hassector
 
     ds = [2, 3, 2]
     d = sum(ds)
     V = SumSpace(ComplexSpace.(ds))
-    
+
     @test isa(V, VectorSpace)
     @test isa(V, ElementarySpace)
 
@@ -99,10 +100,10 @@ end
     @test !(V ≻ ⊕(V, V))
 end
 
-@testitem "GradedSpace" begin
+@testset"GradedSpace" begin
     using TensorKit, BlockTensorKit
     using Test, TestExtras
-    
+
     using TensorKit: hassector
 
     V1 = U1Space(0 => 1, 1 => 1)
@@ -110,7 +111,7 @@ end
     V3 = U1Space(0 => 1, 1 => 1)
     d = dim(V1) + dim(V2) + dim(V3)
     V = SumSpace(V1, V2, V3)
-    
+
     @test isa(V, VectorSpace)
     @test isa(V, ElementarySpace)
 
@@ -125,24 +126,26 @@ end
     @test @constinferred(dual(V)) == @constinferred(conj(V)) ==
           @constinferred(adjoint(V))
     @test field(V) == ℂ
-    
+
     @test @constinferred(sectortype(V)) == sectortype(V1)
     @test ((@constinferred sectors(V))...,) == (U1Irrep(0), U1Irrep(1))
     @test length(sectors(V)) == 2
     @test @constinferred(hassector(V, U1Irrep(0)))
     @test !@constinferred(hassector(V, U1Irrep(2)))
-    @test @constinferred(dim(V)) == d == @constinferred(dim(V,U1Irrep(0))) +
-          @constinferred(dim(V,U1Irrep(1)))
+    @test @constinferred(dim(V)) == d ==
+          @constinferred(dim(V, U1Irrep(0))) +
+          @constinferred(dim(V, U1Irrep(1)))
     @test dim(@constinferred(typeof(V)())) == 0
     @test (sectors(typeof(V)())...,) == ()
     @test @constinferred(axes(V)) == Base.OneTo(d)
-    W = @constinferred SumSpace(U1Space(0=>1))
+    W = @constinferred SumSpace(U1Space(0 => 1))
     @test @constinferred(oneunit(V)) == W == @constinferred(oneunit(typeof(V)))
     @test @constinferred(⊕(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
     @test @constinferred(⊕(V, oneunit(V))) == SumSpace(vcat(V.spaces, oneunit(V1)))
     @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
     @test @constinferred(fuse(V, V)) ≅ SumSpace(U1Space(0 => 9, 1 => 24, 2 => 16))
-    @test @constinferred(fuse(V, V', V, V')) ≅ SumSpace(U1Space(0=>913, 1=>600, -1=>600, 2=>144, -2=>144))
+    @test @constinferred(fuse(V, V', V, V')) ≅
+          SumSpace(U1Space(0 => 913, 1 => 600, -1 => 600, 2 => 144, -2 => 144))
     @test @constinferred(flip(V)) ≅ SumSpace(flip.(V.spaces)...)
     @test flip(V) ≅ V
     @test flip(V) ≾ V
