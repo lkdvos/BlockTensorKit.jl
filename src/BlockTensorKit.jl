@@ -32,7 +32,6 @@ using TensorOperations:
     AbstractBackend
 using LinearAlgebra
 using Strided
-using Strided: SliceIndex
 using TupleTools: getindices, isperm
 using BlockArrays
 using BlockArrays: UndefBlocksInitializer

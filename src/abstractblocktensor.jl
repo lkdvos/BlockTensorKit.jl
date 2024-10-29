@@ -38,8 +38,19 @@ Base.isempty(t::AbstractBlockTensorMap) = isempty(parent(t))
     getindex(parent(t), I)
 
 # slicing getindex needs to correctly allocate output blocktensor:
+const SliceIndex = Union{Strided.SliceIndex, AbstractVector{<:Union{Integer,Bool}}}
+ 
 Base.@propagate_inbounds function Base.getindex(
     t::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
+)
+    V = space(eachspace(t)[indices...])
+    tdst = similar(t, V)
+    copyto!(parent(tdst), view(parent(t), indices...))
+    return tdst
+end
+# disambiguate:
+Base.@propagate_inbounds function Base.getindex(
+    t::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
 )
     V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
@@ -322,7 +333,7 @@ function show_elements(io::IO, x::AbstractBlockTensorMap)
         return ndigits(maximum(getindex.(nzind, i)))
     end
     io = IOContext(io, :compact => compact)
-    nz_pairs = sort(collect(nonzero_pairs(x)); by=first)
+    nz_pairs = sort(vec(collect(nonzero_pairs(x))); by=first)
     for (k, (ind, val)) in enumerate(nz_pairs)
         if k < half_screen_rows || k > length(nzind) - half_screen_rows
             println(io, "  ", '[', Base.join(lpad.(Tuple(ind), pads), ","), "]  =  ", val)

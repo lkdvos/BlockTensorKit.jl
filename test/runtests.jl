@@ -13,6 +13,10 @@ end |> uppercase
     if GROUP == "ALL" || GROUP == "VECTORSPACES"
        @time @safetestset "SumSpace" begin include("sumspace.jl") end 
     end
+    
+    if GROUP == "ALL" || GROUP == "ABSTRACTARRAY"
+        @time @safetestset "Indexing" begin include("indexing.jl") end
+    end
 
     if GROUP == "ALL" || GROUP == "VECTORINTERFACE"
         @time @safetestset "VectorInterface" begin include("vectorinterface.jl") end
