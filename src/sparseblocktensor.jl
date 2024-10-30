@@ -201,9 +201,7 @@ TensorKit.space(A::SparseTensorArray) = A.space
 
 # AbstractArray interface
 # -----------------------
-function Base.size(A::SparseTensorArray)
-    return (length.(codomain(A.space))..., length.(domain(A.space))...)
-end
+Base.size(A::SparseTensorArray) = ntuple(i -> length(space(A)[i]), ndims(A))
 
 function Base.getindex(
     A::SparseTensorArray{S,N₁,N₂,T,N}, I::Vararg{Int,N}
