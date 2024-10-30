@@ -87,6 +87,30 @@ end
     return t
 end
 
+# disambiguate
+@inline function Base.setindex!(
+    t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{Strided.SliceIndex}
+)
+    @boundscheck begin
+        checkbounds(t, indices...)
+        checkspaces(t, v, indices...)
+    end
+    @inbounds parent(t)[indices...] = v
+    return t
+end
+# disambiguate
+@inline function Base.setindex!(
+    t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
+)
+    @boundscheck begin
+        checkbounds(t, indices...)
+        checkspaces(t, v, indices...)
+    end
+
+    copyto!(view(parent(t), indices...), parent(v))
+    return t
+end
+
 @inline function Base.get(t::AbstractBlockTensorMap, key, default)
     @boundscheck checkbounds(t, key)
     return get(parent(t), key, default)
