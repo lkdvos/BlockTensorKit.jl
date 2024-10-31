@@ -182,7 +182,16 @@ end
     t::AbstractBlockTensorMap{E,S,N₁,N₂}, f₁::FusionTree{I,N₁}, f₂::FusionTree{I,N₂}
 ) where {E,S,I,N₁,N₂}
     sectortype(S) === I || throw(SectorMismatch())
-    return mortar(map(x -> x[f₁, f₂], parent(t)))
+    subblocks = map(eachspace(t), parent(t)) do V, x
+        sz = (dims(codomain(V), f₁.uncoupled)..., dims(domain(V), f₂.uncoupled)...)
+        if prod(sz) == 0
+            data = storagetype(t)(undef, 0)
+            return sreshape(StridedView(data), sz)
+        else
+            return x[f₁, f₂]
+        end
+    end
+    return mortar(subblocks)
 end
 
 function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)
@@ -209,13 +218,13 @@ function TensorKit.storagetype(::Type{TT}) where {TT<:AbstractBlockTensorMap}
     end
 end
 
-function TensorKit.fusiontrees(t::AbstractBlockTensorMap)
-    sectortype(t) === Trivial && return ((nothing, nothing),)
-    blocksectoriterator = blocksectors(space(t))
-    rowr, _ = TK._buildblockstructure(codomain(t), blocksectoriterator)
-    colr, _ = TK._buildblockstructure(domain(t), blocksectoriterator)
-    return TK.TensorKeyIterator(rowr, colr)
-end
+# function TensorKit.fusiontrees(t::AbstractBlockTensorMap)
+#     sectortype(t) === Trivial && return ((nothing, nothing),)
+#     blocksectoriterator = blocksectors(space(t))
+#     rowr, _ = TK._buildblockstructure(codomain(t), blocksectoriterator)
+#     colr, _ = TK._buildblockstructure(domain(t), blocksectoriterator)
+#     return TK.TensorKeyIterator(rowr, colr)
+# end
 
 # getindex and setindex checking
 # ------------------------------
@@ -281,7 +290,7 @@ function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
 
     tdst = similar(t, cod ← dom)
     for (f₁, f₂) in fusiontrees(tdst)
-        tdst[f₁, f₂] .= t[f₁, f₂]
+        copyto!(tdst[f₁, f₂], t[f₁, f₂])
     end
 
     return tdst
