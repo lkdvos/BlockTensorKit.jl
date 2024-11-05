@@ -19,7 +19,8 @@ using TensorKit:
     MatrixAlgebra,
     SectorDict,
     AdjointTensorMap,
-    adjointtensorindices
+    adjointtensorindices,
+    compose
 using VectorInterface
 using TensorOperations
 using TensorOperations:
