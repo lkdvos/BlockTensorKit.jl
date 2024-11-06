@@ -9,7 +9,7 @@ blockt = rand(V ⊗ V ⊗ V)
 
 # scalar indexing
 @test @inferred(blockt[1]) isa TensorMap
-@test @inferred(blockt[1,1,1]) isa TensorMap
+@test @inferred(blockt[1, 1, 1]) isa TensorMap
 @test @inferred(blockt[CartesianIndex(1, 1, 1)]) isa TensorMap
 
 # colon indexing
@@ -19,10 +19,10 @@ for I in eachindex(blockt)
     @test blockt[I] === blockt[I]
 end
 
-@test size(@inferred(blockt[1, :, 1])) == (1, 3, 1) 
+@test size(@inferred(blockt[1, :, 1])) == (1, 3, 1)
 blockt2 = blockt[1, [1, 3], 1]
 @test size(blockt2) == (1, 2, 1)
-blockt3 = @inferred blockt[[1], [1],1]
+blockt3 = @inferred blockt[[1], [1], 1]
 @test blockt3 isa BlockTensorMap
 @test length(blockt3) == 1
 
@@ -30,12 +30,11 @@ blockt3 = @inferred blockt[[1], [1],1]
 @test_throws MethodError blockt[:]
 @test_throws MethodError blockt[[1]]
 
-
 blockt = sprand(V ⊗ V ⊗ V, 0.5)
 
 # scalar indexing
 @test @inferred(blockt[1]) isa TensorMap
-@test @inferred(blockt[1,1,1]) isa TensorMap
+@test @inferred(blockt[1, 1, 1]) isa TensorMap
 @test @inferred(blockt[CartesianIndex(1, 1, 1)]) isa TensorMap
 
 # colon indexing
@@ -51,10 +50,10 @@ for I in eachindex(blockt)
     end
 end
 
-@test size(@inferred(blockt[1, :, 1])) == (1, 3, 1) 
+@test size(@inferred(blockt[1, :, 1])) == (1, 3, 1)
 blockt2 = blockt[1, [1, 3], 1]
 @test size(blockt2) == (1, 2, 1)
-blockt3 = @inferred blockt[[1], [1],1]
+blockt3 = @inferred blockt[[1], [1], 1]
 @test blockt3 isa SparseBlockTensorMap
 @test length(blockt3) == 1
 

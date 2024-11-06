@@ -38,21 +38,31 @@ Base.IndexStyle(::Type{<:SumSpaceIndices}) = IndexCartesian()
 
 # simple scalar indexing
 function Base.getindex(iter::SumSpaceIndices{S,N₁,N₂,N}, I::Vararg{Int,N}) where {S,N₁,N₂,N}
-    codomain = ProductSpace{S,N₁}(map((inds, v) -> getindex(v.spaces, inds...), I[1:N₁],
-                                      iter.sumspaces[1:N₁]))
-    domain = ProductSpace{S,N₂}(map((inds, v) -> getindex(v.spaces, inds...),
-                                    I[(N₁ + 1):N], iter.sumspaces[(N₁ + 1):N]))
+    codomain = ProductSpace{S,N₁}(
+        map((inds, v) -> getindex(v.spaces, inds...), I[1:N₁], iter.sumspaces[1:N₁])
+    )
+    domain = ProductSpace{S,N₂}(
+        map(
+            (inds, v) -> getindex(v.spaces, inds...),
+            I[(N₁ + 1):N],
+            iter.sumspaces[(N₁ + 1):N],
+        ),
+    )
     return HomSpace(codomain, domain)
 end
 
 # non-scalar indexing
-@inline function Base._getindex(::IndexCartesian, iter::SumSpaceIndices{S,N₁,N₂,N},
-                                I::Vararg{Union{Real,AbstractArray},N}) where {S,N₁,N₂,N}
+@inline function Base._getindex(
+    ::IndexCartesian,
+    iter::SumSpaceIndices{S,N₁,N₂,N},
+    I::Vararg{Union{Real,AbstractArray},N},
+) where {S,N₁,N₂,N}
     @boundscheck checkbounds(iter, I...)
     return SumSpaceIndices{S,N₁,N₂}(map(getindex, iter.sumspaces, I))
 end
-@inline function Base._getindex(::IndexCartesian, iter::SumSpaceIndices{S,N₁,N₂},
-                                I::Union{Real,AbstractVector}) where {S,N₁,N₂}
+@inline function Base._getindex(
+    ::IndexCartesian, iter::SumSpaceIndices{S,N₁,N₂}, I::Union{Real,AbstractVector}
+) where {S,N₁,N₂}
     @boundscheck checkbounds(iter, I)
     nontrivial_sizes = findall(>(1), size(iter))
     if isempty(nontrivial_sizes)
@@ -66,15 +76,17 @@ end
 end
 
 # disambiguation of base methods
-function Base._getindex(::IndexCartesian, A::SumSpaceIndices{S,N₁,N₂,N},
-                        I::Vararg{Int,M}) where {S,N₁,N₂,N,M}
+function Base._getindex(
+    ::IndexCartesian, A::SumSpaceIndices{S,N₁,N₂,N}, I::Vararg{Int,M}
+) where {S,N₁,N₂,N,M}
     @inline
     @boundscheck checkbounds(A, I...) # generally _to_subscript_indices requires bounds checking
     @inbounds r = getindex(A, Base._to_subscript_indices(A, I...)...)
     return r
 end
-function Base._getindex(::IndexCartesian, A::SumSpaceIndices{S,N₁,N₂,N},
-                        I::Vararg{Int,N}) where {S,N₁,N₂,N}
+function Base._getindex(
+    ::IndexCartesian, A::SumSpaceIndices{S,N₁,N₂,N}, I::Vararg{Int,N}
+) where {S,N₁,N₂,N}
     Base.@_propagate_inbounds_meta
     return getindex(A, I...)
 end
@@ -86,7 +98,11 @@ function TensorKit.space(I::SumSpaceIndices{S,N₁,N₂,N}) where {S,N₁,N₂,N
 end
 
 function subblockdims(V::ProductSumSpace{S,N}, c::Sector) where {S,N}
-    return N == 0 ? [1] :
-           vec(map(I -> blockdim(getsubspace(V, I), c),
-                   CartesianIndices(map(length, V.spaces))))
+    return if N == 0
+        [1]
+    else
+        vec(
+        map(I -> blockdim(getsubspace(V, I), c), CartesianIndices(map(length, V.spaces)))
+    )
+    end
 end

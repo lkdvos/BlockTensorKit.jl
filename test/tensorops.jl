@@ -1,5 +1,10 @@
-Vtr = (SumSpace(ℂ^3), SumSpace(ℂ^2, ℂ^2)', SumSpace(ℂ^2, ℂ^2, ℂ^1), SumSpace(ℂ^2, ℂ^2, ℂ^2),
-       SumSpace(ℂ^2, ℂ^3, ℂ^1, ℂ^1)')
+Vtr = (
+    SumSpace(ℂ^3),
+    SumSpace(ℂ^2, ℂ^2)',
+    SumSpace(ℂ^2, ℂ^2, ℂ^1),
+    SumSpace(ℂ^2, ℂ^2, ℂ^2),
+    SumSpace(ℂ^2, ℂ^3, ℂ^1, ℂ^1)',
+)
 
 for V in (Vtr,)
     V1, V2, V3, V4, V5 = V
@@ -211,16 +216,19 @@ end
     rhoL = TensorMap(randn, ComplexF64, V1, V1)
     rhoR = TensorMap(randn, ComplexF64, V5, V5)' # test adjoint tensor
     H = TensorMap(randn, ComplexF64, V2 * V4, V2 * V4)
-    @tensor HrA12[a, s1, s2, c] := rhoL[a, a'] * conj(A1[a', t1, b]) *
-                                   A2[b, t2, c'] * rhoR[c', c] * H[s1, s2, t1, t2]
-    @show typeof(convert(TensorMap, rhoL)), typeof(convert(TensorMap, A1)),
-          typeof(convert(TensorMap, A2)), typeof(convert(TensorMap, rhoR)),
-          typeof(convert(TensorMap, H))
-    @tensor HrA12array[a, s1, s2, c] := convert(TensorMap, rhoL)[a, a'] *
-                                        conj(convert(TensorMap, A1)[a', t1, b]) *
-                                        convert(TensorMap, A2)[b, t2, c'] *
-                                        convert(TensorMap, rhoR)[c', c] *
-                                        convert(TensorMap, H)[s1, s2, t1, t2]
+    @tensor HrA12[a, s1, s2, c] :=
+        rhoL[a, a'] * conj(A1[a', t1, b]) * A2[b, t2, c'] * rhoR[c', c] * H[s1, s2, t1, t2]
+    @show typeof(convert(TensorMap, rhoL)),
+    typeof(convert(TensorMap, A1)),
+    typeof(convert(TensorMap, A2)),
+    typeof(convert(TensorMap, rhoR)),
+    typeof(convert(TensorMap, H))
+    @tensor HrA12array[a, s1, s2, c] :=
+        convert(TensorMap, rhoL)[a, a'] *
+        conj(convert(TensorMap, A1)[a', t1, b]) *
+        convert(TensorMap, A2)[b, t2, c'] *
+        convert(TensorMap, rhoR)[c', c] *
+        convert(TensorMap, H)[s1, s2, t1, t2]
 
     @test HrA12array ≈ convert(TensorMap, HrA12)
 end
