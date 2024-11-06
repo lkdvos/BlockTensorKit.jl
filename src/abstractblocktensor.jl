@@ -38,8 +38,8 @@ Base.isempty(t::AbstractBlockTensorMap) = isempty(parent(t))
     getindex(parent(t), I)
 
 # slicing getindex needs to correctly allocate output blocktensor:
-const SliceIndex = Union{Strided.SliceIndex, AbstractVector{<:Union{Integer,Bool}}}
- 
+const SliceIndex = Union{Strided.SliceIndex,AbstractVector{<:Union{Integer,Bool}}}
+
 Base.@propagate_inbounds function Base.getindex(
     t::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
 )
@@ -100,7 +100,9 @@ end
 end
 # disambiguate
 @inline function Base.setindex!(
-    t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
+    t::AbstractBlockTensorMap,
+    v::AbstractBlockTensorMap,
+    indices::Vararg{Strided.SliceIndex},
 )
     @boundscheck begin
         checkbounds(t, indices...)
@@ -159,6 +161,10 @@ function Base.similar(
     N₂ = length(domain(P))
     TT = TensorMap{T,S,N₁,N₂,A}
     return BlockTensorMap{TT}(undef, P)
+end
+
+function Base.similar(::Type{T}, P::TensorMapSumSpace) where {T<:AbstractBlockTensorMap}
+    return T(undef_blocks, P)
 end
 
 # AbstractTensorMap Interface
@@ -299,6 +305,7 @@ end
 function Base.convert(
     ::Type{TT}, t::AbstractBlockTensorMap
 ) where {TT<:AbstractBlockTensorMap}
+    t isa TT && return t
     tdst = similar(TT, space(t))
     for (I, v) in nonzero_pairs(t)
         tdst[I] = v

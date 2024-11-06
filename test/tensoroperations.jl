@@ -5,8 +5,13 @@ using TensorOperations
 using Random
 
 ##
-Vtr = (SumSpace(ℂ^2, ℂ^1), SumSpace(ℂ^1, ℂ^2, ℂ^1)', SumSpace(ℂ^2, ℂ^3),
-       SumSpace(ℂ^2, ℂ^2, ℂ^2), SumSpace(ℂ^1, ℂ^2, ℂ^3)')
+Vtr = (
+    SumSpace(ℂ^2, ℂ^1),
+    SumSpace(ℂ^1, ℂ^2, ℂ^1)',
+    SumSpace(ℂ^2, ℂ^3),
+    SumSpace(ℂ^2, ℂ^2, ℂ^2),
+    SumSpace(ℂ^1, ℂ^2, ℂ^3)',
+)
 W = Vtr[1] ⊗ Vtr[2] ⊗ Vtr[3] ← Vtr[4] ⊗ Vtr[5]
 @testset "tensorcopy" begin
     T = ComplexF64
@@ -24,16 +29,17 @@ end
         B = randn(T, W)
         α = randn(T)
         @tensor C1[a, b, c, d, e] := A[a, b, c, d, e] + α * B[a, b, c, d, e]
-        @tensor C2[a, b, c, d, e] := convert(TensorMap, A)[a, b, c, d, e] +
-                                     α * convert(TensorMap, B)[a, b, c, d, e]
+        @tensor C2[a, b, c, d, e] :=
+            convert(TensorMap, A)[a, b, c, d, e] + α * convert(TensorMap, B)[a, b, c, d, e]
         @test convert(TensorMap, C1) ≈ C2
 
         D = randn(T, W)
         E = TensorOperations.tensoralloc_add(T, D, ((3, 2, 1, 5, 4), ()), true, Val(false))
         E = Random.randn!(E)
         @tensor F1[a, b, c, d, e] := E[a, b, c, d, e] + α * conj(D[c, b, a, e, d])
-        @tensor F2[a, b, c, d, e] := convert(TensorMap, E)[a, b, c, d, e] +
-                                     α * conj(convert(TensorMap, D)[c, b, a, e, d])
+        @tensor F2[a, b, c, d, e] :=
+            convert(TensorMap, E)[a, b, c, d, e] +
+            α * conj(convert(TensorMap, D)[c, b, a, e, d])
         @test convert(TensorMap, F1) ≈ F2
     end
 end
@@ -62,15 +68,15 @@ end
         A = randn(T, W[1] ⊗ W[2] ⊗ W[3] ← W[1] ⊗ W[4])
         B = randn(T, W[3]' ⊗ W[5] ← W[2] ⊗ W[1])
         @tensor C1[a, g, e, d, f] := A[a, b, c, d, e] * B[c, f, b, g]
-        @tensor C2[a, g, e, d, f] := convert(TensorMap, A)[a, b, c, d, e] *
-                                     convert(TensorMap, B)[c, f, b, g]
+        @tensor C2[a, g, e, d, f] :=
+            convert(TensorMap, A)[a, b, c, d, e] * convert(TensorMap, B)[c, f, b, g]
         @test convert(TensorMap, C1) ≈ C2
 
         D = randn(real(T), W[1] ⊗ W[1] ← W[1])
         E = randn(T, W[1] ⊗ W[1] ← W[1])
         @tensor F1[a, b, c, d, e, f] := D[a, b, c] * conj(E[d, e, f])
-        @tensor F2[a, b, c, d, e, f] := convert(TensorMap, D)[a, b, c] *
-                                        conj(convert(TensorMap, E)[d, e, f])
+        @tensor F2[a, b, c, d, e, f] :=
+            convert(TensorMap, D)[a, b, c] * conj(convert(TensorMap, E)[d, e, f])
         @test convert(TensorMap, F1) ≈ F2
     end
 end
