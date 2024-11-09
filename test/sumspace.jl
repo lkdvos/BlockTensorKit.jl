@@ -18,7 +18,7 @@ using TensorKit
     @test isa(V, ElementarySpace)
 
     @test isa(InnerProductStyle(V), HasInnerProduct)
-    @test isa(InnerProductStyle(V), EuclideanProduct)
+    @test isa(InnerProductStyle(V), EuclideanInnerProduct)
     @test isa(V, SumSpace)
 
     @test !isdual(V)
@@ -66,7 +66,7 @@ end
     @test isa(V, ElementarySpace)
 
     @test isa(InnerProductStyle(V), HasInnerProduct)
-    @test isa(InnerProductStyle(V), EuclideanProduct)
+    @test isa(InnerProductStyle(V), EuclideanInnerProduct)
     @test isa(V, SumSpace)
 
     @test !isdual(V)
@@ -116,7 +116,7 @@ end
     @test isa(V, ElementarySpace)
 
     @test isa(InnerProductStyle(V), HasInnerProduct)
-    @test isa(InnerProductStyle(V), EuclideanProduct)
+    @test isa(InnerProductStyle(V), EuclideanInnerProduct)
     @test isa(V, SumSpace)
 
     @test !isdual(V)

@@ -44,22 +44,23 @@ import TensorKit as TK
 import TensorOperations as TO
 
 # Spaces
-include("sumspace.jl")
-include("sumspaceindices.jl")
+include("vectorspaces/sumspace.jl")
+include("vectorspaces/sumspaceindices.jl")
 
-# BlockTensorMaps
-include("abstractblocktensor.jl")
-include("blocktensor.jl")
-include("sparseblocktensor.jl")
-include("adjointblocktensor.jl")
-include("pseudoblocktensor.jl")
+# Tensors
+include("tensors/abstractblocktensor/abstractblocktensor.jl")
+include("tensors/blocktensor.jl")
+include("tensors/sparseblocktensor.jl")
+include("tensors/adjointblocktensor.jl")
 
-# various interfaces
-include("matrixalgebra.jl")
-include("linalg.jl")
-include("factorizations.jl")
-include("vectorinterface.jl")
-include("tensoroperations.jl")
-include("indexmanipulations.jl")
+include("tensors/indexmanipulations.jl")
+include("tensors/vectorinterface.jl")
+include("tensors/tensoroperations.jl")
+
+include("linalg/linalg.jl")
+include("linalg/matrixalgebra.jl")
+include("linalg/factorizations.jl")
+
+include("auxiliary/sparsetensorarray.jl")
 
 end

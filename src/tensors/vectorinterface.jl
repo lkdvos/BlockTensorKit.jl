@@ -1,32 +1,10 @@
-# VectorInterface
-# ---------------
-
-# function VI.zerovector(t::BlockTensorMap, ::Type{E}) where {E<:Number}
-#     data = zerovector(parent(t), E)
-#     return BlockTensorMap{E,spacetype(t),numout(t),numin(t),typeof(data)}(data, codomain(t), domain(t))
-# end
-VI.zerovector!(t::BlockTensorMap) = (zerovector!(parent(t)); t)
+# zerovector
+# ----------
+VI.zerovector!(t::AbstractBlockTensorMap) = (zerovector!(parent(t)); t)
 VI.zerovector!(t::SparseBlockTensorMap) = (empty!(t.data); t)
-# VI.zerovector!(t::SparseBlockTensorMap) = (empty!(t.data.data); t)
-# VI.zerovector!!(t::BlockTensorMap) = zerovector!(t)
 
-# function VI.scale(t::BlockTensorMap, α::Number)
-#     t′ = zerovector(t, VI.promote_scale(t, α))
-#     scale!(t′, t, α)
-#     return t′
-# end
-function VI.scale!(t::BlockTensorMap, α::Number)
-    scale!(parent(t), α)
-    return t
-end
-function VI.scale!(t::SparseBlockTensorMap, α::Number)
-    if iszero(α)
-        return zerovector!(t)
-    else
-        for v in nonzero_values(t)
-            scale!(v, α)
-        end
-    end
+function VI.scale!(t::AbstractBlockTensorMap, α::Number)
+    foreach(Base.Fix2(scale!, α), nonzero_values(t))
     return t
 end
 
@@ -37,8 +15,17 @@ function VI.scale!(ty::BlockTensorMap, tx::BlockTensorMap, α::Number)
 end
 function VI.scale!(ty::SparseBlockTensorMap, tx::SparseBlockTensorMap, α::Number)
     space(ty) == space(tx) || throw(SpaceMismatch("$(space(ty)) ≠ $(space(tx))"))
-    for (k, v) in nonzero_pairs(tx)
-        ty[k] = scale(v, α)
+    # remove elements that are not in tx
+    for k in setdiff(nonzero_keys(ty), nonzero_keys(tx))
+        delete!(ty.data, k)
+    end
+    # in-place scale elements that are in both
+    for k in intersect(nonzero_keys(ty), nonzero_keys(tx))
+        ty[k] = scale!(ty[k], tx[k], α)
+    end
+    # new scale for elements in x that are not in y
+    for k in setdiff(nonzero_keys(tx), nonzero_keys(ty))
+        ty[k] = scale(tx[k], α)
     end
     return ty
 end
@@ -94,14 +81,18 @@ function VI.add!(ty::SparseBlockTensorMap, tx::SparseBlockTensorMap, α::Number,
     end
     return ty
 end
-# function VI.add!!(y::BlockTensorMap, x::BlockTensorMap, α::Number,
-#                   β::Number)
-#     return promote_add(y, x, α, β) <: scalartype(y) ? add!(y, x, α, β) : add(y, x, α, β)
-# end
 
+# inner
+# -----
 function VI.inner(x::BlockTensorMap, y::BlockTensorMap)
     space(y) == space(x) || throw(SpaceMismatch())
     return inner(parent(x), parent(y))
 end
-
-# VI.scalartype(::Type{<:BlockTensorMap{E}}) where {E} = E
+function VI.inner(x::SparseBlockTensorMap, y::SparseBlockTensorMap)
+    space(x) == space(y) || throw(SpaceMismatch())
+    both_nonzero = intersect(nonzero_keys(x), nonzero_keys(y))
+    T = VI.promote_inner(x, y)
+    return sum(both_nonzero; init=zero(T)) do k
+        inner(x[k], y[k])
+    end
+end

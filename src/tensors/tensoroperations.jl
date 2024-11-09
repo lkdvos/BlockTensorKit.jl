@@ -1,6 +1,5 @@
 # TensorOperations
 # ----------------
-
 function TO.tensoradd_type(
     TC, A::BlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
 ) where {N₁,N₂}
@@ -17,6 +16,8 @@ function TO.tensoradd_type(TC, A::AdjointBlockTensorMap, pA::Index2Tuple, conjA:
     return TO.tensoradd_type(TC, A', adjointtensorindices(A, pA), !conjA)
 end
 
+# tensoralloc_contract
+# --------------------
 function TO.tensorcontract_type(
     TC,
     A::AbstractBlockTensorMap,
@@ -30,7 +31,6 @@ function TO.tensorcontract_type(
     spacetype(A) == spacetype(B) ||
         throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
     M = promote_storagetype(TC, eltype(A), eltype(B))
-
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
     else
@@ -76,6 +76,39 @@ function TO.tensorcontract_type(
     end
 end
 
+function TO.tensoralloc_contract(
+    TC,
+    A::AbstractBlockTensorMap,
+    pA::Index2Tuple,
+    conjA::Bool,
+    B::AbstractBlockTensorMap,
+    pB::Index2Tuple,
+    conjB::Bool,
+    pAB::Index2Tuple,
+    istemp::Val=Val(false),
+    allocator=TO.DefaultAllocator(),
+)
+    ttype = TO.tensorcontract_type(TC, A, pA, conjA, B, pB, conjB, pAB)
+    structure = TO.tensorcontract_structure(A, pA, conjA, B, pB, conjB, pAB)
+    TT = promote_type(eltype(A), eltype(B))
+
+    if isabstracttype(TT)
+        # do not allocate, use undef allocator
+        E, S, N1, N2 = scalartype(TT), spacetype(TT), numout(structure), numin(structure)
+        if issparse(A) && issparse(B)
+            return SparseBlockTensorMap{AbstractTensorMap{E,S,N1,N2}}(
+                undef, codomain(structure), domain(structure)
+            )
+        else
+            return BlockTensorMap{AbstractTensorMap{E,S,N1,N2}}(
+                undef, codomain(structure), domain(structure)
+            )
+        end
+    else
+        return tensoralloc(ttype, structure, istemp, allocator)
+    end
+end
+
 function promote_storagetype(::Type{T}, ::Type{T₁}, ::Type{T₂}) where {T,T₁,T₂}
     M = TK.similarstoragetype(T₁, T)
     @assert M === TK.similarstoragetype(T₂, T) "incompatible storage types"
@@ -101,12 +134,14 @@ end
 function TO.tensoralloc(
     ::Type{BT}, structure::TensorMapSumSpace, istemp::Val, allocator=TO.DefaultAllocator()
 ) where {BT<:AbstractBlockTensorMap}
-    C = BT(undef, structure)
+    C = BT(undef_blocks, structure)
     blockallocator(V) = TO.tensoralloc(eltype(C), V, istemp, allocator)
     map!(blockallocator, parent(C), eachspace(C))
     return C
 end
 
+# tensorfree!
+# -----------
 function TO.tensorfree!(t::BlockTensorMap, allocator=TO.DefaultAllocator())
     foreach(Base.Fix2(TO.tensorfree!, allocator), parent(t))
     return nothing
@@ -149,39 +184,6 @@ function TK.trace_permute!(
         end
     end
     return tdst
-end
-
-function TO.tensoralloc_contract(
-    TC,
-    A::AbstractBlockTensorMap,
-    pA::Index2Tuple,
-    conjA::Bool,
-    B::AbstractBlockTensorMap,
-    pB::Index2Tuple,
-    conjB::Bool,
-    pAB::Index2Tuple,
-    istemp::Val=Val(false),
-    allocator=TO.DefaultAllocator(),
-)
-    ttype = TO.tensorcontract_type(TC, A, pA, conjA, B, pB, conjB, pAB)
-    structure = TO.tensorcontract_structure(A, pA, conjA, B, pB, conjB, pAB)
-    TT = promote_type(eltype(A), eltype(B))
-
-    if isabstracttype(TT)
-        # do not allocate, use undef allocator
-        E, S, N1, N2 = scalartype(TT), spacetype(TT), numout(structure), numin(structure)
-        if issparse(A) && issparse(B)
-            return SparseBlockTensorMap{AbstractTensorMap{E,S,N1,N2}}(
-                undef, codomain(structure), domain(structure)
-            )
-        else
-            return BlockTensorMap{AbstractTensorMap{E,S,N1,N2}}(
-                undef, codomain(structure), domain(structure)
-            )
-        end
-    else
-        return tensoralloc(ttype, structure, istemp, allocator)
-    end
 end
 
 # PlanarOperations
