@@ -3,8 +3,13 @@ using TensorKit
 using BlockTensorKit
 using VectorInterface
 
-Vtr = (SumSpace(ℂ^2, ℂ^1), SumSpace(ℂ^4)', SumSpace(ℂ^2, ℂ^2, ℂ^1), SumSpace(ℂ^2, ℂ^2, ℂ^2),
-       SumSpace(ℂ^2, ℂ^2, ℂ^3)')
+Vtr = (
+    SumSpace(ℂ^2, ℂ^1),
+    SumSpace(ℂ^4)',
+    SumSpace(ℂ^2, ℂ^2, ℂ^1),
+    SumSpace(ℂ^2, ℂ^2, ℂ^2),
+    SumSpace(ℂ^2, ℂ^2, ℂ^3)',
+)
 
 for V in (Vtr,), k in rand(0:5, 3)
     W = prod(V[1:k]; init=one(V[1])) ← prod(V[(k + 1):end]; init=one(V[1]))

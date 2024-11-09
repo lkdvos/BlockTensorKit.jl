@@ -25,8 +25,10 @@ using TensorKit
     @test !isdual(V')
 
     @test @constinferred(hash(V)) == hash(deepcopy(V))
-    @test V == @constinferred(dual(V)) == @constinferred(conj(V)) ==
-          @constinferred(adjoint(V))
+    @test V ==
+        @constinferred(dual(V)) ==
+        @constinferred(conj(V)) ==
+        @constinferred(adjoint(V))
     @test field(V) == ℝ
 
     @test @constinferred(sectortype(V)) == Trivial
@@ -73,8 +75,7 @@ end
     @test isdual(V')
 
     @test @constinferred(hash(V)) == hash(deepcopy(V))
-    @test @constinferred(dual(V)) == @constinferred(conj(V)) ==
-          @constinferred(adjoint(V))
+    @test @constinferred(dual(V)) == @constinferred(conj(V)) == @constinferred(adjoint(V))
     @test field(V) == ℂ
 
     @test @constinferred(sectortype(V)) == Trivial
@@ -123,8 +124,7 @@ end
     @test isdual(V')
 
     @test @constinferred(hash(V)) == hash(deepcopy(V))
-    @test @constinferred(dual(V)) == @constinferred(conj(V)) ==
-          @constinferred(adjoint(V))
+    @test @constinferred(dual(V)) == @constinferred(conj(V)) == @constinferred(adjoint(V))
     @test field(V) == ℂ
 
     @test @constinferred(sectortype(V)) == sectortype(V1)
@@ -132,9 +132,9 @@ end
     @test length(sectors(V)) == 2
     @test @constinferred(hassector(V, U1Irrep(0)))
     @test !@constinferred(hassector(V, U1Irrep(2)))
-    @test @constinferred(dim(V)) == d ==
-          @constinferred(dim(V, U1Irrep(0))) +
-          @constinferred(dim(V, U1Irrep(1)))
+    @test @constinferred(dim(V)) ==
+        d ==
+        @constinferred(dim(V, U1Irrep(0))) + @constinferred(dim(V, U1Irrep(1)))
     @test dim(@constinferred(typeof(V)())) == 0
     @test (sectors(typeof(V)())...,) == ()
     @test @constinferred(axes(V)) == Base.OneTo(d)
@@ -145,7 +145,7 @@ end
     @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
     @test @constinferred(fuse(V, V)) ≅ SumSpace(U1Space(0 => 9, 1 => 24, 2 => 16))
     @test @constinferred(fuse(V, V', V, V')) ≅
-          SumSpace(U1Space(0 => 913, 1 => 600, -1 => 600, 2 => 144, -2 => 144))
+        SumSpace(U1Space(0 => 913, 1 => 600, -1 => 600, 2 => 144, -2 => 144))
     @test @constinferred(flip(V)) ≅ SumSpace(flip.(V.spaces)...)
     @test flip(V) ≅ V
     @test flip(V) ≾ V
