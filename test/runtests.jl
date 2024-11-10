@@ -18,21 +18,30 @@ const GROUP = uppercase(
         end
     end
 
-    if GROUP == "ALL" || GROUP == "ABSTRACTARRAY"
+    if GROUP == "ALL" || GROUP == "ABSTRACTTENSOR"
         @time @safetestset "Indexing" begin
             include("indexing.jl")
         end
-    end
-
-    if GROUP == "ALL" || GROUP == "VECTORINTERFACE"
-        @time @safetestset "VectorInterface" begin
-            include("vectorinterface.jl")
+        @time @safetestset "BlockTensor" begin
+            include("blocktensor.jl")
+        end
+        @time @safetestset "SparseBlockTensor" begin
+            include("sparseblocktensor.jl")
         end
     end
 
-    if GROUP == "ALL" || GROUP == "TENSOROPERATIONS"
+    if GROUP == "ALL" || GROUP == "LINALG"
+        @time @safetestset "VectorInterface" begin
+            include("vectorinterface.jl")
+        end
+        @time @safetestset "indexmanipulations" begin
+            include("indexmanipulations.jl")
+        end
         @time @safetestset "TensorOperations" begin
             include("tensoroperations.jl")
+        end
+        @time @safetestset "factorizations" begin
+            include("factorizations.jl")
         end
     end
 end

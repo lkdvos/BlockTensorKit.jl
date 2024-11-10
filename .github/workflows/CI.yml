@@ -28,8 +28,7 @@ jobs:
         group:
           - vectorspaces
           - abstracttensor
-          - vectorinterface
-          - tensoroperations
+          - linalg
         os:
           - ubuntu-latest
           - macOS-latest

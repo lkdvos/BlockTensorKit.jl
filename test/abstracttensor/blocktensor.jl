@@ -1,3 +1,9 @@
+using Test
+using TensorKit
+using BlockTensorKit
+using Random
+using Combinatorics
+
 Vtr = (
     SumSpace(ℂ^3),
     SumSpace(ℂ^2, ℂ^2)',
@@ -13,7 +19,7 @@ for V in (Vtr,)
 end
 
 spacelist = (Vtr,)
-scalartypes = (Float64,)
+scalartypes = (Float64, ComplexF64)
 V = first(spacelist)
 # @testset "Tensors with symmetry: $(TensorKit.type_repr(sectortype(first(V))))" verbose = true failfast=true for V in
 #   spacelist
@@ -23,13 +29,57 @@ V1, V2, V3, V4, V5 = V
 @testset "Basic tensor properties" begin
     W = V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5
     for T in scalartypes
-        t = Tensor(zeros, T, W)
-        @test @constinferred(hash(t)) == hash(deepcopy(t))
+        t = zeros(T, W)
+        @test @inferred(hash(t)) == hash(deepcopy(t))
         @test scalartype(t) == T
         @test iszero(norm(t))
-        @test codomain(t) == W
-        @test space(t) == (W ← one(W))
-        @test typeof(t) == @constinferred tensormaptype(spacetype(t), 5, 0, T)
+        @test W == @inferred codomain(t)
+        @test one(W) == @inferred domain(t)
+        @test (W ← one(W)) == @inferred space(t)
+    end
+end
+
+@testset "Constructors" begin
+    W1 = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
+    W2 = V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5
+    W3 = (codomain(W1), domain(W1))
+    W4 = V1
+
+    @testset "$f($T)" for f in (zeros, ones, rand, randn, randexp), T in scalartypes
+        f === randexp && T === ComplexF64 && continue
+        t1 = @inferred f(T, W1)
+        @test space(t1) == W1
+        t2 = @inferred f(T, W2)
+        @test codomain(t2) == W2 && domain(t2) == one(W2)
+        t3 = @inferred f(T, W3...)
+        @test codomain(t3) == W3[1] && domain(t3) == W3[2]
+        t4 = @inferred f(T, W4)
+        @test codomain(t4) == ProductSpace(W4) && domain(t4) == one(W4)
+        if f === zeros
+            @test norm(t1) == norm(t2) == norm(t3) == norm(t4) == 0
+        else
+            @test norm(t1) ≠ 0
+            @test norm(t2) ≠ 0
+            @test norm(t3) ≠ 0
+            @test norm(t4) ≠ 0
+        end
+    end
+end
+
+@testset "TensorMap conversion" begin
+    W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
+    for T in scalartypes
+        t1 = rand(T, W)
+        t2 = rand(T, W)
+        t1′ = @constinferred convert(TensorMap, t1)
+        t2′ = @constinferred convert(TensorMap, t2)
+        @test norm(t1) ≈ norm(t1′)
+        @test norm(t2) ≈ norm(t2′)
+        @test inner(t1, t2) ≈ inner(t1′, t2′)
+        t1″ = @inferred BlockTensorMap(t1′, W)
+        t2″ = @inferred BlockTensorMap(t2′, W)
+        @test t1 ≈ t1″
+        @test t2 ≈ t2″
     end
 end
 
@@ -76,7 +126,7 @@ end
 @testset "Basic linear algebra" begin
     W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
     for T in (Float32, ComplexF64)
-        t = TensorMap(rand, T, W)
+        t = rand(T, W)
         @test scalartype(t) == T
         @test space(t) == W
         @test space(t') == W'
@@ -94,21 +144,21 @@ end
         @test norm(t + t, p) ≈ 2 * norm(t, p)
         @test norm(t) ≈ norm(t')
 
-        t2 = TensorMap(rand, T, W)
+        t2 = rand(T, W)
         β = rand(T)
         @test @constinferred(dot(β * t2, α * t)) ≈ conj(β) * α * conj(dot(t, t2))
         @test dot(t2, t) ≈ conj(dot(t, t2))
         @test dot(t2, t) ≈ conj(dot(t2', t'))
         @test dot(t2, t) ≈ dot(t', t2')
 
-        i1 = @constinferred(isomorphism(Matrix{T}, V1 ⊗ V2, V2 ⊗ V1))
-        i2 = @constinferred(isomorphism(Matrix{T}, V2 ⊗ V1, V1 ⊗ V2))
-        @test i1 * i2 == @constinferred(id(Matrix{T}, V1 ⊗ V2))
-        @test i2 * i1 == @constinferred(id(Matrix{T}, V2 ⊗ V1))
+        i1 = @constinferred(isomorphism(storagetype(t), V1 ⊗ V2, V2 ⊗ V1))
+        i2 = @constinferred(isomorphism(storagetype(t), V2 ⊗ V1, V1 ⊗ V2))
+        @test i1 * i2 == @constinferred(id(storagetype(t), V1 ⊗ V2))
+        @test i2 * i1 == @constinferred(id(storagetype(t), V2 ⊗ V1))
 
-        w = @constinferred(isometry(Matrix{T}, V1 ⊗ (oneunit(V1) ⊕ oneunit(V1)), V1))
+        w = @constinferred(isometry(storagetype(t), V1 ⊗ (oneunit(V1) ⊕ oneunit(V1)), V1))
         @test dim(w) == 2 * dim(V1 ← V1)
-        @test w' * w == id(Matrix{T}, V1)
+        @test w' * w == id(storagetype(t), V1)
         @test w * w' == (w * w')^2
     end
 end
@@ -129,16 +179,18 @@ end
 @testset "Real and imaginary parts" begin
     W = V1 ⊗ V2
     for T in (Float64, ComplexF64, ComplexF32)
-        t = TensorMap(randn, T, W, W)
+        t = randn(T, W, W)
         @test real(convert(TensorMap, t)) == convert(TensorMap, @constinferred real(t))
         @test imag(convert(TensorMap, t)) == convert(TensorMap, @constinferred imag(t))
+        t′ = @inferred complex(real(t), imag(t))
+        @test t ≈ t′ ≈ real(t) + im * imag(t)
     end
 end
 
 @testset "Permutations: test via inner product invariance" begin
     W = V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5
-    t = Tensor(rand, ComplexF64, W)
-    t′ = Tensor(rand, ComplexF64, W)
+    t = rand(ComplexF64, W)
+    t′ = rand(ComplexF64, W)
     for k in 0:5
         for p in permutations(1:5)
             p1 = ntuple(n -> p[n], k)
