@@ -9,21 +9,37 @@ struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     space::TensorMapSumSpace{S,N₁,N₂}
 
     # uninitialized constructor
-    function BlockTensorMap{TT}(
+    function BlockTensorMap{TT,E,S,N₁,N₂,N}(
         ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
-    ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-        N = N₁ + N₂
+    ) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+        @assert N₁ + N₂ == N "BlockTensorMap: data has wrong number of dimensions"
         data = Array{TT,N}(undef, size(SumSpaceIndices(space)))
         return new{TT,E,S,N₁,N₂,N}(data, space)
     end
 
     # constructor from data
-    function BlockTensorMap{TT}(
+    function BlockTensorMap{TT,E,S,N₁,N₂,N}(
         data::Array{TT,N}, space::TensorMapSumSpace{S,N₁,N₂}
     ) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
         @assert N₁ + N₂ == N "BlockTensorMap: data has wrong number of dimensions"
         return new{TT,E,S,N₁,N₂,N}(data, space)
     end
+end
+
+# uninitialized constructor
+function BlockTensorMap{TT}(
+    ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+    N = N₁ + N₂
+    return BlockTensorMap{TT,E,S,N₁,N₂,N}(undef_blocks, space)
+end
+
+# constructor from data
+function BlockTensorMap{TT}(
+    data::Array{TT,N}, space::TensorMapSumSpace{S,N₁,N₂}
+) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+    @assert N₁ + N₂ == N "BlockTensorMap: data has wrong number of dimensions"
+    return BlockTensorMap{TT,E,S,N₁,N₂,N}(data, space)
 end
 
 function blocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}

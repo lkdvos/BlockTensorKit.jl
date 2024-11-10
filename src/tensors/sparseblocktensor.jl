@@ -9,21 +9,36 @@ struct SparseBlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     space::TensorMapSumSpace{S,N₁,N₂}
 
     # uninitialized constructor
-    function SparseBlockTensorMap{TT}(
+    function SparseBlockTensorMap{TT,E,S,N₁,N₂,N}(
         ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
-    ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-        N = N₁ + N₂
+    ) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+        @assert N₁ + N₂ == N "SparseBlockTensorMap: data has wrong number of dimensions"
         data = Dict{CartesianIndex{N},TT}()
         return new{TT,E,S,N₁,N₂,N}(data, space)
     end
 
     # constructor from data
-    function SparseBlockTensorMap{TT}(
+    function SparseBlockTensorMap{TT,E,S,N₁,N₂,N}(
         data::Dict{CartesianIndex{N},TT}, space::TensorMapSumSpace{S,N₁,N₂}
     ) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
         @assert N₁ + N₂ == N "SparseBlockTensorMap: data has wrong number of dimensions"
         return new{TT,E,S,N₁,N₂,N}(data, space)
     end
+end
+
+# uninitialized constructor
+function SparseBlockTensorMap{TT}(
+    ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+    N = N₁ + N₂
+    return SparseBlockTensorMap{TT,E,S,N₁,N₂,N}(undef_blocks, space)
+end
+
+# constructor from data
+function SparseBlockTensorMap{TT}(
+    data::Dict{CartesianIndex{N},TT}, space::TensorMapSumSpace{S,N₁,N₂}
+) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+    return SparseBlockTensorMap{TT,E,S,N₁,N₂,N}(data, space)
 end
 
 function sparseblocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}
