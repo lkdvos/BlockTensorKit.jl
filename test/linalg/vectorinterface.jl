@@ -23,7 +23,7 @@ V = Vtr
         t′ = sprand(Float64, *(V[1:3]...) ← *(V[4], V[5]), 0.5)
     else
         t = rand(*(V[1:3]...) ← *(V[4], V[5]))
-        t′ = rand!(similar(t))
+        t′ = rand(*(V[1:3]...) ← *(V[4], V[5]))
     end
 
     @testset "scalartype" begin
