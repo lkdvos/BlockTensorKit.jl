@@ -116,12 +116,7 @@ issparse(::BlockTensorMap) = false
 
 # Utility
 # -------
-
 Base.delete!(t::BlockTensorMap, I...) = (zerovector!(getindex(t, I...)); t)
-
-function Base.similar(::Type{<:BlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
-    return BlockTensorMap{TT}(undef, P)
-end
 
 # Show
 # ----

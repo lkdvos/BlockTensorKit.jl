@@ -189,7 +189,9 @@ end
 function Base.similar(
     t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
 ) where {S,TorA}
-    if TorA <: Number
+    if TorA <: AbstractTensorMap
+        return BlockTensorMap{TorA}(undef_blocks, P)
+    elseif TorA <: Number
         T = TorA
         A = TensorKit.similarstoragetype(t, T)
     elseif TorA <: DenseVector

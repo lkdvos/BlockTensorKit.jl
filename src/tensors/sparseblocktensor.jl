@@ -88,9 +88,6 @@ function Base.similar(
     end
     return SparseBlockTensorMap{TT′}(undef_blocks, space)
 end
-function Base.similar(::Type{<:SparseBlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
-    return SparseBlockTensorMap{TT}(undef_blocks, P)
-end
 
 # Properties
 # ----------
