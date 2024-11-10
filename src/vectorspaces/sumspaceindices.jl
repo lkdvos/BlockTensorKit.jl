@@ -102,7 +102,9 @@ function subblockdims(V::ProductSumSpace{S,N}, c::Sector) where {S,N}
         [1]
     else
         vec(
-        map(I -> blockdim(getsubspace(V, I), c), CartesianIndices(map(length, V.spaces)))
-    )
+            map(
+                I -> blockdim(getsubspace(V, I), c), CartesianIndices(map(length, V.spaces))
+            ),
+        )
     end
 end

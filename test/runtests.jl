@@ -3,11 +3,13 @@ using SafeTestsets
 # check if user supplied args
 pat = r"(?:--group=)(\w+)"
 arg_id = findfirst(contains(pat), ARGS)
-const GROUP = uppercase(if isnothing(arg_id)
-    uppercase(get(ENV, "GROUP", "ALL"))
-else
-    uppercase(only(match(pat, ARGS[arg_id]).captures))
-end)
+const GROUP = uppercase(
+    if isnothing(arg_id)
+        uppercase(get(ENV, "GROUP", "ALL"))
+    else
+        uppercase(only(match(pat, ARGS[arg_id]).captures))
+    end,
+)
 
 @time begin
     if GROUP == "ALL" || GROUP == "VECTORSPACES"
