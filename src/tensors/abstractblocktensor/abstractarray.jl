@@ -189,6 +189,8 @@ end
 #     @invoke Base.similar(t::TensorKit.AdjointTensorMap, T::Type{TorA}, P::TensorMapSpace)
 # end
 
+Base.similar(t::AbstractBlockTensorMap) = similar(t, eltype(t), space(t))
+
 # make sure tensormap specializations are not used for sumspaces:
 function Base.similar(
     t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
@@ -210,6 +212,7 @@ function Base.similar(
     return BlockTensorMap{TT}(undef, P)
 end
 
+# implementation in type domain
 function Base.similar(::Type{T}, P::TensorMapSumSpace) where {T<:AbstractBlockTensorMap}
     return T(undef_blocks, P)
 end
