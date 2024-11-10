@@ -66,8 +66,7 @@ function SparseBlockTensorMap{TT}(
     return SparseBlockTensorMap{TT}(data, codom ← dom)
 end
 
-# Utility constructors
-# --------------------
+# AbstractBlockTensorMap -> SparseBlockTensorMap
 function SparseBlockTensorMap(t::AbstractBlockTensorMap)
     t isa SparseBlockTensorMap && return t # TODO: should this copy?
     tdst = SparseBlockTensorMap{eltype(t)}(undef_blocks, space(t))
@@ -76,6 +75,19 @@ function SparseBlockTensorMap(t::AbstractBlockTensorMap)
     end
     return tdst
 end
+
+# AbstractTensorMap -> SparseBlockTensorMap
+function SparseBlockTensorMap(t::AbstractTensorMap, space::TensorMapSumSpace)
+    TT = tensormaptype(spacetype(t), numout(t), numin(t), storagetype(t))
+    tdst = SparseBlockTensorMap{TT}(undef, space)
+    for (f₁, f₂) in fusiontrees(tdst)
+        tdst[f₁, f₂] = t[f₁, f₂]
+    end
+    return tdst
+end
+
+# Utility constructors
+# --------------------
 
 sprand(V::VectorSpace, p::Real) = sprand(Float64, V, p)
 function sprand(::Type{T}, V::TensorMapSumSpace, p::Real) where {T<:Number}
