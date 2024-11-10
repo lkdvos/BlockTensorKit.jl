@@ -152,14 +152,27 @@ function TO.tensorfree!(t::SparseBlockTensorMap, allocator=TO.DefaultAllocator()
 end
 
 function TK.trace_permute!(
-    tdst::BlockTensorMap,
-    tsrc::BlockTensorMap,
+    tdst::AbstractBlockTensorMap,
+    tsrc::AbstractBlockTensorMap,
     (p₁, p₂)::Index2Tuple,
     (q₁, q₂)::Index2Tuple,
     α::Number,
     β::Number,
     backend::AbstractBackend=TO.DefaultBackend(),
 )
+    # some input checks
+    (S = spacetype(tdst)) == spacetype(tsrc) ||
+        throw(SpaceMismatch("incompatible spacetypes"))
+    if !(BraidingStyle(sectortype(S)) isa SymmetricBraiding)
+        throw(
+            SectorMismatch(
+                "only tensors with symmetric braiding rules can be contracted; try `@planar` instead",
+            ),
+        )
+    end
+    (N₃ = length(q₁)) == length(q₂) ||
+        throw(IndexError("number of trace indices does not match"))
+
     @boundscheck begin
         space(tdst) == permute(space(tsrc), (p₁, p₂)) ||
             throw(SpaceMismatch("trace: tsrc = $(codomain(tsrc))←$(domain(tsrc)),
@@ -169,19 +182,13 @@ function TK.trace_permute!(
                     q₁ = $(q₁), q₂ = $(q₂)"))
     end
 
-    szA(i) = size(A, i)
-    stA(i) = stride(A, i)
-    newstrides = (stA.(linearize((p₁, p₂)))..., (stA.(q₁) .+ stA.(q₂))...)
-    newsizes = (size(C)..., szA.(q₁))
-    A = StridedView(parent(tsrc), newsizes, newstrides)
-    C = StridedView(parent(tdst))
-
-    trace_indices = Iterators.product(ntuple(i -> axes(A, i + ndims(C)), length(q₁))...)
-    for I in eachindex(C)
-        trace_permute!(C[IC], A[I, first(trace_indices)], (p₁, p₂), (q₁, q₂), α, β, backend)
-        for J in tail(trace_indices)
-            trace_permute!(C[IC], A[I, J], (p₁, p₂), (q₁, q₂), α, One(), backend)
-        end
+    scale!(tdst, β)
+    for (Isrc, vsrc) in nonzero_pairs(tsrc)
+        TT.getindices(Isrc.I, q₁) == TT.getindices(Isrc.I, q₂) || continue
+        Idst = CartesianIndex(TT.getindices(Isrc.I, (p₁..., p₂...)))
+        tdst[Idst] = TensorKit.trace_permute!(
+            tdst[Idst], vsrc, (p₁, p₂), (q₁, q₂), α, One(), backend
+        )
     end
     return tdst
 end
