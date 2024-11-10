@@ -31,6 +31,25 @@ end
     end
     return mortar(subblocks)
 end
+@inline function Base.setindex!(
+    t::AbstractBlockTensorMap, v::AbstractBlockArray, f₁::FusionTree, f₂::FusionTree
+)
+    for I in eachindex(t)
+        getindex!(t, I)[f₁, f₂] = v[Block(I.I)]
+    end
+    return t
+end
+@inline function Base.setindex!(
+    t::AbstractBlockTensorMap, v::AbstractArray, f₁::FusionTree, f₂::FusionTree
+)
+    spaces = (codomain(t)..., domain(t)...)
+    uncoupleds = (f₁.uncoupled..., f₂.uncoupled...)
+    bsz = map(spaces, uncoupleds) do V, uncoupled
+        return dim.(V, Ref(uncoupled))
+    end
+    v′ = BlockedArray(v, bsz...)
+    return setindex!(t, v′, f₁, f₂)
+end
 
 function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)
     sectortype(t) == typeof(c) || throw(SectorMismatch())

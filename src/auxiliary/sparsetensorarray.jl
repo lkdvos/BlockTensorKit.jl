@@ -48,6 +48,17 @@ function Base.getindex(
         return fill!(similar(T, eachspace(A)[I...]), zero(scalartype(T)))
     end
 end
+function getindex!(
+    A::SparseTensorArray{S,N₁,N₂,T,N}, I::CartesianIndex{N}
+) where {S,N₁,N₂,T,N}
+    @boundscheck checkbounds(A, I)
+    return get!(A.data, I) do
+        return fill!(similar(T, eachspace(A)[I]), zero(scalartype(T)))
+    end
+end
+function getindex!(A::SparseTensorArray{S,N₁,N₂,T,N}, I::Vararg{Int,N}) where {S,N₁,N₂,T,N}
+    return getindex!(A, CartesianIndex(I))
+end
 function Base.setindex!(
     A::SparseTensorArray{S,N₁,N₂,T,N}, v, I::Vararg{Int,N}
 ) where {S,N₁,N₂,T,N}

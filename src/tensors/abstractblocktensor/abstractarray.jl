@@ -69,6 +69,10 @@ end
     getindex(parent(t), I...)
 @inline Base.getindex(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
     getindex(parent(t), I)
+@inline getindex!(t::AbstractBlockTensorMap, I::Vararg{Int,N}) where {N} =
+    getindex!(parent(t), I...)
+@inline getindex!(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
+    getindex!(parent(t), I)
 
 # slicing getindex needs to correctly allocate output blocktensor:
 const SliceIndex = Union{Strided.SliceIndex,AbstractVector{<:Union{Integer,Bool}}}
