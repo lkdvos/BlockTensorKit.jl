@@ -33,7 +33,6 @@ using TensorOperations:
     AbstractBackend
 using LinearAlgebra
 using Strided
-using TupleTools: getindices, isperm
 using BlockArrays
 using BlockArrays: UndefBlocksInitializer
 using TupleTools
@@ -43,6 +42,7 @@ using Random
 import VectorInterface as VI
 import TensorKit as TK
 import TensorOperations as TO
+import TupleTools as TT
 
 # Spaces
 include("vectorspaces/sumspace.jl")

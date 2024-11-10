@@ -39,7 +39,7 @@ function TK.add_transform!(
     scale!(tdst, β)
     p = (p₁..., p₂...)
     for (I, v) in nonzero_pairs(tsrc)
-        I′ = CartesianIndex(getindices(I.I, p))
+        I′ = CartesianIndex(TT.getindices(I.I, p))
         tdst[I′] = TK.add_transform!(
             tdst[I′], v, (p₁, p₂), fusiontreetransform, α, one(scalartype(tdst)), backend...
         )
@@ -63,7 +63,7 @@ function TK.add_transform!(
     scale!(tdst, β)
     p = (p₁..., p₂...)
     for (I, v) in nonzero_pairs(tsrc)
-        I′ = CartesianIndex(getindices(I.I, p))
+        I′ = CartesianIndex(TT.getindices(I.I, p))
         tdst[I′] = TK.add_transform!(
             tdst[I′], v, (p₁, p₂), fusiontreetransform, α, one(scalartype(tdst)), backend...
         )

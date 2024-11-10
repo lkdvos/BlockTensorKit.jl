@@ -35,8 +35,8 @@ end
 function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)
     sectortype(t) == typeof(c) || throw(SectorMismatch())
 
-    rows = prod(getindices(size(t), codomainind(t)))
-    cols = prod(getindices(size(t), domainind(t)))
+    rows = prod(TT.getindices(size(t), codomainind(t)))
+    cols = prod(TT.getindices(size(t), domainind(t)))
     @assert rows != 0 && cols != 0 "to be added"
 
     allblocks = map(Base.Fix2(block, c), parent(t))

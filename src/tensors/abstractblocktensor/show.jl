@@ -54,8 +54,8 @@ end
 # adapted from SparseArrays.jl
 const brailleBlocks = UInt16['⠁', '⠂', '⠄', '⡀', '⠈', '⠐', '⠠', '⢀']
 function show_braille(io::IO, x::AbstractBlockTensorMap)
-    m = prod(getindices(size(x), codomainind(x)))
-    n = prod(getindices(size(x), domainind(x)))
+    m = prod(TT.getindices(size(x), codomainind(x)))
+    n = prod(TT.getindices(size(x), domainind(x)))
     reshape_helper = reshape(CartesianIndices((m, n)), size(x))
 
     # The maximal number of characters we allow to display the matrix

@@ -4,7 +4,7 @@ const AdjointBlockTensorMap{T,S,N₁,N₂,TT<:AbstractBlockTensorMap} = AdjointT
 
 function permute_adjointindices(t::AbstractTensorMap, I::CartesianIndex)
     return CartesianIndex(
-        TupleTools.getindices(I.I, adjointtensorindices(t, ntuple(identity, length(I.I))))
+        TT.getindices(I.I, adjointtensorindices(t, ntuple(identity, length(I.I))))
     )
 end
 
