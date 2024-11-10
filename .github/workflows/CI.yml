@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches:
+      - 'master'
+      - 'main'
+      - 'release-'
+    tags: '*'
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Cancel intermediate builds: only if it is a pull request build.
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
+jobs:
+  tests:
+    name: "Tests"
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 'lts'
+          - '1'
+        group:
+          - vectorspaces
+          - abstracttensor
+          - vectorinterface
+          - tensoroperations
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
+    uses: "QuantumKitHub/.github/.github/workflows/tests.yml@main"
+    with:
+      group: "${{ matrix.group }}"
+      julia-version: "${{ matrix.version }}"
+      os: "${{ matrix.os }}"
+    secrets: inherit
