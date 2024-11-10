@@ -11,18 +11,4 @@ include("abstractarray.jl")
 include("abstracttensormap.jl")
 include("conversion.jl")
 include("show.jl")
-
-# Sparsity
-# --------
-nonzero_pairs(t::AbstractBlockTensorMap) = nonzero_pairs(parent(t))
-nonzero_keys(t::AbstractBlockTensorMap) = nonzero_keys(parent(t))
-nonzero_values(t::AbstractBlockTensorMap) = nonzero_values(parent(t))
-nonzero_length(t::AbstractBlockTensorMap) = nonzero_length(parent(t))
-
-nonzero_values(A::AbstractArray) = values(A)
-nonzero_keys(A::AbstractArray) = keys(A)
-nonzero_pairs(A::AbstractArray) = pairs(A)
-nonzero_length(A::AbstractArray) = length(A)
-
-issparse(t::AbstractTensorMap) = false
-issparse(t::TensorKit.AdjointTensorMap) = issparse(parent(t))
+include("sparsity.jl")
