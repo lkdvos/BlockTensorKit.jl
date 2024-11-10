@@ -14,34 +14,34 @@ const GROUP = uppercase(
 @time begin
     if GROUP == "ALL" || GROUP == "VECTORSPACES"
         @time @safetestset "SumSpace" begin
-            include("sumspace.jl")
+            include("vectorspaces/sumspace.jl")
         end
     end
 
     if GROUP == "ALL" || GROUP == "ABSTRACTTENSOR"
         @time @safetestset "Indexing" begin
-            include("indexing.jl")
+            include("abstracttensor/indexing.jl")
         end
         @time @safetestset "BlockTensor" begin
-            include("blocktensor.jl")
+            include("abstracttensor/blocktensor.jl")
         end
         @time @safetestset "SparseBlockTensor" begin
-            include("sparseblocktensor.jl")
+            include("abstracttensor/sparseblocktensor.jl")
         end
     end
 
     if GROUP == "ALL" || GROUP == "LINALG"
         @time @safetestset "VectorInterface" begin
-            include("vectorinterface.jl")
+            include("linalg/vectorinterface.jl")
         end
         @time @safetestset "indexmanipulations" begin
-            include("indexmanipulations.jl")
+            include("linalg/indexmanipulations.jl")
         end
         @time @safetestset "TensorOperations" begin
-            include("tensoroperations.jl")
+            include("linalg/tensoroperations.jl")
         end
         @time @safetestset "factorizations" begin
-            include("factorizations.jl")
+            include("linalg/factorizations.jl")
         end
     end
 end

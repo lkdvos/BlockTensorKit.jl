@@ -1,4 +1,5 @@
 using Test
+using TestExtras
 using TensorKit
 using BlockTensorKit
 using Random
@@ -82,46 +83,6 @@ end
         @test t2 ≈ t2″
     end
 end
-
-# @testset "Tensor Dict conversion" begin
-#     W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
-#     for T in (Int, Float32, ComplexF64)
-#         t = TensorMap(rand, T, W)
-#         d = convert(Dict, t)
-#         @test t == convert(TensorMap, d)
-#     end
-# end
-
-@testset "BlockTensor Tensor conversion" begin
-    W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
-    for T in scalartypes
-        if T <: Integer
-            t = TensorMap(sz -> rand(-20:20, sz), W)
-        else
-            t = TensorMap(randn, T, W)
-        end
-
-        t′ = @constinferred convert(TensorMap, t)
-        @test norm(t′) ≈ norm(t)
-        @test dim(t′) == dim(t)
-        @test t ≈ BlockTensorMap(t′, W)
-    end
-end
-
-# if hasfusiontensor(I)
-#     @timedtestset "Tensor Array conversion" begin
-#         W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
-#         for T in (Int, Float32, ComplexF64)
-#             if T == Int
-#                 t = TensorMap(sz -> rand(-20:20, sz), W)
-#             else
-#                 t = TensorMap(randn, T, W)
-#             end
-#             a = @constinferred convert(Array, t)
-#             @test t ≈ @constinferred TensorMap(a, W)
-#         end
-#     end
-# end
 
 @testset "Basic linear algebra" begin
     W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
