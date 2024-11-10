@@ -81,8 +81,7 @@ function LinearAlgebra.mul!(
 
             vC = get(C, CartesianIndex(I..., J...), nothing)
             if did_mul
-                # TODO: figure out error with One() instead of true
-                C[I..., J...] = _mul!!(vC, vA, vB, α, true)
+                C[I..., J...] = _mul!!(vC, vA, vB, α, One())
             else
                 C[I..., J...] = _mul!!(vC, vA, vB, α, β)
                 did_mul = true
@@ -129,50 +128,24 @@ for (TC, TA, TB) in Iterators.product(
     end
 end
 
-function LinearAlgebra.lmul!(α::Number, t::BlockTensorMap)
-    for v in nonzero_values(t)
-        lmul!(α, v)
-    end
-    return t
-end
-
-function LinearAlgebra.rmul!(t::BlockTensorMap, α::Number)
-    for v in nonzero_values(t)
-        rmul!(v, α)
-    end
-    return t
-end
-
 function LinearAlgebra.norm(tA::BlockTensorMap, p::Real=2)
     vals = nonzero_values(tA)
     isempty(vals) && return norm(zero(scalartype(tA)), p)
     return LinearAlgebra.norm(norm.(vals), p)
 end
 
-function Base.real(t::BlockTensorMap)
-    if isreal(sectortype(spacetype(t)))
-        t′ = TensorMap(undef, real(scalartype(t)), codomain(t), domain(t))
-        for (k, v) in nonzero_pairs(t)
-            t′[k] = real(v)
+for f in (:real, :imag)
+    @eval function Base.$f(t::AbstractBlockTensorMap)
+        if isreal(sectortype(spacetype(t)))
+            TT = Base.promote_op($f, eltype(t))
+            t′ = similar(t, TT)
+            @inbounds for (k, v) in nonzero_pairs(t)
+                t′[k] = $f(v)
+            end
+            return t′
+        else
+            msg = "`$f` has not been implemented for `BlockTensorMap{$(S)}`."
+            throw(ArgumentError(msg))
         end
-
-        return t′
-    else
-        msg = "`real` has not been implemented for `BlockTensorMap{$(S)}`."
-        throw(ArgumentError(msg))
-    end
-end
-
-function Base.imag(t::BlockTensorMap)
-    if isreal(sectortype(spacetype(t)))
-        t′ = TensorMap(undef, real(scalartype(t)), codomain(t), domain(t))
-        for (k, v) in nonzero_pairs(t)
-            t′[k] = imag(v)
-        end
-
-        return t′
-    else
-        msg = "`imag` has not been implemented for `BlockTensorMap{$(S)}`."
-        throw(ArgumentError(msg))
     end
 end
