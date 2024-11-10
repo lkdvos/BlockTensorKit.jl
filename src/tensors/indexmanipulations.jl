@@ -70,26 +70,6 @@ function TK.add_transform!(
     end
     return tdst
 end
-
-# function TK.add_transform!(tdst::BlockTensorMap, tsrc::SparseBlockTensorMap,
-#                            (p₁, p₂)::Index2Tuple{N₁,N₂},
-#                            fusiontreetransform,
-#                            α::Number, β::Number, backend::AbstractBackend...) where {N₁,N₂}
-#     @boundscheck begin
-#         permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
-#             throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
-#             dest = $(codomain(tdst))←$(domain(tdst)), p₁ = $(p₁), p₂ = $(p₂)"))
-#     end
-#     scale!(tdst, β)
-#
-#     @inbounds for (I, v) in nonzero_pairs(tsrc)
-#         I′ = CartesianIndex(getindices(I.I, (p₁..., p₂...)))
-#         tdst[I′] = TK.add_transform!(tdst[I′], v, (p₁, p₂), fusiontreetransform, α,
-#                                      one(scalartype(tdst)),
-#                                      backend...)
-#     end
-#     return tdst
-# end
 function TK.add_transform!(
     tdst::TensorMap,
     tsrc::BlockTensorMap,
