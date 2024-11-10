@@ -8,21 +8,22 @@ struct SparseBlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     data::Dict{CartesianIndex{N},TT}
     space::TensorMapSumSpace{S,N₁,N₂}
 
+    # uninitialized constructor
+    function SparseBlockTensorMap{TT}(
+        ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+    ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+        N = N₁ + N₂
+        data = Dict{CartesianIndex{N},TT}()
+        return new{TT,E,S,N₁,N₂,N}(data, space)
+    end
+
+    # constructor from data
     function SparseBlockTensorMap{TT}(
         data::Dict{CartesianIndex{N},TT}, space::TensorMapSumSpace{S,N₁,N₂}
     ) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
         @assert N₁ + N₂ == N "SparseBlockTensorMap: data has wrong number of dimensions"
         return new{TT,E,S,N₁,N₂,N}(data, space)
     end
-end
-
-# constructor from data
-function SparseBlockTensorMap{TT}(
-    data::Dict{CartesianIndex{N},TT},
-    codom::ProductSumSpace{S,N₁},
-    dom::ProductSumSpace{S,N₂},
-) where {TT,S,N₁,N₂,N}
-    return SparseBlockTensorMap{TT}(data, codom ← dom)
 end
 
 function sparseblocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}
@@ -35,29 +36,19 @@ function sparseblocktensormaptype(
     TT = tensormaptype(S, N₁, N₂, T)
     return SparseBlockTensorMap{TT}
 end
-function sparseblocktensormaptype(
-    TT::Type{<:AbstractTensorMap{E,S}}, N₁::Int, N₂::Int, ::Type{T}
-) where {E,S,T}
-    TT′ = isabstracttype(TT) ? AbstractTensorMap{E,S,N₁,N₂} : tensormaptype(S, N₁, N₂, T)
-    return SparseBlockTensorMap{TT′}
-end
-# Undef constructors
-# ------------------
-# no difference between UndefInitializer and UndefBlocksInitializer
-function SparseBlockTensorMap{TT}(
-    ::Union{UndefBlocksInitializer,UndefInitializer}, space::TensorMapSumSpace{S,N₁,N₂}
-) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    N = N₁ + N₂
-    data = Dict{CartesianIndex{N},TT}()
-    return SparseBlockTensorMap{TT}(data, space)
+
+# Constructors
+# ------------
+function SparseBlockTensorMap{TT}(::UndefInitializer, space::TensorMapSumSpace) where {TT}
+    return SparseBlockTensorMap{TT}(undef_blocks, space)
 end
 
 function SparseBlockTensorMap{TT}(
-    ::Union{UndefInitializer,UndefBlocksInitializer},
-    codom::ProductSumSpace{S,N₁},
-    dom::ProductSumSpace{S,N₂},
-) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    return SparseBlockTensorMap{TT}(undef, codom ← dom)
+    data::Union{Array{TT},UndefInitializer,UndefBlocksInitializer},
+    codom::ProductSumSpace,
+    dom::ProductSumSpace,
+) where {TT}
+    return SparseBlockTensorMap{TT}(data, codom ← dom)
 end
 
 # Utility constructors
@@ -88,15 +79,17 @@ end
 
 # specific implementation for SparseBlockTensorMap with Sumspace -> returns `SparseBlockTensorMap`
 function Base.similar(
-    ::SparseBlockTensorMap{TT}, TorA::Type, P::TensorMapSumSpace{S}
+    ::SparseBlockTensorMap{TT}, TorA::Type, space::TensorMapSumSpace{S}
 ) where {TT,S}
-    N₁ = length(codomain(P))
-    N₂ = length(domain(P))
-    TT′ = sparseblocktensormaptype(TT, N₁, N₂, TorA)
-    return TT′(undef, P)
+    if TorA <: AbstractTensorMap
+        TT′ = TorA
+    else
+        TT′ = tensormaptype(S, numout(space), numin(space), TorA)
+    end
+    return SparseBlockTensorMap{TT′}(undef_blocks, space)
 end
 function Base.similar(::Type{<:SparseBlockTensorMap{TT}}, P::TensorMapSumSpace) where {TT}
-    return SparseBlockTensorMap{TT}(undef, P)
+    return SparseBlockTensorMap{TT}(undef_blocks, P)
 end
 
 # Properties
@@ -113,22 +106,9 @@ nonzero_values(t::SparseBlockTensorMap) = values(t.data)
 nonzero_pairs(t::SparseBlockTensorMap) = pairs(t.data)
 nonzero_length(t::SparseBlockTensorMap) = length(t.data)
 
-function dropzeros!(t::SparseBlockTensorMap)
-    for (k, v) in nonzero_pairs(t)
-        iszero(norm(v)) && delete!(t, k)
-    end
-    return t
-end
-
-function droptol!(t::SparseBlockTensorMap, tol=eps(real(scalartype(t)))^(3 / 4))
-    for (k, v) in nonzero_pairs(t)
-        norm(v) < tol && delete!(t, k)
-    end
-end
-
 # Utility
 # -------
-function Base.delete!(t::SparseBlockTensorMap{TT}, I::CartesianIndex) where {TT}
+function Base.delete!(t::SparseBlockTensorMap, I::CartesianIndex)
     delete!(t.data, I)
     return t
 end
