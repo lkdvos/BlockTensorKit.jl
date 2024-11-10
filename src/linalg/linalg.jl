@@ -149,3 +149,18 @@ for f in (:real, :imag)
         end
     end
 end
+
+function TK.:(⊗)(t1::AbstractBlockTensorMap, t2::AbstractBlockTensorMap)
+    (S = spacetype(t1)) === spacetype(t2) ||
+        throw(SpaceMismatch("spacetype(t1) ≠ spacetype(t2)"))
+    pA = ((codomainind(t1)..., TT.reverse(domainind(t1))...), ())
+    pB = ((), (codomainind(t2)..., TT.reverse(domainind(t2))...))
+    pAB = (
+        (codomainind(t1)..., (codomainind(t2) .+ numind(t1))...),
+        (
+            TT.reverse(domainind(t1) .+ numout(t1))...,
+            TT.reverse(domainind(t2) .+ (numind(t1) + numout(t2)))...,
+        ),
+    )
+    return tensorproduct(t1, pA, false, t2, pB, false, pAB)
+end
