@@ -8,6 +8,15 @@ struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     data::Array{TT,N}
     space::TensorMapSumSpace{S,N₁,N₂}
 
+    # uninitialized constructor
+    function BlockTensorMap{TT}(
+        ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+    ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+        N = N₁ + N₂
+        data = Array{TT,N}(undef, size(SumSpaceIndices(space)))
+        return new{TT,E,S,N₁,N₂,N}(data, space)
+    end
+
     # constructor from data
     function BlockTensorMap{TT}(
         data::Array{TT,N}, space::TensorMapSumSpace{S,N₁,N₂}
@@ -17,20 +26,6 @@ struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     end
 end
 
-function BlockTensorMap{TT}(
-    data::Array{TT}, codom::ProductSumSpace{S,N₁}, dom::ProductSumSpace{S,N₂}
-) where {TT,S,N₁,N₂}
-    return BlockTensorMap{TT}(data, codom ← dom)
-end
-
-# hack to avoid too many type parameters, which are enforced by inner constructor
-# function Base.show(io::IO, ::Type{TT}) where {TT<:BlockTensorMap}
-#     return print(io, "BlockTensorMap{", eltype(TT), "}")
-# end
-# function Base.show(io::IO, ::Type{BlockTensorMap})
-#     return print(io, "BlockTensorMap")
-# end
-
 function blocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S,T}
     TT = tensormaptype(S, N₁, N₂, T)
     return BlockTensorMap{TT}
@@ -39,38 +34,23 @@ function blocktensormaptype(::Type{SumSpace{S}}, N₁::Int, N₂::Int, ::Type{T}
     TT = tensormaptype(S, N₁, N₂, T)
     return BlockTensorMap{TT}
 end
-function blocktensormaptype(
-    TT::Type{<:AbstractTensorMap{E,S}}, N₁::Int, N₂::Int, ::Type{T}
-) where {E,S,T}
-    TT′ = isabstracttype(TT) ? AbstractTensorMap{E,S,N₁,N₂} : tensormaptype(S, N₁, N₂, T)
-    return BlockTensorMap{TT′}
-end
 
-# Undef constructors
-# ------------------
+# Constructors
+# ------------
 function BlockTensorMap{TT}(
-    ::UndefBlocksInitializer, V::TensorMapSumSpace{S,N₁,N₂}
+    ::UndefInitializer, space::TensorMapSumSpace{S,N₁,N₂}
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    N = N₁ + N₂
-    data = Array{TT,N}(undef, size(SumSpaceIndices(V)))
-    return BlockTensorMap{TT}(data, V)
+    tdst = BlockTensorMap{TT}(undef_blocks, space)
+    tdst.data .= similar.(TT, SumSpaceIndices(space))
+    return tdst
 end
 
 function BlockTensorMap{TT}(
-    ::UndefInitializer, V::TensorMapSumSpace{S,N₁,N₂}
-) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    # preallocate data to ensure correct eltype
-    data = Array{TT,N₁ + N₂}(undef, size(SumSpaceIndices(V)))
-    map!(Base.Fix1(similar, TT), data, SumSpaceIndices(V))
-    return BlockTensorMap{TT}(data, V)
-end
-
-function BlockTensorMap{TT}(
-    ::Union{UndefInitializer,UndefBlocksInitializer},
+    data::Union{Array{TT},UndefInitializer,UndefBlocksInitializer},
     codom::ProductSumSpace{S,N₁},
     dom::ProductSumSpace{S,N₂},
-) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    return BlockTensorMap{TT}(undef, codom ← dom)
+) where {TT,S,N₁,N₂}
+    return BlockTensorMap{TT}(data, codom ← dom)
 end
 
 # Convenience constructors
@@ -195,9 +175,9 @@ end
 function Base.convert(::Type{TT}, t::BlockTensorMap) where {TT<:BlockTensorMap}
     t isa TT && return t
 
-    tdst = TT(undef, space(t))
-    for (I, v) in nonzero_pairs(t)
-        tdst[I] = v
+    tdst = TT(undef_blocks, space(t))
+    for I in CartesianIndices(t)
+        tdst[I] = t[I]
     end
     return tdst
 end
