@@ -51,32 +51,6 @@ function LinearAlgebra.mul!(C::BlockTensorMap, α::Number, A::BlockTensorMap)
     return C
 end
 
-function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractBlockTensorMap) # also check tensortype.
-    T = Base.promote_op(LinearAlgebra.matprod, scalartype(A), scalartype(B))
-    V = codomain(A) ← domain(B)
-
-    if issparse(A) && issparse(B)
-        BTT = sparseblocktensormaptype(
-            promote_type(eltype(A), eltype(B)), numout(V), numin(V), storagetype(A)
-        )
-    else
-        BTT = blocktensormaptype(
-            promote_type(eltype(A), eltype(B)), numout(V), numin(V), storagetype(A)
-        )
-    end
-    return similar(BTT, V)
-end
-function TensorKit.compose_dest(A::AbstractBlockTensorMap, B::AbstractTensorMap)
-    T = Base.promote_op(LinearAlgebra.matprod, scalartype(A), scalartype(B))
-    V = codomain(A) ← domain(B)
-    return similar(issparse(A) ? B : A, T, V)
-end
-function TensorKit.compose_dest(A::AbstractTensorMap, B::AbstractBlockTensorMap)
-    T = Base.promote_op(LinearAlgebra.matprod, scalartype(A), scalartype(B))
-    V = codomain(A) ← domain(B)
-    return similar(issparse(A) ? B : A, T, V)
-end
-
 # This is a generic implementation of `mul!` for BlockTensors that is used to make it easier
 # to work with abstract element types, that might not support in-place operations.
 # For now, the implementation might not be hyper-optimized, but the assumption is that we
