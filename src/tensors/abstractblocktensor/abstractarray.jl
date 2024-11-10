@@ -159,7 +159,7 @@ Base.copy(t::AbstractBlockTensorMap) = copy!(similar(t), t)
 function Base.copy!(tdst::AbstractBlockTensorMap, tsrc::AbstractBlockTensorMap)
     space(tdst) == space(tsrc) || throw(SpaceMismatch("$(space(tdst)) ≠ $(space(tsrc))"))
     @inbounds for (key, value) in nonzero_pairs(tsrc)
-        tdst[key] = value
+        tdst[key] = copy(value)
     end
     return tdst
 end
