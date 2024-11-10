@@ -8,7 +8,9 @@ export blocktensormaptype, sparseblocktensormaptype
 
 export SparseTensorArray
 
+export sprand, sprandn
 export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
+export sparse
 export dropzeros!, droptol!
 export undef_blocks
 

@@ -13,6 +13,11 @@ nonzero_length(A::AbstractArray) = length(A)
 issparse(t::AbstractTensorMap) = false
 issparse(t::TensorKit.AdjointTensorMap) = issparse(parent(t))
 
+function sparse(t::AbstractBlockTensorMap)
+    issparse(t) && return t
+    return SparseBlockTensorMap(t)
+end
+
 """
     dropzeros!(t::AbstractBlockTensorMap)
 
