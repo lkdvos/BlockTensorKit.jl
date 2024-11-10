@@ -184,14 +184,6 @@ end
 
 # Utility
 # -------
-function Base.copy(tsrc::BlockTensorMap{E,S,N1,N2,N}) where {E,S,N1,N2,N}
-    tdst = similar(tsrc)
-    for (key, value) in nonzero_pairs(tsrc)
-        tdst[key] = copy(value)
-    end
-    return tdst
-end
-
 Base.haskey(t::BlockTensorMap, I::CartesianIndex) = haskey(t.data, I)
 function Base.haskey(t::BlockTensorMap, i::Int)
     return haskey(t.data, CartesianIndices(t)[i])

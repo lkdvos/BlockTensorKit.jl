@@ -128,9 +128,6 @@ end
 
 # Utility
 # -------
-function Base.copy(t::SparseBlockTensorMap{TT}) where {TT}
-    return SparseBlockTensorMap{TT}(deepcopy(t.data), space(t))
-end
 function Base.delete!(t::SparseBlockTensorMap{TT}, I::CartesianIndex) where {TT}
     delete!(t.data, I)
     return t
