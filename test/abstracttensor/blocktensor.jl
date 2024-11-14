@@ -127,8 +127,8 @@ end
 @testset "Basic linear algebra: test via conversion" begin
     W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
     for T in (Float32, ComplexF64)
-        t = TensorMap(rand, T, W)
-        t2 = TensorMap(rand, T, W)
+        t = rand(T, W)
+        t2 = rand(T, W)
         @test norm(t, 2) ≈ norm(convert(TensorMap, t), 2)
         @test dot(t2, t) ≈ dot(convert(TensorMap, t2), convert(TensorMap, t))
         α = rand(T)
@@ -166,7 +166,7 @@ end
 
 @testset "Permutations: test via conversion" begin
     W = V1 ⊗ V2 ⊗ V3 ⊗ V4 ⊗ V5
-    t = Tensor(rand, ComplexF64, W)
+    t = rand(ComplexF64, W)
     a = convert(TensorMap, t)
     for k in 0:5
         for p in permutations(1:5)
@@ -181,8 +181,8 @@ end
 end
 
 @testset "Full trace: test self-consistency" begin
-    t = Tensor(rand, ComplexF64, V1 ⊗ V2' ⊗ V2 ⊗ V1')
-    t2 = permute(t, (1, 2), (4, 3))
+    t = rand(ComplexF64, V1 ⊗ V2' ⊗ V2 ⊗ V1')
+    t2 = permute(t, ((1, 2), (4, 3)))
     s = @constinferred tr(t2)
     @test conj(s) ≈ tr(t2')
     if !isdual(V1)
@@ -200,7 +200,7 @@ end
 end
 
 @testset "Partial trace: test self-consistency" begin
-    t = Tensor(rand, ComplexF64, V1 ⊗ V2' ⊗ V3 ⊗ V2 ⊗ V1' ⊗ V3')
+    t = rand(ComplexF64, V1 ⊗ V2' ⊗ V3 ⊗ V2 ⊗ V1' ⊗ V3')
     @tensor t2[a, b] := t[c, d, b, d, c, a]
     @tensor t4[a, b, c, d] := t[d, e, b, e, c, a]
     @tensor t5[a, b] := t4[a, b, c, c]
@@ -208,15 +208,15 @@ end
 end
 
 @testset "Trace: test via conversion" begin
-    t = Tensor(rand, ComplexF64, V1 ⊗ V2' ⊗ V3 ⊗ V2 ⊗ V1' ⊗ V3')
+    t = rand(ComplexF64, V1 ⊗ V2' ⊗ V3 ⊗ V2 ⊗ V1' ⊗ V3')
     @tensor t2[a, b] := t[c, d, b, d, c, a]
     @tensor t3[a, b] := convert(TensorMap, t)[c, d, b, d, c, a]
     @test t3 ≈ convert(TensorMap, t2)
 end
 
 @testset "Trace and contraction" begin
-    t1 = Tensor(rand, ComplexF64, V1 ⊗ V2 ⊗ V3)
-    t2 = Tensor(rand, ComplexF64, V2' ⊗ V4 ⊗ V1')
+    t1 = rand(ComplexF64, V1 ⊗ V2 ⊗ V3)
+    t2 = rand(ComplexF64, V2' ⊗ V4 ⊗ V1')
     t3 = t1 ⊗ t2
     @tensor ta[a, b] := t1[x, y, a] * t2[y, b, x]
     @tensor tb[a, b] := t3[x, y, a, y, b, x]
@@ -224,11 +224,11 @@ end
 end
 
 @testset "Tensor contraction: test via conversion" begin
-    A1 = TensorMap(randn, ComplexF64, V1' * V2', V3')
-    A2 = TensorMap(randn, ComplexF64, V3 * V4, V5)
-    rhoL = TensorMap(randn, ComplexF64, V1, V1)
-    rhoR = TensorMap(randn, ComplexF64, V5, V5)' # test adjoint tensor
-    H = TensorMap(randn, ComplexF64, V2 * V4, V2 * V4)
+    A1 = randn(ComplexF64, V1' * V2', V3')
+    A2 = randn(ComplexF64, V3 * V4, V5)
+    rhoL = randn(ComplexF64, V1, V1)
+    rhoR = randn(ComplexF64, V5, V5)' # test adjoint tensor
+    H = randn(ComplexF64, V2 * V4, V2 * V4)
     @tensor HrA12[a, s1, s2, c] :=
         rhoL[a, a'] * conj(A1[a', t1, b]) * A2[b, t2, c'] * rhoR[c', c] * H[s1, s2, t1, t2]
     @show typeof(convert(TensorMap, rhoL)),
@@ -250,9 +250,9 @@ end
     W1 = V1 ⊗ V2 ⊗ V3
     W2 = V4 ⊗ V5
     for T in (Float64, ComplexF64)
-        t1 = TensorMap(rand, T, W1, W1)
-        t2 = TensorMap(rand, T, W2, W2)
-        t = TensorMap(rand, T, W1, W2)
+        t1 = rand(T, W1, W1)
+        t2 = rand(T, W2, W2)
+        t = rand(T, W1, W2)
         @test t1 * (t1 \ t) ≈ t
         @test (t / t2) * t2 ≈ t
         # @test t1 \ one(t1) ≈ inv(t1)
