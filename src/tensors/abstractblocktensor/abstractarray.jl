@@ -190,13 +190,20 @@ end
 # end
 
 Base.similar(t::AbstractBlockTensorMap) = similar(t, eltype(t), space(t))
+Base.similar(t::AbstractBlockTensorMap, P::TensorMapSumSpace) = similar(t, eltype(t), P)
 
 # make sure tensormap specializations are not used for sumspaces:
 function Base.similar(
     t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
 ) where {S,TorA}
     if TorA <: AbstractTensorMap
-        return BlockTensorMap{TorA}(undef_blocks, P)
+        # might need to change the type of the tensor map to account for the new space
+        TT = similar_tensormaptype(TorA, P)
+        return if issparse(t)
+            SparseBlockTensorMap{TT}(undef, P)
+        else
+            BlockTensorMap{TT}(undef, P)
+        end
     elseif TorA <: Number
         T = TorA
         A = TensorKit.similarstoragetype(t, T)
@@ -209,10 +216,20 @@ function Base.similar(
     N₁ = length(codomain(P))
     N₂ = length(domain(P))
     TT = TensorMap{T,S,N₁,N₂,A}
-    return BlockTensorMap{TT}(undef, P)
+    return issparse(t) ? SparseBlockTensorMap{TT}(undef, P) : BlockTensorMap{TT}(undef, P)
+end
+
+function similar_tensormaptype(
+    T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
+) where {S}
+    if isconcretetype(T)
+        return tensormaptype(S, numout(P), numin(P), storagetype(T))
+    else
+        return AbstractTensorMap{scalartype(T),S,numout(P),numin(P)}
+    end
 end
 
 # implementation in type domain
 function Base.similar(::Type{T}, P::TensorMapSumSpace) where {T<:AbstractBlockTensorMap}
-    return T(undef_blocks, P)
+    return T(undef, P)
 end

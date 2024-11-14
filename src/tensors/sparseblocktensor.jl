@@ -104,18 +104,6 @@ function sprand(::Type{T}, V::VectorSpace, p::Real) where {T<:Number}
     return sprand(T, V ← one(V), p)
 end
 
-# specific implementation for SparseBlockTensorMap with Sumspace -> returns `SparseBlockTensorMap`
-function Base.similar(
-    ::SparseBlockTensorMap{TT}, TorA::Type, space::TensorMapSumSpace{S}
-) where {TT,S}
-    if TorA <: AbstractTensorMap
-        TT′ = TorA
-    else
-        TT′ = tensormaptype(S, numout(space), numin(space), TorA)
-    end
-    return SparseBlockTensorMap{TT′}(undef_blocks, space)
-end
-
 # Properties
 # ----------
 TK.space(t::SparseBlockTensorMap) = t.space
