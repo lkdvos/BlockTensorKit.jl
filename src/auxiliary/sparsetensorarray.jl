@@ -74,6 +74,10 @@ function Base.delete!(A::SparseTensorArray, I::Vararg{Int,N}) where {N}
     return delete!(A.data, CartesianIndex(I))
 end
 Base.delete!(A::SparseTensorArray, I::CartesianIndex) = delete!(A.data, I)
+function Base.haskey(A::SparseTensorArray, I::Vararg{Int,N}) where {N}
+    return haskey(A.data, CartesianIndex(I))
+end
+Base.haskey(A::SparseTensorArray, I::CartesianIndex) = haskey(A.data, I)
 
 function Base.similar(
     ::SparseTensorArray, ::Type{T}, spaces::TensorMapSumSpace{S,N₁,N₂}
