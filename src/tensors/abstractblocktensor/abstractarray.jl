@@ -196,36 +196,27 @@ Base.similar(t::AbstractBlockTensorMap, P::TensorMapSumSpace) = similar(t, eltyp
 function Base.similar(
     t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
 ) where {S,TorA}
-    if TorA <: AbstractTensorMap
-        # might need to change the type of the tensor map to account for the new space
-        TT = similar_tensormaptype(TorA, P)
-        return if issparse(t)
-            SparseBlockTensorMap{TT}(undef, P)
-        else
-            BlockTensorMap{TT}(undef, P)
-        end
-    elseif TorA <: Number
-        T = TorA
-        A = TensorKit.similarstoragetype(t, T)
-    elseif TorA <: DenseVector
-        A = TorA
-        T = scalartype(A)
-    else
-        throw(ArgumentError("Type $TorA not supported for similar"))
-    end
-    N₁ = length(codomain(P))
-    N₂ = length(domain(P))
-    TT = TensorMap{T,S,N₁,N₂,A}
+    TT = similar_tensormaptype(t, TorA, P)
     return issparse(t) ? SparseBlockTensorMap{TT}(undef, P) : BlockTensorMap{TT}(undef, P)
 end
 
 function similar_tensormaptype(
-    T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
+    ::AbstractTensorMap, T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
 ) where {S}
     if isconcretetype(T)
         return tensormaptype(S, numout(P), numin(P), storagetype(T))
     else
         return AbstractTensorMap{scalartype(T),S,numout(P),numin(P)}
+    end
+end
+function similar_tensormaptype(
+    t::AbstractBlockTensorMap, T::Type{<:Number}, P::TensorMapSumSpace{S}
+) where {S}
+    if isconcretetype(eltype(t))
+        M = TensorKit.similarstoragetype(t, T)
+        return tensormaptype(S, numout(P), numin(P), M)
+    else
+        return AbstractTensorMap{T,S,numout(P),numin(P)}
     end
 end
 
