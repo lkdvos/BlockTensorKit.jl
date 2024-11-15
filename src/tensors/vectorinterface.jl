@@ -51,13 +51,13 @@ function VI.add!(ty::SparseBlockTensorMap, tx::SparseBlockTensorMap, α::Number,
     inboth = intersect(nonzero_keys(ty), nonzero_keys(tx))
 
     for k in y_notin_x
-        scale!(ty[k], β)
+        ty[k] = scale!!(ty[k], β)
     end
     for k in x_notin_y
-        ty[k] = scale(tx[k], α)
+        ty[k] = scale!!(tx[k], α)
     end
     for k in inboth
-        add!(ty[k], tx[k], α, β)
+        ty[k] = add!!(ty[k], tx[k], α, β)
     end
 
     return ty
