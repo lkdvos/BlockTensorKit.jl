@@ -26,9 +26,15 @@ struct SparseBlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     end
 end
 
+function SparseBlockTensorMap{TT,E,S,N₁,N₂,N}(
+    ::UndefInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+) where {E,S,N₁,N₂,N,TT<:AbstractTensorMap{E,S,N₁,N₂}}
+    return SparseBlockTensorMap{TT,E,S,N₁,N₂,N}(undef_blocks, space)
+end
+
 # uninitialized constructor
 function SparseBlockTensorMap{TT}(
-    ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+    ::Union{UndefBlocksInitializer,UndefInitializer}, space::TensorMapSumSpace{S,N₁,N₂}
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
     N = N₁ + N₂
     return SparseBlockTensorMap{TT,E,S,N₁,N₂,N}(undef_blocks, space)
@@ -54,10 +60,6 @@ end
 
 # Constructors
 # ------------
-function SparseBlockTensorMap{TT}(::UndefInitializer, space::TensorMapSumSpace) where {TT}
-    return SparseBlockTensorMap{TT}(undef_blocks, space)
-end
-
 function SparseBlockTensorMap{TT}(
     data::Union{Array{TT},UndefInitializer,UndefBlocksInitializer},
     codom::ProductSumSpace,

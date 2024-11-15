@@ -26,12 +26,20 @@ struct BlockTensorMap{TT<:AbstractTensorMap,E,S,N₁,N₂,N} <:
     end
 end
 
+function BlockTensorMap{TT,E,S,N₁,N₂,N}(
+    ::UndefInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+) where {TT,E,S,N₁,N₂,N}
+    tdst = BlockTensorMap{TT,E,S,N₁,N₂,N}(undef_blocks, space)
+    tdst.data .= similar.(TT, SumSpaceIndices(space))
+    return tdst
+end
+
 # uninitialized constructor
 function BlockTensorMap{TT}(
-    ::UndefBlocksInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+    u::Union{UndefBlocksInitializer,UndefInitializer}, space::TensorMapSumSpace{S,N₁,N₂}
 ) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
     N = N₁ + N₂
-    return BlockTensorMap{TT,E,S,N₁,N₂,N}(undef_blocks, space)
+    return BlockTensorMap{TT,E,S,N₁,N₂,N}(u, space)
 end
 
 # constructor from data
@@ -53,14 +61,6 @@ end
 
 # Constructors
 # ------------
-function BlockTensorMap{TT}(
-    ::UndefInitializer, space::TensorMapSumSpace{S,N₁,N₂}
-) where {E,S,N₁,N₂,TT<:AbstractTensorMap{E,S,N₁,N₂}}
-    tdst = BlockTensorMap{TT}(undef_blocks, space)
-    tdst.data .= similar.(TT, SumSpaceIndices(space))
-    return tdst
-end
-
 function BlockTensorMap{TT}(
     data::Union{Array{TT},UndefInitializer,UndefBlocksInitializer},
     codom::ProductSumSpace{S,N₁},
