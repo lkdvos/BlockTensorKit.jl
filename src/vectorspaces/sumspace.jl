@@ -51,6 +51,9 @@ Base.:(==)(S1::SumSpace, S2::SumSpace) = S1.spaces == S2.spaces
 # VectorSpace behavior
 # --------------------
 TensorKit.InnerProductStyle(S::Type{<:SumSpace}) = InnerProductStyle(eltype(S))
+TensorKit.spacetype(S::Type{<:SumSpace}) = eltype(S)
+TensorKit.spacetype(::Type{<:ProductSumSpace{S}}) where {S} = S
+TensorKit.spacetype(::Type{<:TensorMapSumSpace{S}}) where {S} = S
 TensorKit.sectortype(S::Type{<:SumSpace}) = sectortype(eltype(S))
 TensorKit.field(::Type{SumSpace{S}}) where {S} = field(S)
 
@@ -174,7 +177,7 @@ end
 # ----
 function Base.show(io::IO, V::SumSpace)
     if length(V) == 1
-        print(io, "⨁(", V[1], ")")
+        print(io, "⊕(", V[1], ")")
     else
         print(io, "(")
         Base.join(io, V, " ⊕ ")

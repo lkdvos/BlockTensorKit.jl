@@ -220,3 +220,13 @@ function TK.:(⊗)(t1::AbstractBlockTensorMap, t2::AbstractBlockTensorMap)
     )
     return tensorproduct(t1, pA, false, t2, pB, false, pAB)
 end
+
+function LinearAlgebra.isposdef!(t::AbstractBlockTensorMap)
+    domain(t) == codomain(t) ||
+        throw(SpaceMismatch("`isposdef` requires domain and codomain to be the same"))
+    InnerProductStyle(spacetype(t)) === EuclideanInnerProduct() || return false
+    for (c, b) in TK.blocks(t)
+        isposdef!(b) || return false
+    end
+    return true
+end

@@ -58,6 +58,51 @@ function TK.leftorth!(t::SparseBlockTensorMap; kwargs...)
     return leftorth!(BlockTensorMap(t); kwargs...)
 end
 
+function TK.leftnull!(
+    t::BlockTensorMap;
+    alg::Union{QR,QRpos,SVD,SDD}=QRpos(),
+    atol::Real=zero(float(real(scalartype(t)))),
+    rtol::Real=if (alg ∉ (SVD(), SDD()))
+        zero(float(real(scalartype(t))))
+    else
+        eps(real(float(one(scalartype(t))))) * iszero(atol)
+    end,
+)
+    InnerProductStyle(t) === EuclideanInnerProduct() ||
+        throw_invalid_innerproduct(:leftnull!)
+    if !iszero(rtol)
+        atol = max(atol, rtol * norm(t))
+    end
+    I = sectortype(t)
+    dims = SectorDict{I,Int}()
+
+    # compute QR factorization for each block
+    V = codomain(t)
+    if !isempty(blocksectors(V))
+        generator = Base.Iterators.map(blocksectors(V)) do c
+            Nc = MatrixAlgebra.leftnull!(block(t, c), alg, atol)
+            dims[c] = size(Nc, 2)
+            return c => Nc
+        end
+        Ndata = SectorDict(generator)
+    end
+
+    # construct new space
+    S = spacetype(t)
+    W = S(dims)
+
+    # construct output tensor
+    T = float(scalartype(t))
+    N = similar(t, T, V ← W)
+    if !isempty(blocksectors(V))
+        for (c, Nc) in Ndata
+            copy!(block(N, c), Nc)
+        end
+    end
+    return N
+end
+TK.leftnull!(t::SparseBlockTensorMap; kwargs...) = leftnull!(BlockTensorMap(t); kwargs...)
+
 function TK.rightorth!(
     t::AbstractBlockTensorMap;
     alg::Union{LQ,LQpos,RQ,RQpos,SVD,SDD,Polar}=LQpos(),
@@ -116,7 +161,52 @@ function TK.rightorth!(t::SparseBlockTensorMap; kwargs...)
     return rightorth!(BlockTensorMap(t); kwargs...)
 end
 
-function TK.tsvd!(t::AbstractBlockTensorMap; trunc=NoTruncation(), p::Real=2, alg=SDD())
+function TK.rightnull!(
+    t::BlockTensorMap;
+    alg::Union{LQ,LQpos,SVD,SDD}=LQpos(),
+    atol::Real=zero(float(real(scalartype(t)))),
+    rtol::Real=if (alg ∉ (SVD(), SDD()))
+        zero(float(real(scalartype(t))))
+    else
+        eps(real(float(one(scalartype(t))))) * iszero(atol)
+    end,
+)
+    InnerProductStyle(t) === EuclideanInnerProduct() ||
+        throw_invalid_innerproduct(:rightnull!)
+    if !iszero(rtol)
+        atol = max(atol, rtol * norm(t))
+    end
+    I = sectortype(t)
+    dims = SectorDict{I,Int}()
+
+    # compute LQ factorization for each block
+    V = domain(t)
+    if !isempty(blocksectors(V))
+        generator = Base.Iterators.map(blocksectors(V)) do c
+            Nc = MatrixAlgebra.rightnull!(block(t, c), alg, atol)
+            dims[c] = size(Nc, 1)
+            return c => Nc
+        end
+        Ndata = SectorDict(generator)
+    end
+
+    # construct new space
+    S = spacetype(t)
+    W = S(dims)
+
+    # construct output tensor
+    T = float(scalartype(t))
+    N = similar(t, T, W ← V)
+    if !isempty(blocksectors(V))
+        for (c, Nc) in Ndata
+            copy!(block(N, c), Nc)
+        end
+    end
+    return N
+end
+TK.rightnull!(t::SparseBlockTensorMap; kwargs...) = rightnull!(BlockTensorMap(t); kwargs...)
+
+function TK.tsvd!(t::AbstractBlockTensorMap; trunc=TK.NoTruncation(), p::Real=2, alg=SDD())
     return TK._tsvd!(t, alg, trunc, p)
 end
 function TK.tsvd!(t::SparseBlockTensorMap; kwargs...)

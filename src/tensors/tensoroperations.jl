@@ -90,7 +90,7 @@ function TO.tensoralloc_contract(
 )
     ttype = TO.tensorcontract_type(TC, A, pA, conjA, B, pB, conjB, pAB)
     structure = TO.tensorcontract_structure(A, pA, conjA, B, pB, conjB, pAB)
-    TT = promote_type(eltype(A), eltype(B))
+    TT = eltype(ttype)
 
     if isabstracttype(TT)
         # do not allocate, use undef allocator
