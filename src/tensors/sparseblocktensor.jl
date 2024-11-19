@@ -91,19 +91,45 @@ end
 # Utility constructors
 # --------------------
 
-sprand(V::VectorSpace, p::Real) = sprand(Float64, V, p)
-function sprand(::Type{T}, V::TensorMapSumSpace, p::Real) where {T<:Number}
+"""
+    spzeros(T::Type, W::TensorMapSumSpace)
+    spzeros(T, W, nonzero_inds)
+
+Construct a sparse blocktensor with entries compatible with type `T` and space `W`.
+By default, the tensor will be empty, but nonzero entries can be specified by passing a tuple of indices `nonzero_inds`.
+"""
+spzeros(W::TensorMapSumSpace) = spzeros(Float64, W)
+function spzeros(
+    ::Type{T}, W::TensorMapSumSpace, nonzero_inds=CartesianIndex{length(W)}[]
+) where {T}
+    TT = sparseblocktensormaptype(spacetype(W), numout(W), numin(W), T)
+    tdst = SparseBlockTensorMap{TT}(undef_blocks, W)
+    for I in nonzero_inds
+        tdst[I] = tdst[I]
+    end
+    return tdst
+end
+
+"""
+    sprand([rng], T::Type, W::TensorMapSumSpace, p::Real)
+
+Construct a sparse blocktensor with entries compatible with type `T` and space `W`.
+Each entry is nonzero with probability `p`.
+"""
+sprand(V::VectorSpace, p::Real) = sprand(Random.default_rng(), Float64, V, p)
+sprand(rng::Random.AbstractRNG, V::VectorSpace, p::Real) = sprand(rng, Float64, V, p)
+sprand(T::Type, V::VectorSpace, p::Real) = sprand(Random.default_rng(), T, V, p)
+function sprand(
+    rng::Random.AbstractRNG, ::Type{T}, V::TensorMapSumSpace, p::Real
+) where {T<:Number}
     TT = sparseblocktensormaptype(spacetype(V), numout(V), numin(V), T)
-    t = TT(undef, V)
-    for (I, v) in enumerate(eachspace(t))
+    t = TT(undef_blocks, V)
+    for I in eachindex(t)
         if rand() < p
-            t[I] = rand(T, v)
+            t[I] = rand!(rng, t[I])
         end
     end
     return t
-end
-function sprand(::Type{T}, V::VectorSpace, p::Real) where {T<:Number}
-    return sprand(T, V ← one(V), p)
 end
 
 # Properties
