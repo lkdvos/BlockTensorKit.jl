@@ -231,7 +231,5 @@ end
 
 # Utility
 # -------
-Base.haskey(t::BlockTensorMap, I::CartesianIndex) = haskey(t.data, I)
-function Base.haskey(t::BlockTensorMap, i::Int)
-    return haskey(t.data, CartesianIndices(t)[i])
-end
+Base.haskey(t::BlockTensorMap, I::CartesianIndex) = checkbounds(Bool, t.data, I)
+Base.haskey(t::BlockTensorMap, i::Int) = checkbounds(Bool, t.data, i)
