@@ -120,7 +120,7 @@ end
         checkspaces(t, v, indices...)
     end
 
-    copyto!(view(parent(t), indices...), parent(v))
+    @inbounds copyto!(view(parent(t), indices...), parent(v))
     return t
 end
 
@@ -146,13 +146,13 @@ end
         checkspaces(t, v, indices...)
     end
 
-    copyto!(view(parent(t), indices...), parent(v))
+    @inbounds copyto!(view(parent(t), indices...), parent(v))
     return t
 end
 
 @inline function Base.get(t::AbstractBlockTensorMap, key, default)
     @boundscheck checkbounds(t, key)
-    return get(parent(t), key, default)
+    return @inbounds get(parent(t), key, default)
 end
 
 Base.copy(t::AbstractBlockTensorMap) = copy!(similar(t), t)
