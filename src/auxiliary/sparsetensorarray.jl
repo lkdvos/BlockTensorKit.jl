@@ -76,6 +76,7 @@ function Base.delete!(A::SparseTensorArray, I::Vararg{Int,N}) where {N}
     return delete!(A.data, CartesianIndex(I))
 end
 Base.delete!(A::SparseTensorArray, I::CartesianIndex) = delete!(A.data, I)
+Base.empty!(A::SparseTensorArray) = empty!(A.data)
 function Base.haskey(A::SparseTensorArray, I::Vararg{Int,N}) where {N}
     return haskey(A.data, CartesianIndex(I))
 end
@@ -88,12 +89,19 @@ function Base.similar(
     return SparseTensorArray{S,N₁,N₂,T,N}(Dict{CartesianIndex{N},T}(), spaces)
 end
 
-function Base.copyto!(
+Base.@propagate_inbounds function Base.copyto!(
     t::SparseTensorArray, v::SubArray{T,N,A}
 ) where {T,N,A<:SparseTensorArray}
-    for (i, j) in zip(eachindex(t), collect(eachindex(parent(v)))[v.indices...])
-        if j ∈ nonzero_keys(parent(v))
-            t[i] = parent(v)[j]
+    undropped_parentindices = map(Base.parentindices(v)) do I
+        I isa Base.ScalarIndex ? (I:I) : I
+    end
+
+    for I in eachindex(IndexCartesian(), t)
+        parentI = CartesianIndex(Base.reindex(undropped_parentindices, I.I))
+        if haskey(parent(v), parentI)
+            t[I] = parent(v)[parentI]
+        else
+            delete!(t, I)
         end
     end
     return t

@@ -91,7 +91,7 @@ Base.@propagate_inbounds function Base.getindex(
 )
     V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
-    copyto!(parent(tdst), view(parent(t), indices...))
+    @inbounds copyto!(parent(tdst), view(parent(t), indices...))
     return tdst
 end
 
