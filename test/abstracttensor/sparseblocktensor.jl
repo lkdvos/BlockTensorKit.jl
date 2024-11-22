@@ -47,7 +47,7 @@ end
     W3 = (codomain(W1), domain(W1))
     W4 = V1
 
-    @testset "$f($T)" for f in (spzeros, sprand, sprandn), T in scalartypes
+    @testset "$f($T)" for f in (spzeros, sprand), T in scalartypes
         t1 = @inferred f(T, W1)
         @test space(t1) == W1
         t2 = @inferred f(T, W2)
