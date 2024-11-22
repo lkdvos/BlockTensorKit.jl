@@ -108,11 +108,11 @@ function spzeros(
     return spzeros(T, cod, one(cod), nonzero_inds)
 end
 function spzeros(
-    ::Type{T}, W::TensorMapSumSpace, nonzero_inds=CartesianIndex{length(W)}[]
+    ::Type{T}, W::TensorMapSumSpace, nonzero_inds=CartesianIndex{numind(W)}[]
 ) where {T}
     TT = sparseblocktensormaptype(spacetype(W), numout(W), numin(W), T)
-    tdst = SparseBlockTensorMap{TT}(undef_blocks, W)
-    for I in nonzero_inds
+    tdst = TT(undef_blocks, W)
+    @inbounds for I in nonzero_inds
         tdst[I] = tdst[I]
     end
     return tdst
@@ -135,12 +135,20 @@ sprand(T::Type, V::TensorSumSpace, p::Real) = sprand(Random.default_rng(), T, V 
 function sprand(rng::Random.AbstractRNG, T::Type, V::TensorSumSpace, p::Real)
     return sprand(rng, T, V ← one(V), p)
 end
+function sprand(T::Type, cod::TensorSumSpace, dom::TensorSumSpace, p::Real)
+    return sprand(Random.default_rng(), T, cod ← dom, p)
+end
+function sprand(
+    rng::Random.AbstractRNG, T::Type, cod::TensorSumSpace, dom::TensorSumSpace, p::Real
+)
+    return sprand(rng, T, cod ← dom, p)
+end
 function sprand(
     rng::Random.AbstractRNG, ::Type{T}, V::TensorMapSumSpace, p::Real
 ) where {T<:Number}
     TT = sparseblocktensormaptype(spacetype(V), numout(V), numin(V), T)
     t = TT(undef_blocks, V)
-    for I in eachindex(t)
+    @inbounds for I in eachindex(t)
         if rand() < p
             t[I] = rand!(rng, t[I])
         end

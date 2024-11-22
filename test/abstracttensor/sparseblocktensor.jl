@@ -47,23 +47,30 @@ end
     W3 = (codomain(W1), domain(W1))
     W4 = V1
 
-    @testset "$f($T)" for f in (spzeros, sprand), T in scalartypes
-        t1 = @inferred f(T, W1)
+    @testset "sprand($T)" for T in scalartypes
+        t1 = @inferred sprand(T, W1, 0.5)
         @test space(t1) == W1
-        t2 = @inferred f(T, W2)
+        t2 = @inferred sprand(T, W2, 0.5)
         @test codomain(t2) == W2 && domain(t2) == one(W2)
-        t3 = @inferred f(T, W3...)
+        t3 = @inferred sprand(T, W3..., 0.5)
         @test codomain(t3) == W3[1] && domain(t3) == W3[2]
-        t4 = @inferred f(T, W4)
+        t4 = @inferred sprand(T, W4, 0.5)
         @test codomain(t4) == ProductSpace(W4) && domain(t4) == one(W4)
-        if f === zeros
-            @test norm(t1) == norm(t2) == norm(t3) == norm(t4) == 0
-        else
-            @test norm(t1) ≠ 0
-            @test norm(t2) ≠ 0
-            @test norm(t3) ≠ 0
-            @test norm(t4) ≠ 0
-        end
+        @test norm(t1) ≠ 0
+        @test norm(t2) ≠ 0
+        @test norm(t3) ≠ 0
+    end
+
+    @testset "spzeros($T)" for T in scalartypes
+        t1 = @inferred spzeros(T, W1)
+        @test space(t1) == W1
+        t2 = @inferred spzeros(T, W2)
+        @test codomain(t2) == W2 && domain(t2) == one(W2)
+        t3 = @inferred spzeros(T, W3...)
+        @test codomain(t3) == W3[1] && domain(t3) == W3[2]
+        t4 = @inferred spzeros(T, W4)
+        @test codomain(t4) == ProductSpace(W4) && domain(t4) == one(W4)
+        @test norm(t1) == norm(t2) == norm(t3) == norm(t4) == 0
     end
 end
 
