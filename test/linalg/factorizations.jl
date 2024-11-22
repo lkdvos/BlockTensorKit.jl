@@ -106,10 +106,10 @@ const rightnull_algs = (TensorKit.LQ(), TensorKit.SVD(), TensorKit.SDD())
 @testset "rightnull with $alg" for alg in rightnull_algs
     for T in (Float32, ComplexF64), isadjoint in (false, true)
         t = isadjoint ? rand(T, W)' : rand(T, W)
-        M = @constinferred rightnull(t, (3, 4), (2, 1, 5); alg=alg)
+        M = @constinferred rightnull(t, ((3, 4), (2, 1, 5)); alg=alg)
         MMd = M * M'
         @test MMd ≈ one(MMd)
-        @test norm(permute(t, (3, 4), (2, 1, 5)) * M') < 100 * eps(norm(t))
+        @test norm(permute(t, ((3, 4), (2, 1, 5))) * M') < 100 * eps(norm(t))
 
         t_empty = isadjoint ? rand(T, W_empty)' : rand(T, W_empty')
         M = @constinferred rightnull(t_empty; alg)
@@ -122,12 +122,12 @@ const svd_algs = (TensorKit.SVD(), TensorKit.SDD())
 @testset "tsvd with $alg" for alg in svd_algs
     for T in (Float32, ComplexF64), isadjoint in (false, true)
         t = isadjoint ? rand(T, W)' : rand(T, W)
-        U, S, V = @constinferred tsvd(t, (3, 4, 2), (1, 5); alg)
+        U, S, V = @constinferred tsvd(t, ((3, 4, 2), (1, 5)); alg)
         UdU = U' * U
         @test UdU ≈ one(UdU)
         VVd = V * V'
         @test VVd ≈ one(VVd)
-        @test U * S * V ≈ permute(t, (3, 4, 2), (1, 5))
+        @test U * S * V ≈ permute(t, ((3, 4, 2), (1, 5)))
 
         t_empty = isadjoint ? rand(T, W_empty')' : rand(T, W_empty)
         U, S, V = @inferred tsvd(t_empty; alg=alg)
