@@ -1,5 +1,5 @@
 
-using Test
+using Test, TestExtras
 using TensorKit
 using BlockTensorKit
 using Random

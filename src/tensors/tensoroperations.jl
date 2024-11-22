@@ -174,7 +174,7 @@ function TK.trace_permute!(
         throw(IndexError("number of trace indices does not match"))
 
     @boundscheck begin
-        space(tdst) == permute(space(tsrc), (p₁, p₂)) ||
+        space(tdst) == TK.select(space(tsrc), (p₁, p₂)) ||
             throw(SpaceMismatch("trace: tsrc = $(codomain(tsrc))←$(domain(tsrc)),
                     tdst = $(codomain(tdst))←$(domain(tdst)), p₁ = $(p₁), p₂ = $(p₂)"))
         all(i -> space(tsrc, q₁[i]) == dual(space(tsrc, q₂[i])), 1:N₃) ||
@@ -183,7 +183,7 @@ function TK.trace_permute!(
     end
 
     scale!(tdst, β)
-    for (Isrc, vsrc) in nonzero_pairs(tsrc)
+    @inbounds for (Isrc, vsrc) in nonzero_pairs(tsrc)
         TT.getindices(Isrc.I, q₁) == TT.getindices(Isrc.I, q₂) || continue
         Idst = CartesianIndex(TT.getindices(Isrc.I, (p₁..., p₂...)))
         tdst[Idst] = TensorKit.trace_permute!(
@@ -204,7 +204,7 @@ function TK.BraidingTensor(V1::SumSpace{S}, V2::SumSpace{S}) where {S}
     end
     tdst = SparseBlockTensorMap{τtype}(undef, V2 ⊗ V1, V1 ⊗ V2)
     Vs = eachspace(tdst)
-    for I in CartesianIndices(tdst)
+    @inbounds for I in CartesianIndices(tdst)
         if I[1] == I[4] && I[2] == I[3]
             V = Vs[I]
             @assert domain(V)[2] == codomain(V)[1] && domain(V)[1] == codomain(V)[2]
@@ -213,105 +213,3 @@ function TK.BraidingTensor(V1::SumSpace{S}, V2::SumSpace{S}) where {S}
     end
     return tdst
 end
-
-# function TK.planartrace!(C::BlockTensorMap,
-#                          A::BlockTensorMap,
-#                          p::Index2Tuple,
-#                          q::Index2Tuple,
-#                          α::Number,
-#                          β::Number,
-#                          backend::AbstractBackend, allocator)
-#     scale!(C, β)
-#
-#     for (IA, v) in nonzero_pairs(A)
-#         IAc1 = CartesianIndex(getindices(IA.I, q[1]))
-#         IAc2 = CartesianIndex(getindices(IA.I, q[2]))
-#         IAc1 == IAc2 || continue
-#
-#         IC = CartesianIndex(getindices(IA.I, linearize(p)))
-#         C[IC] = TK.planartrace!(C[IC], v, p, q, α, One(), backend, allocator)
-#     end
-#     return C
-# end
-
-# function TK.planarcontract!(C::BlockTensorMap{E,S,N₁,N₂},
-#                             A::BlockTensorMap{E,S},
-#                             pA::Index2Tuple,
-#                             B::BlockTensorMap{E,S},
-#                             pB::Index2Tuple,
-#                             pAB::Index2Tuple{N₁,N₂},
-#                             α::Number,
-#                             β::Number,
-#                             backend::Backend...) where {E,S,N₁,N₂}
-#     scale!(C, β)
-#     keysA = sort!(collect(nonzero_keys(A));
-#                   by=IA -> CartesianIndex(getindices(IA.I, pA[2])))
-#     keysB = sort!(collect(nonzero_keys(B));
-#                   by=IB -> CartesianIndex(getindices(IB.I, pB[1])))
-#
-#     iA = iB = 1
-#     @inbounds while iA <= length(keysA) && iB <= length(keysB)
-#         IA = keysA[iA]
-#         IB = keysB[iB]
-#         IAc = CartesianIndex(getindices(IA.I, pA[2]))
-#         IBc = CartesianIndex(getindices(IB.I, pB[1]))
-#         if IAc == IBc
-#             Ic = IAc
-#             jA = iA
-#             while jA < length(keysA)
-#                 if CartesianIndex(getindices(keysA[jA + 1].I, pA[2])) == Ic
-#                     jA += 1
-#                 else
-#                     break
-#                 end
-#             end
-#             jB = iB
-#             while jB < length(keysB)
-#                 if CartesianIndex(getindices(keysB[jB + 1].I, pB[1])) == Ic
-#                     jB += 1
-#                 else
-#                     break
-#                 end
-#             end
-#             rA = iA:jA
-#             rB = iB:jB
-#             if length(rA) < length(rB)
-#                 for kB in rB
-#                     IB = keysB[kB]
-#                     IBo = CartesianIndex(getindices(IB.I, pB[2]))
-#                     vB = B[IB]
-#                     for kA in rA
-#                         IA = keysA[kA]
-#                         IAo = CartesianIndex(getindices(IA.I, pA[1]))
-#                         IABo = CartesianIndex(IAo, IBo)
-#                         IC = CartesianIndex(getindices(IABo.I, linearize(pAB)))
-#                         vA = A[IA]
-#                         C[IC] = TK.planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
-#                     end
-#                 end
-#             else
-#                 for kA in rA
-#                     IA = keysA[kA]
-#                     IAo = CartesianIndex(getindices(IA.I, pA[1]))
-#                     vA = A[IA]
-#                     for kB in rB
-#                         IB = keysB[kB]
-#                         IBo = CartesianIndex(getindices(IB.I, pB[2]))
-#                         vB = parent(B).data[IB]
-#                         IABo = CartesianIndex(IAo, IBo)
-#                         IC = CartesianIndex(getindices(IABo.I, linearize(pAB)))
-#                         C[IC] = TK.planarcontract!(C[IC], vA, pA, vB, pB, pAB, α, One())
-#                     end
-#                 end
-#             end
-#             iA = jA + 1
-#             iB = jB + 1
-#         elseif IAc < IBc
-#             iA += 1
-#         else
-#             iB += 1
-#         end
-#     end
-#
-#     return C
-# end
