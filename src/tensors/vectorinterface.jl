@@ -54,7 +54,7 @@ function VI.add!(ty::SparseBlockTensorMap, tx::SparseBlockTensorMap, α::Number,
         ty[k] = scale!!(ty[k], β)
     end
     for k in x_notin_y
-        ty[k] = scale!!(tx[k], α)
+        ty[k] = scale(tx[k], α)
     end
     for k in inboth
         ty[k] = add!!(ty[k], tx[k], α, β)
