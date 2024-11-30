@@ -7,7 +7,7 @@ struct SumSpace{S<:ElementarySpace} <: ElementarySpace
     spaces::Vector{S}
 end
 
-SumSpace(spaces::S...) where {S<:ElementarySpace} = SumSpace(collect(spaces))
+SumSpace(V::S, spaces::S...) where {S<:ElementarySpace} = SumSpace(collect((V, spaces...)))
 SumSpace{S}() where {S} = SumSpace(S[])
 
 # Convenience aliases
@@ -116,7 +116,7 @@ function ⊕ end
 ⊕(V::Vararg{VectorSpace}) = foldl(⊕, V)
 const oplus = ⊕
 
-⊕(S::ElementarySpace) = S isa SumSpace ? S : SumSpace(S)
+⊕(V::ElementarySpace) = V isa SumSpace ? V : SumSpace(V)
 function ⊕(V₁::S, V₂::S) where {S<:ElementarySpace}
     return if isdual(V₁) == isdual(V₂)
         SumSpace(V₁, V₂)
