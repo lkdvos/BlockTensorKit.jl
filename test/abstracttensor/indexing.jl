@@ -27,8 +27,8 @@ blockt3 = @inferred blockt[[1], [1], 1]
 @test length(blockt3) == 1
 
 # invalid indexing
-@test_throws MethodError blockt[:]
-@test_throws MethodError blockt[[1]]
+@test_throws ArgumentError blockt[:]
+@test_throws ArgumentError blockt[[1]]
 
 blockt = sprand(V ⊗ V ⊗ V, 0.5)
 
@@ -58,5 +58,5 @@ blockt3 = @inferred blockt[[1], [1], 1]
 @test length(blockt3) == 1
 
 # invalid indexing
-@test_throws MethodError blockt[:]
-@test_throws MethodError blockt[[1]]
+@test_throws ArgumentError blockt[[1]]
+@test_throws ArgumentError blockt[:]

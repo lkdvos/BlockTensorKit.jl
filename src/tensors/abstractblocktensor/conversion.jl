@@ -1,8 +1,8 @@
 # Conversion
 # ----------
 function Base.convert(::Type{T}, t::AbstractBlockTensorMap) where {T<:TensorMap}
-    cod = ProductSpace{spacetype(t),numout(t)}(join.(codomain(t).spaces))
-    dom = ProductSpace{spacetype(t),numin(t)}(join.(domain(t).spaces))
+    cod = ProductSpace{spacetype(t),numout(t)}(oplus.(codomain(t).spaces))
+    dom = ProductSpace{spacetype(t),numin(t)}(oplus.(domain(t).spaces))
 
     tdst = similar(t, cod ← dom)
     for (f₁, f₂) in fusiontrees(tdst)
@@ -13,8 +13,8 @@ function Base.convert(::Type{T}, t::AbstractBlockTensorMap) where {T<:TensorMap}
 end
 # disambiguate
 function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
-    cod = ProductSpace{spacetype(t),numout(t)}(join.(codomain(t).spaces))
-    dom = ProductSpace{spacetype(t),numin(t)}(join.(domain(t).spaces))
+    cod = ProductSpace{spacetype(t),numout(t)}(oplus.(codomain(t).spaces))
+    dom = ProductSpace{spacetype(t),numin(t)}(oplus.(domain(t).spaces))
 
     tdst = similar(t, cod ← dom)
     for (f₁, f₂) in fusiontrees(tdst)

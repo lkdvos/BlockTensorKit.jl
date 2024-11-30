@@ -1,11 +1,12 @@
 using Test, TestExtras
-using TensorKit
+using TensorKit, BlockTensorKit
 
 @testset "CartesianSpace" begin
     using TensorKit, BlockTensorKit
     using Test, TestExtras
 
     using TensorKit: hassector
+    using BlockTensorKit: ⊕
 
     ds = [2, 3, 2]
     d = sum(ds)
@@ -59,6 +60,7 @@ end
     using Test, TestExtras
 
     using TensorKit: hassector
+    using BlockTensorKit: ⊕
 
     ds = [2, 3, 2]
     d = sum(ds)
@@ -106,6 +108,7 @@ end
     using Test, TestExtras
 
     using TensorKit: hassector
+    using BlockTensorKit: ⊕
 
     V1 = U1Space(0 => 1, 1 => 1)
     V2 = U1Space(0 => 1, 1 => 2)

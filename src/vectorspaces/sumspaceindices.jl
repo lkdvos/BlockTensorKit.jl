@@ -70,10 +70,11 @@ end
     elseif length(nontrivial_sizes) == 1
         I′ = ntuple(i -> i in nontrivial_sizes ? I : 1, ndims(iter))
     else
-        throw(MethodError("Invalid indexing"))
+        throw(ArgumentError("Cannot index $iter with $I"))
     end
     return Base._getindex(IndexCartesian(), iter, I′...)
 end
+@inline Base._getindex(::IndexCartesian, iter::SumSpaceIndices, ::Colon) = iter
 
 # disambiguation of base methods
 function Base._getindex(

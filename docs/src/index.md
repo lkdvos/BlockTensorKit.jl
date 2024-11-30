@@ -3,7 +3,8 @@
 *A Julia package for handling arrays-of-tensors, built on top of [TensorKit.jl](https://github.com/Jutho/TensorKit.jl)*
 
 ```@meta
-CurrentModule = TensorKit
+CurrentModule = BlockTensorKit
+DocTestSetup = :(using TensorKit, BlockTensorKit)
 ```
 
 ## Package summary
