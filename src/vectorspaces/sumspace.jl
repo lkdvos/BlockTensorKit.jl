@@ -96,16 +96,7 @@ TensorKit.dim(S::SumSpace, sector::Sector) = sum(v -> dim(v, sector), S.spaces; 
 # ambiguity fix:
 TensorKit.dim(S::SumSpace, ::Trivial) = sum(v -> dim(v, Trivial()), S.spaces; init=0)
 
-using TensorKit: ⊕
-
 # TODO: find a better name for this function
-function join(S::SumSpace)
-    if length(S) == 1
-        return only(S.spaces)
-    else
-        return ⊕(S.spaces...)
-    end
-end
 
 TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
 # bit of a hack to make spacechecks happy?
@@ -120,10 +111,36 @@ end
 # this conflicts with the definition in TensorKit, so users always need to specify
 # ⊕(Vs::IndexSpace...) = SumSpace(Vs...)
 
-TensorKit.:⊕(S::ElementarySpace) = S
-function TensorKit.:⊕(S1::SumSpace{I}, S2::SumSpace{I}) where {I}
-    return SumSpace(vcat(S1.spaces, S2.spaces))
+function ⊕ end
+⊕(V₁::VectorSpace, V₂::VectorSpace) = ⊕(promote(V₁, V₂)...)
+⊕(V::Vararg{VectorSpace}) = foldl(⊕, V)
+const oplus = ⊕
+
+⊕(S::ElementarySpace) = S isa SumSpace ? S : SumSpace(S)
+function ⊕(V₁::S, V₂::S) where {S<:ElementarySpace}
+    return if isdual(V₁) == isdual(V₂)
+        SumSpace(V₁, V₂)
+    else
+        throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
+    end
 end
+function ⊕(V₁::SumSpace{S}, V₂::SumSpace{S}) where {S}
+    return if isdual(V₁) == isdual(V₂)
+        SumSpace(vcat(V₁.spaces, V₂.spaces))
+    else
+        throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
+    end
+end
+
+#! format: off
+function TensorKit.:⊕(S::SumSpace)
+    if length(S) == 1
+        return only(S.spaces)
+    else
+        return TensorKit.⊕(S.spaces...)
+    end
+end
+#! format: on
 
 function TensorKit.fuse(V1::S, V2::S) where {S<:SumSpace}
     return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
@@ -150,7 +167,7 @@ function Base.promote_rule(
     return TensorMapSumSpace{S}
 end
 
-Base.convert(::Type{I}, S::SumSpace{I}) where {I} = join(S)
+Base.convert(::Type{I}, S::SumSpace{I}) where {I} = TensorKit .⊕ (S)
 Base.convert(::Type{SumSpace{S}}, V::S) where {S} = SumSpace(V)
 function Base.convert(::Type{<:ProductSumSpace{S,N}}, V::ProductSpace{S,N}) where {S,N}
     return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
@@ -159,7 +176,7 @@ function Base.convert(::Type{<:ProductSumSpace{S}}, V::ProductSpace{S,N}) where 
     return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
 end
 function Base.convert(::Type{<:ProductSpace{S,N}}, V::ProductSumSpace{S,N}) where {S,N}
-    return ProductSpace{S,N}(join.(V.spaces)...)
+    return ProductSpace{S,N}(TensorKit.oplus.(V.spaces)...)
 end
 function Base.convert(
     ::Type{<:TensorMapSumSpace{S}}, V::TensorMapSpace{S,N₁,N₂}
