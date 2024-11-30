@@ -74,6 +74,7 @@ end
     end
     return Base._getindex(IndexCartesian(), iter, I′...)
 end
+@inline Base._getindex(::IndexCartesian, iter::SumSpaceIndices, ::Colon) = iter
 
 # disambiguation of base methods
 function Base._getindex(

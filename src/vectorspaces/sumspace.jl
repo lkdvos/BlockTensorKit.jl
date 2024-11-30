@@ -137,9 +137,10 @@ function TensorKit.:⊕(S::SumSpace)
     if length(S) == 1
         return only(S.spaces)
     else
-        return TensorKit.⊕(S.spaces...)
+        return TensorKit.oplus(S.spaces...)
     end
 end
+TensorKit.:⊕(V1::SumSpace, V2::SumSpace...) = TensorKit.oplus(⊕(V1, V2...))
 #! format: on
 
 function TensorKit.fuse(V1::S, V2::S) where {S<:SumSpace}
@@ -167,7 +168,7 @@ function Base.promote_rule(
     return TensorMapSumSpace{S}
 end
 
-Base.convert(::Type{I}, S::SumSpace{I}) where {I} = TensorKit .⊕ (S)
+Base.convert(::Type{I}, S::SumSpace{I}) where {I} = TensorKit.oplus(S)
 Base.convert(::Type{SumSpace{S}}, V::S) where {S} = SumSpace(V)
 function Base.convert(::Type{<:ProductSumSpace{S,N}}, V::ProductSpace{S,N}) where {S,N}
     return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
