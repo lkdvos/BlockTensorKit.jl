@@ -44,4 +44,8 @@ const GROUP = uppercase(
             include("linalg/factorizations.jl")
         end
     end
+
+    @time @safetestset "aqua" begin
+        include("aqua.jl")
+    end
 end

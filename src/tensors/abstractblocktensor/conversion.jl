@@ -35,4 +35,14 @@ function Base.convert(
     return tdst
 end
 
+function Base.convert(::Type{TT}, t::AbstractTensorMap) where {TT<:AbstractBlockTensorMap}
+    tdst = TT(
+        undef,
+        convert(ProductSumSpace{S,N₁}, codomain(t)),
+        convert(ProductSumSpace{S,N₂}, domain(t)),
+    )
+    tdst[1] = t
+    return tdst
+end
+
 TensorKit.TensorMap(t::AbstractBlockTensorMap) = convert(TensorMap, t)

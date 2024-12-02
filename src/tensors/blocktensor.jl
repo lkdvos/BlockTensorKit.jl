@@ -195,40 +195,6 @@ function Base.promote_rule(
     return BlockTensorMap{TT}
 end
 
-function Base.convert(::Type{<:BlockTensorMap{TT₁}}, t::BlockTensorMap{TT₂}) where {TT₁,TT₂}
-    TT₁ === TT₂ && return t
-    tdst = BlockTensorMap{TT₁}(undef, space(t))
-    for I in eachindex(t)
-        tdst[I] = t[I]
-    end
-    return tdst
-end
-
-function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap)
-    t isa BlockTensorMap && return t
-    S = spacetype(t)
-    N₁ = numout(t)
-    N₂ = numin(t)
-    TT = blocktensormaptype(S, N₁, N₂, storagetype(t))
-    tdst = TT(
-        undef,
-        convert(ProductSumSpace{S,N₁}, codomain(t)),
-        convert(ProductSumSpace{S,N₂}, domain(t)),
-    )
-    tdst[1] = t
-    return tdst
-end
-
-function Base.convert(::Type{TT}, t::BlockTensorMap) where {TT<:BlockTensorMap}
-    t isa TT && return t
-
-    tdst = TT(undef_blocks, space(t))
-    for I in CartesianIndices(t)
-        tdst[I] = t[I]
-    end
-    return tdst
-end
-
 # Utility
 # -------
 Base.haskey(t::BlockTensorMap, I::CartesianIndex) = checkbounds(Bool, t.data, I)

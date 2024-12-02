@@ -96,8 +96,8 @@ Base.@propagate_inbounds function Base.getindex(
 end
 
 # TODO: check if this fallback is fair
-@inline Base.setindex!(t::AbstractBlockTensorMap, args...) = (
-    setindex!(parent(t), args...); t
+@inline Base.setindex!(t::AbstractBlockTensorMap, v::AbstractTensorMap, args...) = (
+    setindex!(parent(t), v, args...); t
 )
 
 # setindex verifies structure is correct

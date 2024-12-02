@@ -74,6 +74,14 @@ end
     end
     return Base._getindex(IndexCartesian(), iter, I′...)
 end
+# disambiguate:
+@inline function Base._getindex(
+    ::IndexCartesian, iter::SumSpaceIndices{S,N₁,N₂,1}, I::Union{Real,AbstractVector}
+) where {S,N₁,N₂}
+    @boundscheck checkbounds(iter, I)
+    return SumSpaceIndices{S,N₁,N₂}(map(getindex, iter.sumspaces, (I,)))
+end
+
 @inline Base._getindex(::IndexCartesian, iter::SumSpaceIndices, ::Colon) = iter
 
 # disambiguation of base methods
