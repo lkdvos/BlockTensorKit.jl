@@ -195,6 +195,17 @@ function Base.promote_rule(
     return BlockTensorMap{TT}
 end
 
+function Base.convert(::Type{BlockTensorMap}, t::AbstractTensorMap)
+    S = spacetype(t)
+    data = fill(t, ntuple(Returns(1), numind(t)))
+    tdst = BlockTensorMap(
+        data,
+        convert(ProductSumSpace{S,numout(t)}, codomain(t)),
+        convert(ProductSumSpace{S,numin(t)}, domain(t)),
+    )
+    return tdst
+end
+
 # Utility
 # -------
 Base.haskey(t::BlockTensorMap, I::CartesianIndex) = checkbounds(Bool, t.data, I)
