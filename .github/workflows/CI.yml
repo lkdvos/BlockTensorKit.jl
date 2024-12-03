@@ -29,6 +29,7 @@ jobs:
           - vectorspaces
           - abstracttensor
           - linalg
+          - utility
         os:
           - ubuntu-latest
           - macOS-latest

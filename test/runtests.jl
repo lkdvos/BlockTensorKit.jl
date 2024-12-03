@@ -45,7 +45,9 @@ const GROUP = uppercase(
         end
     end
 
-    @time @safetestset "aqua" begin
-        include("aqua.jl")
+    if GROUP == "ALL" || GROUP == "UTILITY"
+        @time @safetestset "aqua" begin
+            include("aqua.jl")
+        end
     end
 end
