@@ -24,25 +24,22 @@ function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
     return tdst
 end
 
-function Base.convert(
-    ::Type{TT}, t::AbstractBlockTensorMap
-) where {TT<:AbstractBlockTensorMap}
-    t isa TT && return t
-    tdst = similar(TT, space(t))
-    for (I, v) in nonzero_pairs(t)
-        tdst[I] = v
-    end
-    return tdst
-end
-
 function Base.convert(::Type{TT}, t::AbstractTensorMap) where {TT<:AbstractBlockTensorMap}
-    S = spacetype(t)
-    tdst = TT(
-        undef,
-        convert(ProductSumSpace{S,numout(t)}, codomain(t)),
-        convert(ProductSumSpace{S,numin(t)}, domain(t)),
-    )
-    tdst[1] = t
+    t isa TT && return t
+    if t isa AbstractBlockTensorMap
+        tdst = similar(TT, space(t))
+        for (I, v) in nonzero_pairs(t)
+            tdts[I] = v
+        end
+    else
+        S = spacetype(t)
+        tdst = TT(
+            undef,
+            convert(ProductSumSpace{S,numout(t)}, codomain(t)),
+            convert(ProductSumSpace{S,numin(t)}, domain(t)),
+        )
+        tdst[1] = t
+    end
     return tdst
 end
 
