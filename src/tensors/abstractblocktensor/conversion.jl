@@ -36,10 +36,11 @@ function Base.convert(
 end
 
 function Base.convert(::Type{TT}, t::AbstractTensorMap) where {TT<:AbstractBlockTensorMap}
+    S = spacetype(t)
     tdst = TT(
         undef,
-        convert(ProductSumSpace{S,N₁}, codomain(t)),
-        convert(ProductSumSpace{S,N₂}, domain(t)),
+        convert(ProductSumSpace{S,numout(t)}, codomain(t)),
+        convert(ProductSumSpace{S,numin(t)}, domain(t)),
     )
     tdst[1] = t
     return tdst
