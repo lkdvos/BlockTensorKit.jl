@@ -102,10 +102,14 @@ TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
 # bit of a hack to make spacechecks happy?
 Base.:(==)(V::SumSpace{S}, W::S) where {S} = ==(promote(V, W)...)
 Base.:(==)(V::S, W::SumSpace{S}) where {S} = ==(promote(V, W)...)
-Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSpace{S}) where {S} = ==(promote(V, W)...)
-Base.:(==)(V::TensorMapSpace{S}, W::TensorMapSumSpace{S}) where {S} = ==(promote(V, W)...)
+function Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSpace{S}) where {S<:IndexSpace}
+    return ==(promote(V, W)...)
+end
+function Base.:(==)(V::TensorMapSpace{S}, W::TensorMapSumSpace{S}) where {S<:IndexSpace}
+    return ==(promote(V, W)...)
+end
 # disambiguate
-function Base.:(==)(V::TensorMapSumSpace, W::TensorMapSumSpace)
+function Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSumSpace{S}) where {S<:IndexSpace}
     @invoke ==(V::HomSpace, W::HomSpace)
 end
 # this conflicts with the definition in TensorKit, so users always need to specify
@@ -151,7 +155,7 @@ Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
 
 # Promotion and conversion
 # ------------------------
-Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S} = SumSpace{S}
+Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S<:ElementarySpace} = SumSpace{S}
 function Base.promote_rule(
     ::Type{S1}, ::Type{<:ProductSpace{S2}}
 ) where {S1<:ElementarySpace,S2<:ElementarySpace}
@@ -168,8 +172,8 @@ function Base.promote_rule(
     return TensorMapSumSpace{S}
 end
 
-Base.convert(::Type{I}, S::SumSpace{I}) where {I} = TensorKit.oplus(S)
-Base.convert(::Type{SumSpace{S}}, V::S) where {S} = SumSpace(V)
+Base.convert(::Type{I}, S::SumSpace{I}) where {I<:ElementarySpace} = TensorKit.oplus(S)
+Base.convert(::Type{SumSpace{S}}, V::S) where {S<:ElementarySpace} = SumSpace(V)
 function Base.convert(::Type{<:ProductSumSpace{S,N}}, V::ProductSpace{S,N}) where {S,N}
     return ProductSumSpace{S,N}(SumSpace.(V.spaces)...)
 end

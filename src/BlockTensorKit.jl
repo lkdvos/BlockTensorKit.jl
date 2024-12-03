@@ -3,12 +3,12 @@ module BlockTensorKit
 export SumSpace, ProductSumSpace
 export eachspace, SumSpaceIndices, sumspacetype
 
-export AbstractBlockTensorMap, BlockTensorMap, SparseBlockTensorMap, PseudoBlockTensorMap
+export AbstractBlockTensorMap, BlockTensorMap, SparseBlockTensorMap
 export blocktensormaptype, sparseblocktensormaptype
 
 export SparseTensorArray
 
-export sprand, sprandn, spzeros
+export sprand, spzeros
 export nonzero_keys, nonzero_values, nonzero_pairs, nonzero_length
 export sparse
 export dropzeros!, droptol!
