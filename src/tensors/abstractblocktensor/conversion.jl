@@ -29,7 +29,7 @@ function Base.convert(::Type{TT}, t::AbstractTensorMap) where {TT<:AbstractBlock
     if t isa AbstractBlockTensorMap
         tdst = similar(TT, space(t))
         for (I, v) in nonzero_pairs(t)
-            tdts[I] = v
+            tdst[I] = v
         end
     else
         S = spacetype(t)
