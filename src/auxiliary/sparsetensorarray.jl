@@ -107,6 +107,37 @@ Base.@propagate_inbounds function Base.copyto!(
     return t
 end
 
+Base.@propagate_inbounds function Base.copyto!(
+    dest::SparseTensorArray,
+    Rdest::CartesianIndices,
+    src::SparseTensorArray,
+    Rsrc::CartesianIndices,
+)
+    isempty(Rdest) && return dest
+    if size(Rdest) != size(Rsrc)
+        throw(
+            ArgumentError(
+                "source and destination must have same size (got $(size(Rsrc)) and $(size(Rdest)))",
+            ),
+        )
+    end
+    @boundscheck begin
+        checkbounds(dest, first(Rdest))
+        checkbounds(dest, last(Rdest))
+        checkbounds(src, first(Rsrc))
+        checkbounds(src, last(Rsrc))
+    end
+    CRdest = CartesianIndices(Rdest)
+    CRsrc = CartesianIndices(Rsrc)
+    ΔI = first(CRdest) - first(CRsrc)
+    for I in CRsrc
+        if Rsrc[I] in nonzero_keys(src)
+            dest[Rdest[I + ΔI]] = src[Rsrc[I]]
+        end
+    end
+    return dest
+end
+
 # non-scalar indexing
 # -------------------
 # specialisations to have non-scalar indexing behave as expected
