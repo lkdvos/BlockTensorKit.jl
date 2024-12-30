@@ -213,6 +213,27 @@ function TK.tsvd!(t::SparseBlockTensorMap; kwargs...)
     return tsvd!(BlockTensorMap(t); kwargs...)
 end
 
+function TK._tsvd!(
+    t::BlockTensorMap, alg::Union{SVD,SDD}, trunc::TruncationScheme, p::Real=2
+)
+    # early return
+    if isempty(blocksectors(t))
+        truncerr = zero(real(scalartype(t)))
+        return TK._empty_svdtensors(t)..., truncerr
+    end
+
+    # compute SVD factorization for each block
+    S = spacetype(t)
+    SVDdata, dims = TK._compute_svddata!(t, alg)
+    Σdata = SectorDict(c => Σ for (c, (U, Σ, V)) in SVDdata)
+    truncdim = TK._compute_truncdim(Σdata, trunc, p)
+    truncerr = TK._compute_truncerr(Σdata, truncdim, p)
+
+    # construct output tensors
+    U, Σ, V⁺ = TK._create_svdtensors(t, SVDdata, truncdim)
+    return U, Σ, V⁺, truncerr
+end
+
 function TK._compute_svddata!(t::AbstractBlockTensorMap, alg::Union{SVD,SDD})
     InnerProductStyle(t) === EuclideanInnerProduct() || throw_invalid_innerproduct(:tsvd!)
     I = sectortype(t)
@@ -225,7 +246,6 @@ function TK._compute_svddata!(t::AbstractBlockTensorMap, alg::Union{SVD,SDD})
     SVDdata = SectorDict(generator)
     return SVDdata, dims
 end
-
 function TK._create_svdtensors(t::AbstractBlockTensorMap, SVDdata, dims)
     S = spacetype(t)
     W = S(dims)
@@ -239,5 +259,18 @@ function TK._create_svdtensors(t::AbstractBlockTensorMap, SVDdata, dims)
         block(Σ, c) .= Diagonal(view(Σc, r))
         block(V⁺, c) .= view(V⁺c, r, :)
     end
+    return U, Σ, V⁺
+end
+
+function TK._empty_svdtensors(t::AbstractBlockTensorMap)
+    T = scalartype(t)
+    S = spacetype(t)
+    I = sectortype(t)
+    dims = SectorDict{I,Int}()
+    W = S(dims)
+
+    U = similar(t, codomain(t) ← W)
+    Σ = similar(t, real(T), W ← W)
+    V⁺ = similar(t, W ← domain(t))
     return U, Σ, V⁺
 end
