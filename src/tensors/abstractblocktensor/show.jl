@@ -7,6 +7,7 @@ function Base.show(io::IO, t::AbstractBlockTensorMap)
     for (c, b) in TensorKit.blocks(t)
         println(io, "* Block for sector $c:")
         show(io, b)
+        println(io)
     end
     return nothing
 end
