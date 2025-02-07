@@ -243,3 +243,15 @@ function TK.add_braid!(
     @assert length(tsrc) == 1 "source tensor must be a single tensor"
     return TK.add_braid!(tdst, only(tsrc), (p₁, p₂), levels, α, β, backend...)
 end
+
+Base.@constprop :aggressive function TK.removeunit(
+    t::SparseBlockTensorMap, i::Int; copy::Bool=false
+)
+    W = removeunit(space(t), i)
+    tdst = similar(t, W)
+    for (I, v) in nonzero_pairs(t)
+        I′ = CartesianIndex(TupleTools.deleteat(I.I, i))
+        tdst[I′] = removeunit(v, i; copy)
+    end
+    return tdst
+end
