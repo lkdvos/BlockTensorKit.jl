@@ -243,3 +243,39 @@ function TK.add_braid!(
     @assert length(tsrc) == 1 "source tensor must be a single tensor"
     return TK.add_braid!(tdst, only(tsrc), (p₁, p₂), levels, α, β, backend...)
 end
+
+Base.@constprop :aggressive function TK.insertleftunit(
+    t::AbstractBlockTensorMap, i::Int=numind(t) + 1; kwargs...
+)
+    W = TK.insertleftunit(space(t), i; kwargs...)
+    tdst = similar(t, W)
+    for (I, v) in nonzero_pairs(t)
+        I′ = CartesianIndex(TT.insertafter(I.I, i - 1, 1))
+        tdst[I′] = TK.insertleftunit(v, i; kwargs...)
+    end
+    return tdst
+end
+
+Base.@constprop :aggressive function TK.insertrightunit(
+    t::AbstractBlockTensorMap, i::Int=numind(t) + 1; kwargs...
+)
+    W = TK.insertrightunit(space(t), i; kwargs...)
+    tdst = similar(t, W)
+    for (I, v) in nonzero_pairs(t)
+        I′ = CartesianIndex(TT.insertafter(I.I, i, 1))
+        tdst[I′] = TK.insertrightunit(v, i; kwargs...)
+    end
+    return tdst
+end
+
+Base.@constprop :aggressive function TK.removeunit(
+    t::AbstractBlockTensorMap, i::Int; kwargs...
+)
+    W = TK.removeunit(space(t), i)
+    tdst = similar(t, W)
+    for (I, v) in nonzero_pairs(t)
+        I′ = CartesianIndex(TT.deleteat(I.I, i))
+        tdst[I′] = TK.removeunit(v, i)
+    end
+    return tdst
+end
