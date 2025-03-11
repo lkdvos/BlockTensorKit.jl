@@ -279,3 +279,8 @@ Base.@constprop :aggressive function TK.removeunit(
     end
     return tdst
 end
+
+function TK.twist!(t::AbstractBlockTensorMap, is; inv::Bool=false)
+    foreach(x -> twist!(x, is; inv), nonzero_values(t))
+    return t
+end
