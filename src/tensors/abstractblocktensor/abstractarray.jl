@@ -210,6 +210,17 @@ function similar_tensormaptype(
     end
 end
 function similar_tensormaptype(
+    t::AbstractBlockTensorMap, T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
+) where {S}
+    if eltype(t) === T && typeof(space(t)) === typeof(P)
+        return T
+    elseif isconcretetype(T)
+        return tensormaptype(S, numout(P), numin(P), storagetype(T))
+    else
+        return AbstractTensorMap{scalartype(T),S,numout(P),numin(P)}
+    end
+end
+function similar_tensormaptype(
     t::AbstractBlockTensorMap, M::Type{<:AbstractVector}, P::TensorMapSumSpace{S}
 ) where {S}
     if isconcretetype(eltype(t))
