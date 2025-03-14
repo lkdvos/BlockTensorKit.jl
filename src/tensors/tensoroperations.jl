@@ -1,16 +1,14 @@
 # TensorOperations
 # ----------------
 function TO.tensoradd_type(
-    TC, A::BlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
+    TC, A::AbstractBlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
 ) where {N₁,N₂}
     M = TK.similarstoragetype(eltype(A), TC)
-    return blocktensormaptype(spacetype(A), N₁, N₂, M)
-end
-function TO.tensoradd_type(
-    TC, A::SparseBlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
-) where {N₁,N₂}
-    M = TK.similarstoragetype(eltype(A), TC)
-    return sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
+    return if issparse(A)
+        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
+    else
+        blocktensormaptype(spacetype(A), N₁, N₂, M)
+    end
 end
 function TO.tensoradd_type(TC, A::AdjointBlockTensorMap, pA::Index2Tuple, conjA::Bool)
     return TO.tensoradd_type(TC, A', adjointtensorindices(A, pA), !conjA)
