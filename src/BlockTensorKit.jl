@@ -41,6 +41,8 @@ using TupleTools
 using Base: @propagate_inbounds
 using Random
 
+using Compat
+
 import VectorInterface as VI
 import TensorKit as TK
 import TensorOperations as TO
