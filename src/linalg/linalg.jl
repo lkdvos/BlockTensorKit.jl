@@ -157,7 +157,9 @@ end
 
 _mul!!(::Nothing, A, B, α::Number, β::Number) = scale!!(A * B, α)
 _mul!!(C, A, B, α::Number, β::Number) = add!!(C, A * B, α, β)
-const _TM_CAN_MUL = Union{TensorMap,AdjointTensorMap{<:TensorMap}}
+const _TM_CAN_MUL = Union{
+    TensorMap,AdjointTensorMap{<:Any,<:Any,<:Any,<:Any,<:TensorMap},BraidingTensor
+}
 function _mul!!(C::_TM_CAN_MUL, A::_TM_CAN_MUL, B::_TM_CAN_MUL, α::Number, β::Number)
     return mul!(C, A, B, α, β)
 end
