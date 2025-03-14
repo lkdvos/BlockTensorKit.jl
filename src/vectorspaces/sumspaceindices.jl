@@ -117,3 +117,16 @@ function subblockdims(V::ProductSumSpace{S,N}, c::Sector) where {S,N}
         )
     end
 end
+
+function Base._cat(dims, A::SumSpaceIndices{S,N₁,N₂}...) where {S,N₁,N₂}
+    @assert maximum(dims) <= N₁ + N₂ "Invalid number of spaces"
+    catdims = Base.dims2cat(dims)
+    Vs = ntuple(N₁ + N₂) do i
+        return if i <= length(catdims) && catdims[i]
+            ⊕((A[j].sumspaces[i] for j in 1:length(A))...)
+        else
+            A[1].sumspaces[i]
+        end
+    end
+    return SumSpaceIndices{S,N₁,N₂}(Vs)
+end

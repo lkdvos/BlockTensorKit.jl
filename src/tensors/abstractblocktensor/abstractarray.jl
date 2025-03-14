@@ -244,3 +244,25 @@ end
 function Base.similar(::Type{T}, P::TensorMapSumSpace) where {T<:AbstractBlockTensorMap}
     return T(undef, P)
 end
+
+# Cat
+# ---
+Base.eltypeof(t::AbstractBlockTensorMap) = eltype(t)
+
+@inline function Base._cat_t(
+    dims, ::Type{T}, ts::AbstractBlockTensorMap...
+) where {T<:AbstractTensorMap}
+    catdims = Base.dims2cat(dims)
+    V = space(Base._cat(dims, eachspace.(ts)...))
+    A = similar(ts[1], T, V)
+    shape = size(A)
+    if count(!iszero, catdims)::Int > 1
+        zerovector!(A)
+    end
+    return Base.__cat(A, shape, catdims, ts...)
+end
+
+Base._copy_or_fill!(A, inds, x::AbstractBlockTensorMap) = (A[inds...] = x)
+
+# WHY DOES BASE NOT DEFAULT TO AXES
+Base.cat_indices(A::AbstractBlockTensorMap, d) = axes(A, d)
