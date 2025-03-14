@@ -129,11 +129,10 @@ function ⊕(V₁::S, V₂::S) where {S<:ElementarySpace}
     end
 end
 function ⊕(V₁::SumSpace{S}, V₂::SumSpace{S}) where {S}
-    return if isdual(V₁) == isdual(V₂)
-        SumSpace(vcat(V₁.spaces, V₂.spaces))
-    else
+    V = SumSpace(vcat(V₁.spaces, V₂.spaces))
+    allequal(isdual, V.spaces) ||
         throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
-    end
+    return V
 end
 
 #! format: off
