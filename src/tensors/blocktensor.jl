@@ -33,6 +33,13 @@ function BlockTensorMap{TT,E,S,N₁,N₂,N}(
     tdst.data .= similar.(TT, SumSpaceIndices(space))
     return tdst
 end
+function BlockTensorMap{TT,E,S,N₁,N₂,N}(
+    ::UndefInitializer, space::TensorMapSumSpace{S,N₁,N₂}
+) where {TT′,TT<:AdjointTensorMap{<:Any,<:Any,<:Any,<:Any,TT′},E,S,N₁,N₂,N}
+    tdst = BlockTensorMap{TT,E,S,N₁,N₂,N}(undef_blocks, space)
+    tdst.data .= adjoint.(similar.(TT′, adjoint.(SumSpaceIndices(space))))
+    return tdst
+end
 
 # uninitialized constructor
 function BlockTensorMap{TT}(
