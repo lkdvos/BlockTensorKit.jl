@@ -266,3 +266,4 @@ Base._copy_or_fill!(A, inds, x::AbstractBlockTensorMap) = (A[inds...] = x)
 
 # WHY DOES BASE NOT DEFAULT TO AXES
 Base.cat_indices(A::AbstractBlockTensorMap, d) = axes(A, d)
+Base.cat_size(A::AbstractBlockTensorMap, d) = size(A, d)
