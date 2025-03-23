@@ -84,6 +84,20 @@ function TK.add_transform!(
         tdst, only(tsrc), (p₁, p₂), fusiontreetransform, α, β, backend...
     )
 end
+function TK.add_transform!(
+    tdst::BlockTensorMap,
+    tsrc::TensorMap,
+    (p₁, p₂)::Index2Tuple,
+    fusiontreetransform,
+    α::Number,
+    β::Number,
+    backend::AbstractBackend...,
+)
+    # @assert length(tsrc) == 1 "source tensor must be a single tensor"
+    return TK.add_transform!(
+        only(tdst), tsrc, (p₁, p₂), fusiontreetransform, α, β, backend...
+    )
+end
 
 # we need to capture the other functions earlier to enjoy the fast transformers...
 for f! in (:add_permute!, :add_transpose!)
