@@ -29,9 +29,9 @@ function SumSpaceIndices{S,N₁,N₂}(spaces::Tuple) where {S,N₁,N₂}
 end
 
 # Overload show of type to hide the inferred last type parameter
-function Base.show(io::IO, ::Type{<:SumSpaceIndices{S,N₁,N₂}}) where {S,N₁,N₂}
-    return print(io, "SumSpaceIndices{", S, ",", N₁, ",", N₂, "}")
-end
+# function Base.show(io::IO, ::Type{<:SumSpaceIndices{S,N₁,N₂}}) where {S,N₁,N₂}
+#     return print(io, "SumSpaceIndices{", S, ",", N₁, ",", N₂, "}")
+# end
 
 Base.size(I::SumSpaceIndices) = map(length, I.sumspaces)
 Base.IndexStyle(::Type{<:SumSpaceIndices}) = IndexCartesian()
@@ -118,14 +118,17 @@ function subblockdims(V::ProductSumSpace{S,N}, c::Sector) where {S,N}
     end
 end
 
-function Base._cat(dims, A::SumSpaceIndices{S,N₁,N₂}...) where {S,N₁,N₂}
+function Base._cat(
+    dims, A::SumSpaceIndices{S,N₁,N₂}, As::SumSpaceIndices{S,N₁,N₂}...
+) where {S,N₁,N₂}
     @assert maximum(dims) <= N₁ + N₂ "Invalid number of spaces"
     catdims = Base.dims2cat(dims)
+    allA = (A, As...)
     Vs = ntuple(N₁ + N₂) do i
         return if i <= length(catdims) && catdims[i]
-            ⊕((A[j].sumspaces[i] for j in 1:length(A))...)
+            ⊕((allA[j].sumspaces[i] for j in 1:length(allA))...)
         else
-            A[1].sumspaces[i]
+            A.sumspaces[i]
         end
     end
     return SumSpaceIndices{S,N₁,N₂}(Vs)
