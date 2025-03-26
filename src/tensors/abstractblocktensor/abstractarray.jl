@@ -37,6 +37,9 @@ end
 @inline function Base.checkbounds(::Type{Bool}, t::AbstractBlockTensorMap, I...)
     return Base.checkbounds_indices(Bool, axes(t), I)
 end
+@inline function Base.checkbounds(::Type{Bool}, t::AbstractBlockTensorMap, i)
+    return Base.checkindex(Bool, eachindex(IndexLinear(), t), i)
+end
 
 # TODO: make this also have Bool as first argument
 function checkspaces(t::AbstractBlockTensorMap, v::AbstractTensorMap, I...)
