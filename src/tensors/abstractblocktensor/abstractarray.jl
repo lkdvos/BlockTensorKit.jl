@@ -19,9 +19,10 @@ Base.lastindex(t::AbstractBlockTensorMap, i::Int) = size(t, i)
 
 Base.IndexStyle(::AbstractBlockTensorMap) = IndexCartesian()
 Base.CartesianIndices(t::AbstractBlockTensorMap) = CartesianIndices(size(t))
+Base.LinearIndices(t::AbstractBlockTensorMap) = LinearIndices(size(t))
 Base.eachindex(t::AbstractBlockTensorMap) = eachindex(IndexStyle(t), t)
 Base.eachindex(::IndexCartesian, t::AbstractBlockTensorMap) = CartesianIndices(t)
-Base.eachindex(::IndexLinear, t::AbstractBlockTensorMap) = LinearIndices(t)
+Base.eachindex(::IndexLinear, t::AbstractBlockTensorMap) = Base.OneTo(length(t))
 
 Base.keys(l::Base.IndexStyle, t::AbstractBlockTensorMap) = keys(l, parent(t))
 Base.haskey(t::AbstractBlockTensorMap, args...) = haskey(parent(t), args...)
