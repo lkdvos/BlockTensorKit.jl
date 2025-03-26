@@ -3,7 +3,12 @@
 function TO.tensoradd_type(
     TC, A::AbstractBlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
 ) where {N₁,N₂}
-    M = TK.similarstoragetype(eltype(A), TC)
+    TA = eltype(A)
+    if TA isa Union
+        M = Union{TK.similarstoragetype(TA.a, TC),TK.similarstoragetype(TA.b, TC)}
+    else
+        M = TK.similarstoragetype(TA, TC)
+    end
     return if issparse(A)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
     else
@@ -108,14 +113,17 @@ function TO.tensoralloc_contract(
 end
 
 function promote_storagetype(::Type{T}, ::Type{T₁}, ::Type{T₂}) where {T,T₁,T₂}
-    M = TK.similarstoragetype(T₁, T)
-    @assert M === TK.similarstoragetype(T₂, T) "incompatible storage types"
-    # TODO: actually make this work, probably with some promotion rules?
-    return M
-end
-# evil hack???
-function TK.storagetype(::Type{AbstractTensorMap{E,S,N1,N2}}) where {E,S,N1,N2}
-    return Vector{E}
+    if T₁ isa Union
+        M₁ = Union{TK.similarstoragetype(T₁.a, T),TK.similarstoragetype(T₁.b, T)}
+    else
+        M₁ = TK.similarstoragetype(T₁, T)
+    end
+    if T₂ isa Union
+        M₂ = Union{TK.similarstoragetype(T₂.a, T),TK.similarstoragetype(T₂.b, T)}
+    else
+        M₂ = TK.similarstoragetype(T₂, T)
+    end
+    return Union{M₁,M₂}
 end
 
 function promote_blocktype(::Type{TT}, ::Type{A₁}, ::Type{A₂}) where {TT,A₁,A₂}
