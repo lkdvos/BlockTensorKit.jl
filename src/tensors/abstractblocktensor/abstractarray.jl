@@ -1,20 +1,27 @@
 # AbstractArray Interface
 # -----------------------
 # mostly pass everything through to the parent array, but with additional features for slicing
-Base.eltype(t::AbstractBlockTensorMap) = eltype(parent(t))
+Base.eltype(t::AbstractBlockTensorMap) = eltype(typeof(t))
 
-Base.ndims(t::AbstractBlockTensorMap) = ndims(parent(t))
-Base.size(t::AbstractBlockTensorMap, args...) = size(parent(t), args...)
-Base.length(t::AbstractBlockTensorMap) = length(parent(t))
-Base.axes(t::AbstractBlockTensorMap, args...) = axes(parent(t), args...)
+Base.ndims(t::AbstractBlockTensorMap) = numind(t)
+Base.size(t::AbstractBlockTensorMap) = size(eachspace(t))
+Base.size(t::AbstractBlockTensorMap, i::Int) = size(t)[i]
+Base.length(t::AbstractBlockTensorMap) = prod(size(t))
+Base.axes(t::AbstractBlockTensorMap) = map(Base.OneTo, size(t))
+Base.axes(t::AbstractBlockTensorMap, i::Int) = Base.OneTo(i ≤ ndims(t) ? size(t, i) : 1)
 
 Base.first(t::AbstractBlockTensorMap) = first(parent(t))
 Base.last(t::AbstractBlockTensorMap) = last(parent(t))
-Base.lastindex(t::AbstractBlockTensorMap, args...) = lastindex(parent(t), args...)
-Base.firstindex(t::AbstractBlockTensorMap, args...) = firstindex(parent(t), args...)
+Base.firstindex(t::AbstractBlockTensorMap) = 1
+Base.firstindex(t::AbstractBlockTensorMap, i::Int) = 1
+Base.lastindex(t::AbstractBlockTensorMap) = length(t)
+Base.lastindex(t::AbstractBlockTensorMap, i::Int) = size(t, i)
 
-Base.CartesianIndices(t::AbstractBlockTensorMap) = CartesianIndices(parent(t))
-Base.eachindex(t::AbstractBlockTensorMap) = eachindex(parent(t))
+Base.IndexStyle(::AbstractBlockTensorMap) = IndexCartesian()
+Base.CartesianIndices(t::AbstractBlockTensorMap) = CartesianIndices(size(t))
+Base.eachindex(t::AbstractBlockTensorMap) = eachindex(IndexStyle(t), t)
+Base.eachindex(::IndexCartesian, t::AbstractBlockTensorMap) = CartesianIndices(t)
+Base.eachindex(::IndexLinear, t::AbstractBlockTensorMap) = LinearIndices(t)
 
 Base.keys(l::Base.IndexStyle, t::AbstractBlockTensorMap) = keys(l, parent(t))
 Base.haskey(t::AbstractBlockTensorMap, args...) = haskey(parent(t), args...)
@@ -23,10 +30,14 @@ Base.only(t::AbstractBlockTensorMap) = only(parent(t))
 Base.isempty(t::AbstractBlockTensorMap) = isempty(parent(t))
 
 # index checking
-Base.checkbounds(t::AbstractBlockTensorMap, I...) = checkbounds(parent(t), I...)
-function Base.checkbounds(::Type{Bool}, t::AbstractBlockTensorMap, I...)
-    return checkbounds(Bool, parent(t), I...)
+@inline function Base.checkbounds(t::AbstractBlockTensorMap, I...)
+    checkbounds(Bool, t, I...) || Base.throw_boundserror(t, I)
+    return nothing
 end
+@inline function Base.checkbounds(::Type{Bool}, t::AbstractBlockTensorMap, I...)
+    return Base.checkbounds_indices(Bool, axes(t), I)
+end
+
 # TODO: make this also have Bool as first argument
 function checkspaces(t::AbstractBlockTensorMap, v::AbstractTensorMap, I...)
     space(v) == eachspace(t)[I...] || throw(
@@ -82,17 +93,27 @@ Base.@propagate_inbounds function Base.getindex(
 )
     V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
-    copyto!(parent(tdst), view(parent(t), indices...))
+
+    # prevent discarding of singleton dimensions
+    indices′ = map(indices) do ind
+        return ind isa Int ? (ind:ind) : ind
+    end
+    Rsrc = CartesianIndices(t)[indices′...]
+    Rdst = CartesianIndices(tdst)
+
+    for (I, v) in nonzero_pairs(t)
+        j = findfirst(==(I), Rsrc)
+        isnothing(j) && continue
+        tdst[Rdst[j]] = v
+    end
     return tdst
 end
+
 # disambiguate:
 Base.@propagate_inbounds function Base.getindex(
     t::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
 )
-    V = space(eachspace(t)[indices...])
-    tdst = similar(t, V)
-    @inbounds copyto!(parent(tdst), view(parent(t), indices...))
-    return tdst
+    return @invoke Base.getindex(t::AbstractBlockTensorMap, indices::Vararg{SliceIndex})
 end
 
 # TODO: check if this fallback is fair
