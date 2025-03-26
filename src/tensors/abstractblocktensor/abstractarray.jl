@@ -113,7 +113,22 @@ end
 Base.@propagate_inbounds function Base.getindex(
     t::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
 )
-    return @invoke Base.getindex(t::AbstractBlockTensorMap, indices::Vararg{SliceIndex})
+    V = space(eachspace(t)[indices...])
+    tdst = similar(t, V)
+
+    # prevent discarding of singleton dimensions
+    indices′ = map(indices) do ind
+        return ind isa Int ? (ind:ind) : ind
+    end
+    Rsrc = CartesianIndices(t)[indices′...]
+    Rdst = CartesianIndices(tdst)
+
+    for (I, v) in nonzero_pairs(t)
+        j = findfirst(==(I), Rsrc)
+        isnothing(j) && continue
+        tdst[Rdst[j]] = v
+    end
+    return tdst
 end
 
 # TODO: check if this fallback is fair
