@@ -97,6 +97,7 @@ Base.@propagate_inbounds function Base.getindex(
 )
     V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
+    length(tdst) == 0 && return tdst
 
     # prevent discarding of singleton dimensions
     indices′ = map(indices) do ind
@@ -119,6 +120,7 @@ Base.@propagate_inbounds function Base.getindex(
 )
     V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
+    length(tdst) == 0 && return tdst
 
     # prevent discarding of singleton dimensions
     indices′ = map(indices) do ind
