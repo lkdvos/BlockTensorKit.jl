@@ -196,13 +196,27 @@ end
 
 # Show
 # ----
+# adapted from Base.show_vector
+# https://github.com/JuliaLang/julia/blob/9af96508e9715e22154fc7b5a7283ad41d23765a/base/arrayshow.jl#L514
+const SUMSPACE_SHOW_LIMIT = Ref(5)
 function Base.show(io::IO, V::SumSpace)
     if length(V) == 1
-        print(io, "⊕(", V[1], ")")
-    else
-        print(io, "(")
-        Base.join(io, V, " ⊕ ")
+        print(io, "⊕(")
+        show(io, V[1])
         print(io, ")")
+        return nothing
+    end
+
+    limited = get(io, :limited, true)
+    if limited && length(V) > SUMSPACE_SHOW_LIMIT[]
+        ax = axes(V.spaces, 1)
+        f, l = first(ax), last(ax)
+        h = SUMSPACE_SHOW_LIMIT[] ÷ 2
+        Base.show_delim_array(io, V.spaces, "(", " ⊕", "", false, f, f + h)
+        print(io, " ⊕ ⋯ ⊕ ")
+        Base.show_delim_array(io, V.spaces, "", " ⊗", ")", false, l - h, l)
+    else
+        Base.show_delim_array(io, V.spaces, "(", " ⊕", ")", false)
     end
     return nothing
 end
