@@ -207,6 +207,16 @@ end
     @test ta ≈ tb
 end
 
+@testset "Adjoint via conversion" begin
+    t1 = rand(ComplexF64, V1 ⊗ V2 ← V4')
+    a = convert(TensorMap, t1)
+    t1adj = @constinferred adjoint(t1)
+    t1adj′ = @constinferred copy(t1adj)
+    @test !(eltype(t1adj′) <: TensorKit.AdjointTensorMap)
+    @test t1adj ≈ t1adj′
+    @test a' ≈ convert(TensorMap, t1adj)
+end
+
 # if hasfusiontensor(I)
 #     @timedtestset "Tensor functions" begin
 #         W = V1 ⊗ V2
