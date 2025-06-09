@@ -197,11 +197,13 @@ end
     return @inbounds get(parent(t), key, default)
 end
 
-Base.copy(t::AbstractBlockTensorMap) = copy!(similar(t), t)
+function Base.copy(t::AbstractBlockTensorMap)
+    return copy!(similar(t, Base.promote_op(copy, eltype(t)), space(t)), t)
+end
 function Base.copy!(tdst::AbstractBlockTensorMap, tsrc::AbstractBlockTensorMap)
     space(tdst) == space(tsrc) || throw(SpaceMismatch("$(space(tdst)) ≠ $(space(tsrc))"))
     @inbounds for (key, value) in nonzero_pairs(tsrc)
-        tdst[key] = copy(value)
+        tdst[key] = copy!(tdst[key], value)
     end
     return tdst
 end
