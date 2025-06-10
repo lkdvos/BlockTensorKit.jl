@@ -108,6 +108,24 @@ Base.@propagate_inbounds function Base.copyto!(
 end
 
 Base.@propagate_inbounds function Base.copyto!(
+    t::SubArray{T,N,A}, v::SparseTensorArray
+) where {T,N,A<:SparseTensorArray}
+    undropped_parentindices = map(Base.parentindices(t)) do I
+        I isa Base.ScalarIndex ? (I:I) : I
+    end
+
+    for I in eachindex(IndexCartesian(), v)
+        if haskey(v, I)
+            t[I] = v[I]
+        else
+            parentI = CartesianIndex(Base.reindex(undropped_parentindices, I.I))
+            delete!(parent(t), parentI)
+        end
+    end
+    return t
+end
+
+Base.@propagate_inbounds function Base.copyto!(
     dest::SparseTensorArray,
     Rdest::CartesianIndices,
     src::SparseTensorArray,
