@@ -198,7 +198,12 @@ end
 end
 
 function Base.copy(t::AbstractBlockTensorMap)
-    return copy!(similar(t, Base.promote_op(copy, eltype(t)), space(t)), t)
+    tdst = if eltype(t) <: AdjointTensorMap
+        similar(t, Base.promote_op(copy, eltype(t)), space(t))
+    else
+        similar(t)
+    end
+    return copy!(tdst, t)
 end
 function Base.copy!(tdst::AbstractBlockTensorMap, tsrc::AbstractBlockTensorMap)
     space(tdst) == space(tsrc) || throw(SpaceMismatch("$(space(tdst)) ≠ $(space(tsrc))"))
