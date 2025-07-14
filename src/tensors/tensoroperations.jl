@@ -35,7 +35,10 @@ function TO.tensorcontract_type(
 ) where {N₁,N₂}
     spacetype(A) == spacetype(B) ||
         throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
-    M = promote_storagetype(TC, eltype(A), eltype(B))
+    
+    I = TK.sectortype(A)
+    Tnew = TKS.sectorscalartype(I) <: Real ? TC : complex(TC)
+    M = promote_storagetype(Tnew, eltype(A), eltype(B))
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
     else
@@ -54,7 +57,10 @@ function TO.tensorcontract_type(
 ) where {N₁,N₂}
     spacetype(A) == spacetype(B) ||
         throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
-    M = promote_storagetype(TC, typeof(A), eltype(B))
+    
+    I = TK.sectortype(A)
+    Tnew = TKS.sectorscalartype(I) <: Real ? TC : complex(TC)
+    M = promote_storagetype(Tnew, typeof(A), eltype(B))
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
     else
