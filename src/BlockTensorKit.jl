@@ -14,6 +14,7 @@ export sparse
 export dropzeros!, droptol!
 export undef_blocks
 
+using TensorKitSectors
 using TensorKit
 using TensorKit:
     OneOrNoneIterator,
@@ -45,6 +46,7 @@ using Compat
 
 import VectorInterface as VI
 import TensorKit as TK
+import TensorKitSectors as TKS
 import TensorOperations as TO
 import TupleTools as TT
 
