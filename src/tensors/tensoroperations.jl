@@ -4,8 +4,8 @@ function TO.tensoradd_type(
     TC, A::AbstractBlockTensorMap, ::Index2Tuple{N₁,N₂}, ::Bool
 ) where {N₁,N₂}
     TA = eltype(A)
-    I = TK.sectortype(A)
-    Tnew = TKS.sectorscalartype(I) <: Real ? TC : complex(TC)
+    I = sectortype(A)
+    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
     if TA isa Union
         M = Union{TK.similarstoragetype(TA.a, Tnew),TK.similarstoragetype(TA.b, Tnew)}
     else
@@ -35,9 +35,9 @@ function TO.tensorcontract_type(
 ) where {N₁,N₂}
     spacetype(A) == spacetype(B) ||
         throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
-    
-    I = TK.sectortype(A)
-    Tnew = TKS.sectorscalartype(I) <: Real ? TC : complex(TC)
+
+    I = sectortype(A)
+    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
     M = promote_storagetype(Tnew, eltype(A), eltype(B))
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
@@ -57,9 +57,9 @@ function TO.tensorcontract_type(
 ) where {N₁,N₂}
     spacetype(A) == spacetype(B) ||
         throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
-    
-    I = TK.sectortype(A)
-    Tnew = TKS.sectorscalartype(I) <: Real ? TC : complex(TC)
+
+    I = sectortype(A)
+    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
     M = promote_storagetype(Tnew, typeof(A), eltype(B))
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
@@ -79,9 +79,9 @@ function TO.tensorcontract_type(
 ) where {N₁,N₂}
     spacetype(A) == spacetype(B) ||
         throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
-    
-    I = TK.sectortype(A)
-    Tnew = TKS.sectorscalartype(I) <: Real ? TC : complex(TC)
+
+    I = sectortype(A)
+    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
     M = promote_storagetype(Tnew, eltype(A), typeof(B))
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
