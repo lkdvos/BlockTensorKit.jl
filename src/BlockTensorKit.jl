@@ -22,7 +22,8 @@ using TensorKit:
     SectorDict,
     AdjointTensorMap,
     adjointtensorindices,
-    compose
+    compose,
+    sectorscalartype
 using VectorInterface
 using TensorOperations
 using TensorOperations:
