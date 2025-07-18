@@ -63,7 +63,7 @@ function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)
 end
 
 # TODO: this might get fixed once new tensormap is implemented
-TensorKit.blocks(t::AbstractBlockTensorMap) = ((c, block(t, c)) for c in blocksectors(t))
+TensorKit.blocks(t::AbstractBlockTensorMap) = ((c => block(t, c)) for c in blocksectors(t))
 TensorKit.blocksectors(t::AbstractBlockTensorMap) = blocksectors(space(t))
 TensorKit.hasblock(t::AbstractBlockTensorMap, c::Sector) = c in blocksectors(t)
 
