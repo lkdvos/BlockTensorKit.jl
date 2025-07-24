@@ -1,3 +1,13 @@
+@noinline function _check_spacetype(
+    ::Type{S₁}, ::Type{S₂}
+) where {S₁<:ElementarySpace,S₂<:ElementarySpace}
+    S₁ === S₂ ||
+        S₁ === SumSpace{S₂} ||
+        SumSpace{S₁} === S₂ ||
+        throw(SpaceMismatch(lazy"incompatible spacetypes: $S₁ and $S₂"))
+    return nothing
+end
+
 # TensorOperations
 # ----------------
 function TO.tensoradd_type(
@@ -33,12 +43,12 @@ function TO.tensorcontract_type(
     ::Bool,
     ::Index2Tuple{N₁,N₂},
 ) where {N₁,N₂}
-    spacetype(A) == spacetype(B) ||
-        throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
+    _check_spacetype(spacetype(A), spacetype(B))
 
     I = sectortype(A)
     Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
     M = promote_storagetype(Tnew, eltype(A), eltype(B))
+
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
     else
@@ -55,12 +65,12 @@ function TO.tensorcontract_type(
     conjB::Bool,
     pAB::Index2Tuple{N₁,N₂},
 ) where {N₁,N₂}
-    spacetype(A) == spacetype(B) ||
-        throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
+    _check_spacetype(spacetype(A), spacetype(B))
 
     I = sectortype(A)
     Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
     M = promote_storagetype(Tnew, typeof(A), eltype(B))
+
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
     else
@@ -77,12 +87,12 @@ function TO.tensorcontract_type(
     ::Bool,
     ::Index2Tuple{N₁,N₂},
 ) where {N₁,N₂}
-    spacetype(A) == spacetype(B) ||
-        throw(SpaceMismatch("incompatible space types: $(spacetype(A)) ≠ $(spacetype(B))"))
+    _check_spacetype(spacetype(A), spacetype(B))
 
     I = sectortype(A)
     Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
     M = promote_storagetype(Tnew, eltype(A), typeof(B))
+
     return if issparse(A) && issparse(B)
         sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
     else
@@ -181,8 +191,7 @@ function TK.trace_permute!(
     backend::AbstractBackend=TO.DefaultBackend(),
 )
     # some input checks
-    (S = spacetype(tdst)) == spacetype(tsrc) ||
-        throw(SpaceMismatch("incompatible spacetypes"))
+    _check_spacetype(spacetype(tdst), spacetype(tsrc))
     if !(BraidingStyle(sectortype(S)) isa SymmetricBraiding)
         throw(
             SectorMismatch(
@@ -216,19 +225,16 @@ end
 # PlanarOperations
 # ----------------
 
-function TK.BraidingTensor(V1::SumSpace{S}, V2::SumSpace{S}) where {S}
-    τtype = if BraidingStyle(sectortype(S)) isa SymmetricBraiding
-        BraidingTensor{Float64,S}
-    else
-        BraidingTensor{ComplexF64,S}
-    end
+function TK.BraidingTensor{T,S}(
+    V1::SumSpace{S}, V2::SumSpace{S}, adjoint::Bool=false
+) where {T,S}
+    τtype = BraidingTensor{T,S}
     tdst = SparseBlockTensorMap{τtype}(undef, V2 ⊗ V1, V1 ⊗ V2)
     Vs = eachspace(tdst)
     @inbounds for I in CartesianIndices(tdst)
         if I[1] == I[4] && I[2] == I[3]
             V = Vs[I]
-            @assert domain(V)[2] == codomain(V)[1] && domain(V)[1] == codomain(V)[2]
-            tdst[I] = TK.BraidingTensor(V[2], V[1])
+            tdst[I] = TK.BraidingTensor{T,S}(V[2], V[1], adjoint)
         end
     end
     return tdst
