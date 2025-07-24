@@ -255,6 +255,17 @@ function similar_tensormaptype(
     end
 end
 function similar_tensormaptype(
+        ::AbstractTensorMap, T::Type{<:AbstractVector}, P::TensorMapSumSpace{S}
+    ) where {S}
+    return tensormaptype(S, numout(P), numin(P), T)
+end
+function similar_tensormaptype(
+        ::AbstractTensorMap, T::Type{<:Number}, P::TensorMapSumSpace{S}
+    ) where {S}
+    return tensormaptype(S, numout(P), numin(P), T)
+end
+
+function similar_tensormaptype(
         t::AbstractBlockTensorMap, T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
     ) where {S}
     if eltype(t) === T && typeof(space(t)) === typeof(P)
