@@ -1,22 +1,21 @@
 using TensorKit: QR, QRpos, QL, QLpos, SVD, SDD, Polar, LQ, LQpos, RQ, RQpos
 
 function TK.leftorth!(
-    t::AbstractBlockTensorMap;
-    alg::Union{QR,QRpos,QL,QLpos,SVD,SDD,Polar}=QRpos(),
-    atol::Real=zero(float(real(scalartype(t)))),
-    rtol::Real=if (alg ∉ (SVD(), SDD()))
-        zero(float(real(scalartype(t))))
-    else
-        eps(real(float(one(scalartype(t))))) * iszero(atol)
-    end,
-)
-    InnerProductStyle(t) === EuclideanInnerProduct() ||
-        throw_invalid_innerproduct(:leftorth!)
+        t::AbstractBlockTensorMap;
+        alg::Union{QR, QRpos, QL, QLpos, SVD, SDD, Polar} = QRpos(),
+        atol::Real = zero(float(real(scalartype(t)))),
+        rtol::Real = if (alg ∉ (SVD(), SDD()))
+            zero(float(real(scalartype(t))))
+        else
+            eps(real(float(one(scalartype(t))))) * iszero(atol)
+        end,
+    )
+    InnerProductStyle(t) === EuclideanInnerProduct() || throw_invalid_innerproduct(:leftorth!)
     if !iszero(rtol)
         atol = max(atol, rtol * norm(t))
     end
     I = sectortype(t)
-    dims = TK.SectorDict{I,Int}()
+    dims = TK.SectorDict{I, Int}()
 
     # compute QR factorization for each block
     if !isempty(TK.blocks(t))
@@ -59,22 +58,22 @@ function TK.leftorth!(t::SparseBlockTensorMap; kwargs...)
 end
 
 function TK.leftnull!(
-    t::BlockTensorMap;
-    alg::Union{QR,QRpos,SVD,SDD}=QRpos(),
-    atol::Real=zero(float(real(scalartype(t)))),
-    rtol::Real=if (alg ∉ (SVD(), SDD()))
-        zero(float(real(scalartype(t))))
-    else
-        eps(real(float(one(scalartype(t))))) * iszero(atol)
-    end,
-)
+        t::BlockTensorMap;
+        alg::Union{QR, QRpos, SVD, SDD} = QRpos(),
+        atol::Real = zero(float(real(scalartype(t)))),
+        rtol::Real = if (alg ∉ (SVD(), SDD()))
+            zero(float(real(scalartype(t))))
+        else
+            eps(real(float(one(scalartype(t))))) * iszero(atol)
+        end,
+    )
     InnerProductStyle(t) === EuclideanInnerProduct() ||
         throw_invalid_innerproduct(:leftnull!)
     if !iszero(rtol)
         atol = max(atol, rtol * norm(t))
     end
     I = sectortype(t)
-    dims = SectorDict{I,Int}()
+    dims = SectorDict{I, Int}()
 
     # compute QR factorization for each block
     V = codomain(t)
@@ -104,22 +103,22 @@ end
 TK.leftnull!(t::SparseBlockTensorMap; kwargs...) = leftnull!(BlockTensorMap(t); kwargs...)
 
 function TK.rightorth!(
-    t::AbstractBlockTensorMap;
-    alg::Union{LQ,LQpos,RQ,RQpos,SVD,SDD,Polar}=LQpos(),
-    atol::Real=zero(float(real(scalartype(t)))),
-    rtol::Real=if (alg ∉ (SVD(), SDD()))
-        zero(float(real(scalartype(t))))
-    else
-        eps(real(float(one(scalartype(t))))) * iszero(atol)
-    end,
-)
+        t::AbstractBlockTensorMap;
+        alg::Union{LQ, LQpos, RQ, RQpos, SVD, SDD, Polar} = LQpos(),
+        atol::Real = zero(float(real(scalartype(t)))),
+        rtol::Real = if (alg ∉ (SVD(), SDD()))
+            zero(float(real(scalartype(t))))
+        else
+            eps(real(float(one(scalartype(t))))) * iszero(atol)
+        end,
+    )
     InnerProductStyle(t) === EuclideanInnerProduct() ||
         throw_invalid_innerproduct(:rightorth!)
     if !iszero(rtol)
         atol = max(atol, rtol * norm(t))
     end
     I = sectortype(t)
-    dims = TK.SectorDict{I,Int}()
+    dims = TK.SectorDict{I, Int}()
 
     # compute LQ factorization for each block
     if !isempty(TK.blocks(t))
@@ -162,22 +161,22 @@ function TK.rightorth!(t::SparseBlockTensorMap; kwargs...)
 end
 
 function TK.rightnull!(
-    t::BlockTensorMap;
-    alg::Union{LQ,LQpos,SVD,SDD}=LQpos(),
-    atol::Real=zero(float(real(scalartype(t)))),
-    rtol::Real=if (alg ∉ (SVD(), SDD()))
-        zero(float(real(scalartype(t))))
-    else
-        eps(real(float(one(scalartype(t))))) * iszero(atol)
-    end,
-)
+        t::BlockTensorMap;
+        alg::Union{LQ, LQpos, SVD, SDD} = LQpos(),
+        atol::Real = zero(float(real(scalartype(t)))),
+        rtol::Real = if (alg ∉ (SVD(), SDD()))
+            zero(float(real(scalartype(t))))
+        else
+            eps(real(float(one(scalartype(t))))) * iszero(atol)
+        end,
+    )
     InnerProductStyle(t) === EuclideanInnerProduct() ||
         throw_invalid_innerproduct(:rightnull!)
     if !iszero(rtol)
         atol = max(atol, rtol * norm(t))
     end
     I = sectortype(t)
-    dims = SectorDict{I,Int}()
+    dims = SectorDict{I, Int}()
 
     # compute LQ factorization for each block
     V = domain(t)
@@ -206,7 +205,7 @@ function TK.rightnull!(
 end
 TK.rightnull!(t::SparseBlockTensorMap; kwargs...) = rightnull!(BlockTensorMap(t); kwargs...)
 
-function TK.tsvd!(t::AbstractBlockTensorMap; trunc=TK.NoTruncation(), p::Real=2, alg=SDD())
+function TK.tsvd!(t::AbstractBlockTensorMap; trunc = TK.NoTruncation(), p::Real = 2, alg = SDD())
     return TK._tsvd!(t, alg, trunc, p)
 end
 function TK.tsvd!(t::SparseBlockTensorMap; kwargs...)
@@ -214,8 +213,8 @@ function TK.tsvd!(t::SparseBlockTensorMap; kwargs...)
 end
 
 function TK._tsvd!(
-    t::BlockTensorMap, alg::Union{SVD,SDD}, trunc::TruncationScheme, p::Real=2
-)
+        t::BlockTensorMap, alg::Union{SVD, SDD}, trunc::TruncationScheme, p::Real = 2
+    )
     # early return
     if isempty(blocksectors(t))
         truncerr = zero(real(scalartype(t)))
@@ -234,10 +233,10 @@ function TK._tsvd!(
     return U, Σ, V⁺, truncerr
 end
 
-function TK._compute_svddata!(t::AbstractBlockTensorMap, alg::Union{SVD,SDD})
+function TK._compute_svddata!(t::AbstractBlockTensorMap, alg::Union{SVD, SDD})
     InnerProductStyle(t) === EuclideanInnerProduct() || throw_invalid_innerproduct(:tsvd!)
     I = sectortype(t)
-    dims = SectorDict{I,Int}()
+    dims = SectorDict{I, Int}()
     generator = Base.Iterators.map(TK.blocks(t)) do (c, b)
         U, Σ, V = TK.MatrixAlgebra.svd!(b, alg)
         dims[c] = length(Σ)
@@ -266,7 +265,7 @@ function TK._empty_svdtensors(t::AbstractBlockTensorMap)
     T = scalartype(t)
     S = spacetype(t)
     I = sectortype(t)
-    dims = SectorDict{I,Int}()
+    dims = SectorDict{I, Int}()
     W = S(dims)
 
     U = similar(t, codomain(t) ← W)

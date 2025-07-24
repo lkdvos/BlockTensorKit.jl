@@ -62,13 +62,13 @@ const leftnull_algs = (TensorKit.QR(), TensorKit.SVD(), TensorKit.SDD())
 @testset "leftnull with $alg" for alg in leftnull_algs
     for T in (Float32, ComplexF64), isadjoint in (false, true)
         t = isadjoint ? rand(T, W)' : rand(T, W)
-        N = @constinferred leftnull(t, ((3, 4, 2), (1, 5)); alg=alg)
+        N = @constinferred leftnull(t, ((3, 4, 2), (1, 5)); alg = alg)
         NdN = N' * N
         @test NdN ≈ one(NdN)
         @test norm(N' * permute(t, ((3, 4, 2), (1, 5)))) < 100 * eps(norm(t))
 
         t_empty = isadjoint ? rand(T, W_empty')' : rand(T, W_empty)
-        N = @constinferred leftnull(t_empty; alg=alg)
+        N = @constinferred leftnull(t_empty; alg = alg)
         @test N' * N ≈ id(domain(N))
         @test N * N' ≈ id(codomain(N))
     end
@@ -86,7 +86,7 @@ const rightorth_algs = (
 @testset "rightorth with $alg" for alg in rightorth_algs
     for T in (Float32, ComplexF64), isadjoint in (false, true)
         t = isadjoint ? rand(T, W)' : rand(T, W)
-        L, Q = @constinferred rightorth(t, ((3, 4), (2, 1, 5)); alg=alg)
+        L, Q = @constinferred rightorth(t, ((3, 4), (2, 1, 5)); alg = alg)
         QQd = Q * Q'
         @test QQd ≈ one(QQd)
         @test L * Q ≈ permute(t, ((3, 4), (2, 1, 5)))
@@ -96,7 +96,7 @@ const rightorth_algs = (
         end
 
         t_empty = isadjoint ? rand(T, W_empty)' : rand(T, W_empty')
-        L, Q = @constinferred rightorth(t_empty; alg=alg)
+        L, Q = @constinferred rightorth(t_empty; alg = alg)
         @test Q == t_empty
         @test dim(Q) == dim(L) == 0
     end
@@ -106,7 +106,7 @@ const rightnull_algs = (TensorKit.LQ(), TensorKit.SVD(), TensorKit.SDD())
 @testset "rightnull with $alg" for alg in rightnull_algs
     for T in (Float32, ComplexF64), isadjoint in (false, true)
         t = isadjoint ? rand(T, W)' : rand(T, W)
-        M = @constinferred rightnull(t, ((3, 4), (2, 1, 5)); alg=alg)
+        M = @constinferred rightnull(t, ((3, 4), (2, 1, 5)); alg = alg)
         MMd = M * M'
         @test MMd ≈ one(MMd)
         @test norm(permute(t, ((3, 4), (2, 1, 5))) * M') < 100 * eps(norm(t))
@@ -130,7 +130,7 @@ const svd_algs = (TensorKit.SVD(), TensorKit.SDD())
         @test U * S * V ≈ permute(t, ((3, 4, 2), (1, 5)))
 
         t_empty = isadjoint ? rand(T, W_empty')' : rand(T, W_empty)
-        U, S, V = @inferred tsvd(t_empty; alg=alg)
+        U, S, V = @inferred tsvd(t_empty; alg = alg)
         @test U == t_empty
         @test dim(U) == dim(S) == dim(V)
     end

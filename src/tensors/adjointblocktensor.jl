@@ -1,6 +1,5 @@
-const AdjointBlockTensorMap{T,S,N₁,N₂,TT<:AbstractBlockTensorMap} = AdjointTensorMap{
-    T,S,N₁,N₂,TT
-}
+const AdjointBlockTensorMap{T, S, N₁, N₂, TT <: AbstractBlockTensorMap} =
+    AdjointTensorMap{T, S, N₁, N₂, TT}
 
 function permute_adjointindices(t::AbstractTensorMap, I::CartesianIndex)
     return CartesianIndex(
@@ -30,10 +29,10 @@ end
 
 # help out inference
 function Base.promote_op(
-    ::typeof(Base.adjoint), ::Type{AbstractTensorMap{T,S,N₁,N₂}}
-) where {T,S,N₁,N₂}
+        ::typeof(Base.adjoint), ::Type{AbstractTensorMap{T, S, N₁, N₂}}
+    ) where {T, S, N₁, N₂}
     AT = Base.promote_op(adjoint, T)
-    return AbstractTensorMap{AT,S,N₂,N₁}
+    return AbstractTensorMap{AT, S, N₂, N₁}
 end
 
 function nonzero_pairs(t::AdjointBlockTensorMap)

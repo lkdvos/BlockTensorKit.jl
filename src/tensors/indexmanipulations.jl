@@ -1,12 +1,9 @@
 function TK.add_transform!(
-    tdst::BlockTensorMap,
-    tsrc::BlockTensorMap,
-    (p₁, p₂)::Index2Tuple{N₁,N₂},
-    fusiontreetransform,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-) where {N₁,N₂}
+        tdst::BlockTensorMap, tsrc::BlockTensorMap, (p₁, p₂)::Index2Tuple{N₁, N₂},
+        fusiontreetransform,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    ) where {N₁, N₂}
     @boundscheck begin
         permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
             throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -23,14 +20,12 @@ function TK.add_transform!(
     return tdst
 end
 function TK.add_transform!(
-    tdst::AbstractBlockTensorMap,
-    tsrc::AbstractBlockTensorMap,
-    (p₁, p₂)::Index2Tuple{N₁,N₂},
-    fusiontreetransform,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-) where {N₁,N₂}
+        tdst::AbstractBlockTensorMap, tsrc::AbstractBlockTensorMap,
+        (p₁, p₂)::Index2Tuple{N₁, N₂},
+        fusiontreetransform,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    ) where {N₁, N₂}
     @boundscheck begin
         permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
             throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -47,14 +42,12 @@ function TK.add_transform!(
     return tdst
 end
 function TK.add_transform!(
-    tdst::AbstractBlockTensorMap,
-    tsrc::AdjointTensorMap{T,S,N₁,N₂,TT},
-    (p₁, p₂)::Index2Tuple,
-    fusiontreetransform,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-) where {T,S,N₁,N₂,TT<:AbstractBlockTensorMap}
+        tdst::AbstractBlockTensorMap, tsrc::AdjointTensorMap{T, S, N₁, N₂, TT},
+        (p₁, p₂)::Index2Tuple,
+        fusiontreetransform,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    ) where {T, S, N₁, N₂, TT <: AbstractBlockTensorMap}
     @boundscheck begin
         permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
             throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -71,28 +64,23 @@ function TK.add_transform!(
     return tdst
 end
 function TK.add_transform!(
-    tdst::TensorMap,
-    tsrc::BlockTensorMap,
-    (p₁, p₂)::Index2Tuple,
-    fusiontreetransform,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-)
+        tdst::TensorMap, tsrc::BlockTensorMap, (p₁, p₂)::Index2Tuple,
+        fusiontreetransform,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    )
     @assert length(tsrc) == 1 "source tensor must be a single tensor"
     return TK.add_transform!(
         tdst, only(tsrc), (p₁, p₂), fusiontreetransform, α, β, backend...
     )
 end
 function TK.add_transform!(
-    tdst::BlockTensorMap,
-    tsrc::TensorMap,
-    (p₁, p₂)::Index2Tuple,
-    fusiontreetransform,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-)
+        tdst::BlockTensorMap, tsrc::TensorMap,
+        (p₁, p₂)::Index2Tuple,
+        fusiontreetransform,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    )
     # @assert length(tsrc) == 1 "source tensor must be a single tensor"
     return TK.add_transform!(
         only(tdst), tsrc, (p₁, p₂), fusiontreetransform, α, β, backend...
@@ -102,13 +90,11 @@ end
 # we need to capture the other functions earlier to enjoy the fast transformers...
 for f! in (:add_permute!, :add_transpose!)
     @eval function TK.$f!(
-        tdst::BlockTensorMap,
-        tsrc::BlockTensorMap,
-        (p₁, p₂)::Index2Tuple{N₁,N₂},
-        α::Number,
-        β::Number,
-        backend::AbstractBackend...,
-    ) where {N₁,N₂}
+            tdst::BlockTensorMap, tsrc::BlockTensorMap,
+            (p₁, p₂)::Index2Tuple{N₁, N₂},
+            α::Number, β::Number,
+            backend::AbstractBackend...,
+        ) where {N₁, N₂}
         @boundscheck begin
             permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
                 throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -123,13 +109,11 @@ for f! in (:add_permute!, :add_transpose!)
         return tdst
     end
     @eval function TK.$f!(
-        tdst::AbstractBlockTensorMap,
-        tsrc::AbstractBlockTensorMap,
-        (p₁, p₂)::Index2Tuple{N₁,N₂},
-        α::Number,
-        β::Number,
-        backend::AbstractBackend...,
-    ) where {N₁,N₂}
+            tdst::AbstractBlockTensorMap, tsrc::AbstractBlockTensorMap,
+            (p₁, p₂)::Index2Tuple{N₁, N₂},
+            α::Number, β::Number,
+            backend::AbstractBackend...,
+        ) where {N₁, N₂}
         @boundscheck begin
             permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
                 throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -144,13 +128,11 @@ for f! in (:add_permute!, :add_transpose!)
         return tdst
     end
     @eval function TK.$f!(
-        tdst::AbstractBlockTensorMap,
-        tsrc::AdjointTensorMap{T,S,N₁,N₂,TT},
-        (p₁, p₂)::Index2Tuple,
-        α::Number,
-        β::Number,
-        backend::AbstractBackend...,
-    ) where {T,S,N₁,N₂,TT<:AbstractBlockTensorMap}
+            tdst::AbstractBlockTensorMap, tsrc::AdjointTensorMap{T, S, N₁, N₂, TT},
+            (p₁, p₂)::Index2Tuple,
+            α::Number, β::Number,
+            backend::AbstractBackend...,
+        ) where {T, S, N₁, N₂, TT <: AbstractBlockTensorMap}
         @boundscheck begin
             permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
                 throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -165,27 +147,23 @@ for f! in (:add_permute!, :add_transpose!)
         return tdst
     end
     @eval function TK.$f!(
-        tdst::TensorMap,
-        tsrc::BlockTensorMap,
-        (p₁, p₂)::Index2Tuple,
-        α::Number,
-        β::Number,
-        backend::AbstractBackend...,
-    )
+            tdst::TensorMap, tsrc::BlockTensorMap,
+            (p₁, p₂)::Index2Tuple,
+            α::Number, β::Number,
+            backend::AbstractBackend...,
+        )
         @assert length(tsrc) == 1 "source tensor must be a single tensor"
         return TK.$f!(tdst, only(tsrc), (p₁, p₂), α, β, backend...)
     end
 end
 
 function TK.add_braid!(
-    tdst::BlockTensorMap,
-    tsrc::BlockTensorMap,
-    (p₁, p₂)::Index2Tuple{N₁,N₂},
-    levels::IndexTuple,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-) where {N₁,N₂}
+        tdst::BlockTensorMap, tsrc::BlockTensorMap,
+        (p₁, p₂)::Index2Tuple{N₁, N₂},
+        levels::IndexTuple,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    ) where {N₁, N₂}
     @boundscheck begin
         permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
             throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -202,14 +180,12 @@ function TK.add_braid!(
     return tdst
 end
 function TK.add_braid!(
-    tdst::AbstractBlockTensorMap,
-    tsrc::AbstractBlockTensorMap,
-    (p₁, p₂)::Index2Tuple{N₁,N₂},
-    levels::IndexTuple,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-) where {N₁,N₂}
+        tdst::AbstractBlockTensorMap, tsrc::AbstractBlockTensorMap,
+        (p₁, p₂)::Index2Tuple{N₁, N₂},
+        levels::IndexTuple,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    ) where {N₁, N₂}
     @boundscheck begin
         permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
             throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -224,14 +200,12 @@ function TK.add_braid!(
     return tdst
 end
 function TK.add_braid!(
-    tdst::AbstractBlockTensorMap,
-    tsrc::AdjointTensorMap{T,S,N₁,N₂,TT},
-    (p₁, p₂)::Index2Tuple,
-    levels::IndexTuple,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-) where {T,S,N₁,N₂,TT<:AbstractBlockTensorMap}
+        tdst::AbstractBlockTensorMap, tsrc::AdjointTensorMap{T, S, N₁, N₂, TT},
+        (p₁, p₂)::Index2Tuple,
+        levels::IndexTuple,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    ) where {T, S, N₁, N₂, TT <: AbstractBlockTensorMap}
     @boundscheck begin
         permute(space(tsrc), (p₁, p₂)) == space(tdst) ||
             throw(SpaceMismatch("source = $(codomain(tsrc))←$(domain(tsrc)),
@@ -246,21 +220,19 @@ function TK.add_braid!(
     return tdst
 end
 function TK.add_braid!(
-    tdst::TensorMap,
-    tsrc::BlockTensorMap,
-    (p₁, p₂)::Index2Tuple,
-    levels::IndexTuple,
-    α::Number,
-    β::Number,
-    backend::AbstractBackend...,
-)
+        tdst::TensorMap, tsrc::BlockTensorMap,
+        (p₁, p₂)::Index2Tuple,
+        levels::IndexTuple,
+        α::Number, β::Number,
+        backend::AbstractBackend...,
+    )
     @assert length(tsrc) == 1 "source tensor must be a single tensor"
     return TK.add_braid!(tdst, only(tsrc), (p₁, p₂), levels, α, β, backend...)
 end
 
 Base.@constprop :aggressive function TK.insertleftunit(
-    t::AbstractBlockTensorMap, i::Int=numind(t) + 1; kwargs...
-)
+        t::AbstractBlockTensorMap, i::Int = numind(t) + 1; kwargs...
+    )
     W = TK.insertleftunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
@@ -271,8 +243,8 @@ Base.@constprop :aggressive function TK.insertleftunit(
 end
 
 Base.@constprop :aggressive function TK.insertrightunit(
-    t::AbstractBlockTensorMap, i::Int=numind(t) + 1; kwargs...
-)
+        t::AbstractBlockTensorMap, i::Int = numind(t) + 1; kwargs...
+    )
     W = TK.insertrightunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
@@ -283,8 +255,8 @@ Base.@constprop :aggressive function TK.insertrightunit(
 end
 
 Base.@constprop :aggressive function TK.removeunit(
-    t::AbstractBlockTensorMap, i::Int; kwargs...
-)
+        t::AbstractBlockTensorMap, i::Int; kwargs...
+    )
     W = TK.removeunit(space(t), i)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
@@ -294,7 +266,7 @@ Base.@constprop :aggressive function TK.removeunit(
     return tdst
 end
 
-function TK.twist!(t::AbstractBlockTensorMap, is; inv::Bool=false)
+function TK.twist!(t::AbstractBlockTensorMap, is; inv::Bool = false)
     foreach(x -> twist!(x, is; inv), nonzero_values(t))
     return t
 end

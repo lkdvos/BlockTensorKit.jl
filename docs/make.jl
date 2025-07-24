@@ -8,18 +8,18 @@ pages = [
 ]
 
 makedocs(;
-    modules=[BlockTensorKit],
-    sitename="BlockTensorKit.jl",
-    authors="Lukas Devos",
-    warnonly=[:missing_docs, :cross_references],
-    format=Documenter.HTML(;
-        prettyurls=get(ENV, "CI", nothing) == "true",
-        mathengine=MathJax(),
-        repolink="https://github.com/lkdvos/BlockTensorKit.jl.git",
+    modules = [BlockTensorKit],
+    sitename = "BlockTensorKit.jl",
+    authors = "Lukas Devos",
+    warnonly = [:missing_docs, :cross_references],
+    format = Documenter.HTML(;
+        prettyurls = get(ENV, "CI", nothing) == "true",
+        mathengine = MathJax(),
+        repolink = "https://github.com/lkdvos/BlockTensorKit.jl.git",
     ),
-    pages=pages,
-    pagesonly=true,
-    repo="github.com/lkdvos/BlockTensorKit.jl.git",
+    pages = pages,
+    pagesonly = true,
+    repo = "github.com/lkdvos/BlockTensorKit.jl.git",
 )
 
-deploydocs(; repo="github.com/lkdvos/BlockTensorKit.jl.git", push_preview=true)
+deploydocs(; repo = "github.com/lkdvos/BlockTensorKit.jl.git", push_preview = true)

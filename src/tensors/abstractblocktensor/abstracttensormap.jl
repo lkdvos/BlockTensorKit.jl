@@ -1,11 +1,10 @@
-
 # AbstractTensorMap Interface
 # ---------------------------
 # TODO: do we really want this:
 # note: this goes along with the specializations of Base.similar above...
 function TensorKit.tensormaptype(
-    ::Type{SumSpace{S}}, N₁::Int, N₂::Int, TorA::Type
-) where {S}
+        ::Type{SumSpace{S}}, N₁::Int, N₂::Int, TorA::Type
+    ) where {S}
     return blocktensormaptype(S, N₁, N₂, TorA)
 end
 
@@ -17,8 +16,8 @@ eachspace(t::AbstractBlockTensorMap) = SumSpaceIndices(space(t))
     return mortar(map(x -> x[nothing, nothing], parent(t)))
 end
 @inline function Base.getindex(
-    t::AbstractBlockTensorMap{E,S,N₁,N₂}, f₁::FusionTree{I,N₁}, f₂::FusionTree{I,N₂}
-) where {E,S,I,N₁,N₂}
+        t::AbstractBlockTensorMap{E, S, N₁, N₂}, f₁::FusionTree{I, N₁}, f₂::FusionTree{I, N₂}
+    ) where {E, S, I, N₁, N₂}
     sectortype(S) === I || throw(SectorMismatch())
     subblocks = map(eachspace(t), parent(t)) do V, x
         sz = (dims(codomain(V), f₁.uncoupled)..., dims(domain(V), f₂.uncoupled)...)
@@ -32,16 +31,16 @@ end
     return mortar(subblocks)
 end
 @inline function Base.setindex!(
-    t::AbstractBlockTensorMap, v::AbstractBlockArray, f₁::FusionTree, f₂::FusionTree
-)
+        t::AbstractBlockTensorMap, v::AbstractBlockArray, f₁::FusionTree, f₂::FusionTree
+    )
     for I in eachindex(t)
         getindex!(t, I)[f₁, f₂] = v[Block(I.I)]
     end
     return t
 end
 @inline function Base.setindex!(
-    t::AbstractBlockTensorMap, v::AbstractArray, f₁::FusionTree, f₂::FusionTree
-)
+        t::AbstractBlockTensorMap, v::AbstractArray, f₁::FusionTree, f₂::FusionTree
+    )
     spaces = (codomain(t)..., domain(t)...)
     uncoupleds = (f₁.uncoupled..., f₂.uncoupled...)
     bsz = map(spaces, uncoupleds) do V, uncoupled
@@ -67,7 +66,7 @@ TensorKit.blocks(t::AbstractBlockTensorMap) = ((c => block(t, c)) for c in block
 TensorKit.blocksectors(t::AbstractBlockTensorMap) = blocksectors(space(t))
 TensorKit.hasblock(t::AbstractBlockTensorMap, c::Sector) = c in blocksectors(t)
 
-function TensorKit.storagetype(::Type{TT}) where {TT<:AbstractBlockTensorMap}
+function TensorKit.storagetype(::Type{TT}) where {TT <: AbstractBlockTensorMap}
     return if isconcretetype(eltype(TT))
         storagetype(eltype(TT))
     else

@@ -156,9 +156,9 @@ end
         for p in permutations(1:5)
             p1 = ntuple(n -> p[n], k)
             p2 = ntuple(n -> p[k + n], 5 - k)
-            t2 = permute(t, (p1, p2); copy=true)
+            t2 = permute(t, (p1, p2); copy = true)
             a2 = convert(TensorMap, t2)
-            @test a2 ≈ permute(a, (p1, p2); copy=true)
+            @test a2 ≈ permute(a, (p1, p2); copy = true)
             @test convert(TensorMap, transpose(t2)) ≈ transpose(a2)
         end
     end

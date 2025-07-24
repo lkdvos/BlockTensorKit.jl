@@ -53,7 +53,7 @@ function checkspaces(t::AbstractBlockTensorMap, v::AbstractTensorMap, I...)
 end
 function checkspaces(t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, I...)
     V_slice = eachspace(t)[I...]
-    if V_slice isa SumSpaceIndices
+    return if V_slice isa SumSpaceIndices
         space(v) == space(V_slice) || throw(
             SpaceMismatch(
                 "inserting a tensor of space $(space(v)) at index $I into a tensor of space $(space(V_slice))",
@@ -80,21 +80,21 @@ function checkspaces(t::AbstractBlockTensorMap)
 end
 
 # scalar indexing is dispatched through:
-@inline Base.getindex(t::AbstractBlockTensorMap, I::Vararg{Int,N}) where {N} =
+@inline Base.getindex(t::AbstractBlockTensorMap, I::Vararg{Int, N}) where {N} =
     getindex(parent(t), I...)
 @inline Base.getindex(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
     getindex(parent(t), I)
-@inline getindex!(t::AbstractBlockTensorMap, I::Vararg{Int,N}) where {N} =
+@inline getindex!(t::AbstractBlockTensorMap, I::Vararg{Int, N}) where {N} =
     getindex!(parent(t), I...)
 @inline getindex!(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
     getindex!(parent(t), I)
 
 # slicing getindex needs to correctly allocate output blocktensor:
-const SliceIndex = Union{Strided.SliceIndex,AbstractVector{<:Union{Integer,Bool}}}
+const SliceIndex = Union{Strided.SliceIndex, AbstractVector{<:Union{Integer, Bool}}}
 
 Base.@propagate_inbounds function Base.getindex(
-    t::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
-)
+        t::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
+    )
     V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
     length(tdst) == 0 && return tdst
@@ -116,8 +116,8 @@ end
 
 # disambiguate:
 Base.@propagate_inbounds function Base.getindex(
-    t::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
-)
+        t::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
+    )
     V = space(eachspace(t)[indices...])
     tdst = similar(t, V)
     length(tdst) == 0 && return tdst
@@ -144,8 +144,8 @@ end
 
 # setindex verifies structure is correct
 @inline function Base.setindex!(
-    t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{SliceIndex}
-)
+        t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{SliceIndex}
+    )
     @boundscheck begin
         checkbounds(t, indices...)
         checkspaces(t, v, indices...)
@@ -155,8 +155,8 @@ end
 end
 # setindex with blocktensor needs to correctly slice-assign
 @inline function Base.setindex!(
-    t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
-)
+        t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, indices::Vararg{SliceIndex}
+    )
     @boundscheck begin
         checkbounds(t, indices...)
         checkspaces(t, v, indices...)
@@ -168,8 +168,8 @@ end
 
 # disambiguate
 @inline function Base.setindex!(
-    t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{Strided.SliceIndex}
-)
+        t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{Strided.SliceIndex}
+    )
     @boundscheck begin
         checkbounds(t, indices...)
         checkspaces(t, v, indices...)
@@ -179,10 +179,8 @@ end
 end
 # disambiguate
 @inline function Base.setindex!(
-    t::AbstractBlockTensorMap,
-    v::AbstractBlockTensorMap,
-    indices::Vararg{Strided.SliceIndex},
-)
+        t::AbstractBlockTensorMap, v::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex},
+    )
     @boundscheck begin
         checkbounds(t, indices...)
         checkspaces(t, v, indices...)
@@ -213,11 +211,9 @@ function Base.copy!(tdst::AbstractBlockTensorMap, tsrc::AbstractBlockTensorMap)
     return tdst
 end
 function Base.copyto!(
-    tdst::AbstractBlockTensorMap,
-    Rdest::CartesianIndices,
-    tsrc::AbstractBlockTensorMap,
-    Rsrc::CartesianIndices,
-)
+        tdst::AbstractBlockTensorMap, Rdest::CartesianIndices,
+        tsrc::AbstractBlockTensorMap, Rsrc::CartesianIndices,
+    )
     copyto!(parent(tdst), Rdest, parent(tsrc), Rsrc)
     return tdst
 end
@@ -243,54 +239,54 @@ Base.similar(t::AbstractBlockTensorMap, P::TensorMapSumSpace) = similar(t, eltyp
 
 # make sure tensormap specializations are not used for sumspaces:
 function Base.similar(
-    t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
-) where {S,TorA}
+        t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
+    ) where {S, TorA}
     TT = similar_tensormaptype(t, TorA, P)
     return issparse(t) ? SparseBlockTensorMap{TT}(undef, P) : BlockTensorMap{TT}(undef, P)
 end
 
 function similar_tensormaptype(
-    ::AbstractTensorMap, T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
-) where {S}
+        ::AbstractTensorMap, T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
+    ) where {S}
     if isconcretetype(T)
         return tensormaptype(S, numout(P), numin(P), storagetype(T))
     else
-        return AbstractTensorMap{scalartype(T),S,numout(P),numin(P)}
+        return AbstractTensorMap{scalartype(T), S, numout(P), numin(P)}
     end
 end
 function similar_tensormaptype(
-    t::AbstractBlockTensorMap, T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
-) where {S}
+        t::AbstractBlockTensorMap, T::Type{<:AbstractTensorMap}, P::TensorMapSumSpace{S}
+    ) where {S}
     if eltype(t) === T && typeof(space(t)) === typeof(P)
         return T
     elseif isconcretetype(T)
         return tensormaptype(S, numout(P), numin(P), storagetype(T))
     else
-        return AbstractTensorMap{scalartype(T),S,numout(P),numin(P)}
+        return AbstractTensorMap{scalartype(T), S, numout(P), numin(P)}
     end
 end
 function similar_tensormaptype(
-    t::AbstractBlockTensorMap, M::Type{<:AbstractVector}, P::TensorMapSumSpace{S}
-) where {S}
+        t::AbstractBlockTensorMap, M::Type{<:AbstractVector}, P::TensorMapSumSpace{S}
+    ) where {S}
     if isconcretetype(eltype(t))
         return tensormaptype(S, numout(P), numin(P), M)
     else
-        return AbstractTensorMap{scalartype(M),S,numout(P),numin(P)}
+        return AbstractTensorMap{scalartype(M), S, numout(P), numin(P)}
     end
 end
 function similar_tensormaptype(
-    t::AbstractBlockTensorMap, T::Type{<:Number}, P::TensorMapSumSpace{S}
-) where {S}
+        t::AbstractBlockTensorMap, T::Type{<:Number}, P::TensorMapSumSpace{S}
+    ) where {S}
     if isconcretetype(eltype(t))
         M = TensorKit.similarstoragetype(t, T)
         return tensormaptype(S, numout(P), numin(P), M)
     else
-        return AbstractTensorMap{T,S,numout(P),numin(P)}
+        return AbstractTensorMap{T, S, numout(P), numin(P)}
     end
 end
 
 # implementation in type domain
-function Base.similar(::Type{T}, P::TensorMapSumSpace) where {T<:AbstractBlockTensorMap}
+function Base.similar(::Type{T}, P::TensorMapSumSpace) where {T <: AbstractBlockTensorMap}
     return T(undef, P)
 end
 
@@ -299,8 +295,8 @@ end
 Base.eltypeof(t::AbstractBlockTensorMap) = eltype(t)
 
 @inline function Base._cat_t(
-    dims, ::Type{T}, ts::AbstractBlockTensorMap...
-) where {T<:AbstractTensorMap}
+        dims, ::Type{T}, ts::AbstractBlockTensorMap...
+    ) where {T <: AbstractTensorMap}
     catdims = Base.dims2cat(dims)
     V = space(Base._cat(dims, eachspace.(ts)...))
     A = similar(ts[1], T, V)

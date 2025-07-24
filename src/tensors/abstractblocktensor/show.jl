@@ -41,7 +41,7 @@ function show_elements(io::IO, x::AbstractBlockTensorMap)
         return ndigits(maximum(getindex.(nzind, i)))
     end
     io = IOContext(io, :compact => compact)
-    nz_pairs = sort(vec(collect(nonzero_pairs(x))); by=first)
+    nz_pairs = sort(vec(collect(nonzero_pairs(x))); by = first)
     for (k, (ind, val)) in enumerate(nz_pairs)
         if k < half_screen_rows || k > length(nzind) - half_screen_rows
             println(io, "  ", '[', Base.join(lpad.(Tuple(ind), pads), ","), "]  =  ", val)
@@ -49,6 +49,7 @@ function show_elements(io::IO, x::AbstractBlockTensorMap)
             println(io, "   ", Base.join(" " .^ pads, " "), "   \u22ee")
         end
     end
+    return nothing
 end
 
 # adapted from SparseArrays.jl
