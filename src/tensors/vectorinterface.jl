@@ -73,7 +73,7 @@ function VI.inner(x::SparseBlockTensorMap, y::SparseBlockTensorMap)
     space(x) == space(y) || throw(SpaceMismatch())
     both_nonzero = intersect(nonzero_keys(x), nonzero_keys(y))
     T = VI.promote_inner(x, y)
-    return sum(both_nonzero; init=zero(T)) do k
+    return sum(both_nonzero; init = zero(T)) do k
         inner(x[k], y[k])
     end
 end

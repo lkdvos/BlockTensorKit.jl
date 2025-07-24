@@ -36,7 +36,7 @@ end
 
 Remove the tensor entries of a blocktensor that have norm `≤(tol)`.
 """
-function droptol!(t::AbstractBlockTensorMap, tol=eps(real(scalartype(t)))^(3 / 4))
+function droptol!(t::AbstractBlockTensorMap, tol = eps(real(scalartype(t)))^(3 / 4))
     for (k, v) in nonzero_pairs(t)
         norm(v) ≤ tol && delete!(t, k)
     end

@@ -15,9 +15,9 @@ Vtr = (
 V = Vtr
 
 @testset "VectorInterface $(issparse ? "SparseBlockTensorMap" : "BlockTensorMap")" for issparse in
-                                                                                       (
-    false, true
-)
+    (
+        false, true,
+    )
     if issparse
         t = sprand(Float64, *(V[1:3]...) ← *(V[4], V[5]), 0.5)
         t′ = sprand(Float64, *(V[1:3]...) ← *(V[4], V[5]), 0.5)

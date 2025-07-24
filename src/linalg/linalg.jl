@@ -57,21 +57,18 @@ end
 # are in the limit where multiplying the individual elements is the bottleneck.
 # With that in mind, we simply write the multiplication in terms of sparse tensors.
 function LinearAlgebra.mul!(
-    C::AbstractBlockTensorMap,
-    A::AbstractBlockTensorMap,
-    B::AbstractBlockTensorMap,
-    α::Number,
-    β::Number,
-)
+        C::AbstractBlockTensorMap, A::AbstractBlockTensorMap, B::AbstractBlockTensorMap,
+        α::Number, β::Number,
+    )
     compose(space(A), space(B)) == space(C) ||
         throw(SpaceMismatch(lazy"$(space(C)) ≠ $(space(A)) * $(space(B))"))
 
     scale!(C, β)
 
     sortIA(IA) = CartesianIndex(TT.getindices(IA.I, domainind(A)))
-    keysA = sort!(vec(collect(nonzero_keys(A))); by=sortIA)
+    keysA = sort!(vec(collect(nonzero_keys(A))); by = sortIA)
     sortIB(IB) = CartesianIndex(TT.getindices(IB.I, codomainind(B)))
-    keysB = sort!(vec(collect(nonzero_keys(B))); by=sortIB)
+    keysB = sort!(vec(collect(nonzero_keys(B))); by = sortIB)
 
     iA = iB = 1
     @inbounds while iA <= length(keysA) && iB <= length(keysB)
@@ -141,14 +138,10 @@ function LinearAlgebra.mul!(
 end
 
 @inline function increasemulindex!(
-    C::AbstractBlockTensorMap,
-    A::AbstractTensorMap,
-    B::AbstractTensorMap,
-    α::Number,
-    β::Number,
-    I,
-)
-    if haskey(C, I)
+        C::AbstractBlockTensorMap, A::AbstractTensorMap, B::AbstractTensorMap,
+        α::Number, β::Number, I,
+    )
+    return if haskey(C, I)
         C[I] = _mul!!(C[I], A, B, α, β)
     else
         C[I] = _mul!!(nothing, A, B, α, β)
@@ -158,7 +151,7 @@ end
 _mul!!(::Nothing, A, B, α::Number, β::Number) = scale!!(A * B, α)
 _mul!!(C, A, B, α::Number, β::Number) = add!!(C, A * B, α, β)
 const _TM_CAN_MUL = Union{
-    TensorMap,AdjointTensorMap{<:Any,<:Any,<:Any,<:Any,<:TensorMap},BraidingTensor
+    TensorMap, AdjointTensorMap{<:Any, <:Any, <:Any, <:Any, <:TensorMap}, BraidingTensor,
 }
 function _mul!!(C::_TM_CAN_MUL, A::_TM_CAN_MUL, B::_TM_CAN_MUL, α::Number, β::Number)
     return mul!(C, A, B, α, β)
@@ -167,12 +160,9 @@ end
 
 # ensure that mixes with AbstractBlockTensorMap and AbstractTensorMap behave as expected:
 for (TC, TA, TB) in Iterators.product(
-    Iterators.repeated((:AbstractTensorMap, :AbstractBlockTensorMap), 3)...
-)
-    (
-        :AbstractBlockTensorMap ∉ (TC, TA, TB) ||
-        all(==(:AbstractBlockTensorMap), (TC, TA, TB))
-    ) && continue
+        Iterators.repeated((:AbstractTensorMap, :AbstractBlockTensorMap), 3)...
+    )
+    (:AbstractBlockTensorMap ∉ (TC, TA, TB) || all(==(:AbstractBlockTensorMap), (TC, TA, TB))) && continue
     @eval function LinearAlgebra.mul!(C::$TC, A::$TA, B::$TB, α::Number, β::Number)
         A′ = A isa AbstractBlockTensorMap ? A : convert(BlockTensorMap, A)
         B′ = B isa AbstractBlockTensorMap ? B : convert(BlockTensorMap, B)
@@ -186,7 +176,7 @@ for (TC, TA, TB) in Iterators.product(
     end
 end
 
-function LinearAlgebra.norm(tA::BlockTensorMap, p::Real=2)
+function LinearAlgebra.norm(tA::BlockTensorMap, p::Real = 2)
     vals = nonzero_values(tA)
     isempty(vals) && return norm(zero(scalartype(tA)), p)
     return LinearAlgebra.norm(norm.(vals), p)
