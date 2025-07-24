@@ -192,7 +192,7 @@ function TK.trace_permute!(
 )
     # some input checks
     _check_spacetype(spacetype(tdst), spacetype(tsrc))
-    if !(BraidingStyle(sectortype(S)) isa SymmetricBraiding)
+    if !(BraidingStyle(sectortype(tdst)) isa SymmetricBraiding)
         throw(
             SectorMismatch(
                 "only tensors with symmetric braiding rules can be contracted; try `@planar` instead",
