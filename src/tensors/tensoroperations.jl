@@ -212,7 +212,7 @@ function TK.BraidingTensor(
         V1::SumSpace{S}, V2::SumSpace{S}, adjoint::Bool = false
     ) where {S}
     T = BraidingStyle(sectortype(S)) isa SymmetricBraiding ? Float64 : ComplexF64
-    return TK.BraidingTensor{T,S}(V1, V2, adjoint)
+    return TK.BraidingTensor{T, S}(V1, V2, adjoint)
 end
 
 function TK.BraidingTensor{T, S}(
