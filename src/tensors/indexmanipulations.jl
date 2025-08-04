@@ -236,7 +236,7 @@ Base.@constprop :aggressive function TK.insertleftunit(
     W = TK.insertleftunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
-        I′ = CartesianIndex(TT.insertafter(I.I, i - 1, 1))
+        I′ = CartesianIndex(TT.insertafter(I.I, i - 1, (1,)))
         tdst[I′] = TK.insertleftunit(v, i; kwargs...)
     end
     return tdst
@@ -248,7 +248,7 @@ Base.@constprop :aggressive function TK.insertrightunit(
     W = TK.insertrightunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
-        I′ = CartesianIndex(TT.insertafter(I.I, i, 1))
+        I′ = CartesianIndex(TT.insertafter(I.I, i, (1,)))
         tdst[I′] = TK.insertrightunit(v, i; kwargs...)
     end
     return tdst
