@@ -33,10 +33,6 @@ function TK.leftorth!(
     if alg isa Polar
         @assert V ≅ domain(t)
         W = domain(t)
-    elseif length(domain(t)) == 1 && domain(t) ≅ V
-        W = domain(t)
-    elseif length(codomain(t)) == 1 && codomain(t) ≅ V
-        W = codomain(t)
     else
         W = ProductSpace(V)
     end
@@ -136,10 +132,6 @@ function TK.rightorth!(
     if alg isa Polar
         @assert V ≅ codomain(t)
         W = codomain(t)
-    elseif length(codomain(t)) == 1 && codomain(t) ≅ V
-        W = codomain(t)
-    elseif length(domain(t)) == 1 && domain(t) ≅ V
-        W = domain(t)
     else
         W = ProductSpace(V)
     end
