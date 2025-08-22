@@ -5,10 +5,20 @@ A (lazy) direct sum of elementary vector spaces of type `S`.
 """
 struct SumSpace{S <: ElementarySpace} <: ElementarySpace
     spaces::Vector{S}
+    dual::Bool
+    function SumSpace{S}(spaces::Vector{S}, dual::Bool) where {S}
+        allequal(==(dual) ∘ isdual, spaces) || throw(ArgumentError("Invalid mix of dual flags"))
+        return new{S}(spaces, dual)
+    end
 end
 
-SumSpace(V::S, spaces::S...) where {S <: ElementarySpace} = SumSpace(collect((V, spaces...)))
-SumSpace{S}() where {S} = SumSpace(S[])
+function SumSpace(V::S, spaces::S...; dual::Bool = isdual(V)) where {S <: ElementarySpace}
+    return SumSpace(collect((V, spaces...)); dual)
+end
+function SumSpace(spaces::Vector{S}; dual::Bool = isempty(spaces) ? false : isdual(first(spaces))) where {S}
+    return SumSpace{S}(spaces, dual)
+end
+SumSpace{S}(; dual::Bool = false) where {S} = SumSpace{S}(S[], dual)
 
 # Convenience aliases
 const ProductSumSpace{S, N} = ProductSpace{SumSpace{S}, N}
@@ -68,10 +78,10 @@ TensorKit.dims(S::SumSpace) = map(dim, S.spaces)
 TensorKit.dim(S::SumSpace, n::Int) = dim(S.spaces[n])
 TensorKit.dim(S::SumSpace) = sum(dims(S))
 
-TensorKit.isdual(S::SumSpace) = isdual(first(S.spaces))
-TensorKit.dual(S::SumSpace) = SumSpace(map(dual, S.spaces))
+TensorKit.isdual(S::SumSpace) = S.dual
+TensorKit.dual(S::SumSpace) = SumSpace(map(dual, S.spaces); dual = !isdual(S))
 Base.conj(S::SumSpace) = dual(S)
-TensorKit.flip(S::SumSpace) = SumSpace(map(flip, S.spaces))
+TensorKit.flip(S::SumSpace) = SumSpace(map(flip, S.spaces); dual = isdual(S))
 
 function TensorKit.hassector(S::SumSpace, s::Sector)
     return mapreduce(v -> hassector(v, s), |, S.spaces; init = false)
