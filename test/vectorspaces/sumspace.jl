@@ -103,7 +103,7 @@ end
     @test !(V ≻ ⊕(V, V))
 end
 
-@testset"GradedSpace" begin
+@testset "GradedSpace" begin
     using TensorKit, BlockTensorKit
     using Test, TestExtras
 
@@ -149,6 +149,72 @@ end
     @test @constinferred(fuse(V, V)) ≅ SumSpace(U1Space(0 => 9, 1 => 24, 2 => 16))
     @test @constinferred(fuse(V, V', V, V')) ≅
         SumSpace(U1Space(0 => 913, 1 => 600, -1 => 600, 2 => 144, -2 => 144))
+    @test @constinferred(flip(V)) ≅ SumSpace(flip.(V.spaces)...)
+    @test flip(V) ≅ V
+    @test flip(V) ≾ V
+    @test flip(V) ≿ V
+    @test V ≺ ⊕(V, V)
+    @test !(V ≻ ⊕(V, V))
+end
+
+@testset "MultFusion" begin
+    using TensorKit, BlockTensorKit
+    using Test, TestExtras
+
+    using TensorKit: hassector
+    using BlockTensorKit: ⊕
+
+    I = IsingBimodule
+
+    C0, C1, D0, D1, M, Mop = I(1, 1, 0), I(1, 1, 1), I(2, 2, 0), I(2, 2, 1), I(1, 2, 0), I(2, 1, 0)
+
+    V1 = Vect[I](C0 => 1, C1 => 1)
+    V2 = Vect[I](D0 => 1, D1 => 1)
+    V3 = Vect[I](M => 1) # no Mop
+    d = dim(V1) + dim(V2) + dim(V3)
+    V = SumSpace(V1, V2, V3)
+
+    @test isa(V, VectorSpace)
+    @test isa(V, ElementarySpace)
+
+    @test isa(InnerProductStyle(V), HasInnerProduct)
+    @test isa(InnerProductStyle(V), EuclideanInnerProduct)
+    @test isa(V, SumSpace)
+
+    @test !isdual(V)
+    @test isdual(V')
+
+    @test @constinferred(hash(V)) == hash(deepcopy(V))
+    @test @constinferred(dual(V)) == @constinferred(conj(V)) == @constinferred(adjoint(V))
+    @test field(V) == ℂ
+
+    @test_throws ArgumentError("one of Type IsingBimodule doesn't exist") oneunit(V)
+    # TODO: get left/rightoneunit working
+
+    @test @constinferred(sectortype(V)) == sectortype(V1)
+    @test ((@constinferred sectors(V))...,) == (C1, C0, D1, D0, M) # why does ordering matter?
+    @test length(sectors(V)) == 5
+    @test @constinferred(hassector(V, M))
+    @test !@constinferred(hassector(V, Mop))
+    @test @constinferred(dim(V)) ==
+        d ==
+        @constinferred(sum(dim(s) for s in sectors(V)))
+    @test dim(@constinferred(typeof(V)())) == 0
+    @test (sectors(typeof(V)())...,) == ()
+
+    W = @constinferred SumSpace(Vect[I](M => 1))
+    @test @constinferred(oneunit(V)) == W == @constinferred(oneunit(typeof(V)))
+
+    VC = SumSpace(V1, V1) # TODO: finish tests with these
+    VCM = SumSpace(V1, V3)
+    VMD = SumSpace(V2, V3)
+
+    @test @constinferred(⊕(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
+    @test @constinferred(⊕(V, oneunit(V))) == SumSpace(vcat(V.spaces, oneunit(V1)))
+    @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
+    @test @constinferred(fuse(VC, VC)) ≅ SumSpace(Vect[I](C0 => 8, C1 => 8))
+    @test @constinferred(fuse(VC, VC', VC, VC')) ≅
+        SumSpace(Vect[I](C0 => 128, C1 => 128))
     @test @constinferred(flip(V)) ≅ SumSpace(flip.(V.spaces)...)
     @test flip(V) ≅ V
     @test flip(V) ≾ V
