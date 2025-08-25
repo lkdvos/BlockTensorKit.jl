@@ -23,7 +23,8 @@ using TensorKit:
     AdjointTensorMap,
     adjointtensorindices,
     compose,
-    sectorscalartype
+    sectorscalartype,
+    hasblock
 using VectorInterface
 using TensorOperations
 using TensorOperations:
@@ -52,6 +53,7 @@ import TupleTools as TT
 # Spaces
 include("vectorspaces/sumspace.jl")
 include("vectorspaces/sumspaceindices.jl")
+include("vectorspaces/multifusionsumspace.jl")
 
 # Tensors
 include("tensors/abstractblocktensor/abstractblocktensor.jl")
