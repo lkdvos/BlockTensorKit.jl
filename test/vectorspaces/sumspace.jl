@@ -144,6 +144,8 @@ end
     W = @constinferred SumSpace(U1Space(0 => 1))
     @test @constinferred(oneunit(V)) == W == @constinferred(oneunit(typeof(V)))
     @test @constinferred(leftoneunit(V)) == W == @constinferred(rightoneunit(V))
+    Vempty = @constinferred(SumSpace(zero(U1Space)))
+    @test oneunit(Vempty) == leftoneunit(Vempty) == rightoneunit(Vempty) == SumSpace(U1Space(0 => 1))
     @test @constinferred(⊕(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
     @test @constinferred(⊕(V, oneunit(V))) == SumSpace(vcat(V.spaces, oneunit(V1)))
     @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
@@ -216,6 +218,11 @@ end
     @test leftoneunit(WM) == WC && rightoneunit(WM) == WD
     @test_throws ArgumentError("non-diagonal SumSpace $WM") oneunit(WM)
     @test_throws ArgumentError("non-diagonal SumSpace $WMop") oneunit(WMop)
+
+    Wempty = SumSpace(Vect[I]())
+    for f in (oneunit, leftoneunit, rightoneunit)
+        @test_throws ArgumentError("Cannot determine type of empty space") f(Wempty)
+    end
 
     VC = SumSpace(V1, V1)
     VCM = SumSpace(V1, V3)
