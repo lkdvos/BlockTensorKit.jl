@@ -157,7 +157,7 @@ end
     @test !(V ≻ ⊕(V, V))
 end
 
-@testset "MultFusion" begin
+@testset "Multifusion" begin
     using TensorKit, BlockTensorKit
     using Test, TestExtras
 
@@ -188,11 +188,10 @@ end
     @test @constinferred(dual(V)) == @constinferred(conj(V)) == @constinferred(adjoint(V))
     @test field(V) == ℂ
 
-    @test_throws ArgumentError("one of Type IsingBimodule doesn't exist") oneunit(V)
-    # TODO: get left/rightoneunit working
+    @test_throws ArgumentError("sectors of $V are not all equal") oneunit(V)
 
     @test @constinferred(sectortype(V)) == sectortype(V1)
-    @test ((@constinferred sectors(V))...,) == (C1, C0, D1, D0, M) # why does ordering matter?
+    @test ((@constinferred sectors(V))...,) == (C1, C0, D1, D0, M) # ordering matters
     @test length(sectors(V)) == 5
     @test @constinferred(hassector(V, M))
     @test !@constinferred(hassector(V, Mop))
@@ -202,15 +201,30 @@ end
     @test dim(@constinferred(typeof(V)())) == 0
     @test (sectors(typeof(V)())...,) == ()
 
-    W = @constinferred SumSpace(Vect[I](M => 1))
-    @test @constinferred(oneunit(V)) == W == @constinferred(oneunit(typeof(V)))
+    # (left/right)oneunit tests
+    WC = @constinferred SumSpace(Vect[I](C0 => 1))
+    WD = @constinferred SumSpace(Vect[I](D0 => 1))
+    WM = @constinferred SumSpace(V3)
+    WMop = @constinferred SumSpace(Vect[I](Mop => 1))
+    for W in [WC, WD]
+        @test @constinferred(oneunit(W)) == W == @constinferred(leftoneunit(W)) == @constinferred(rightoneunit(W))
+        @test_throws ArgumentError("one of Type IsingBimodule doesn't exist") oneunit(typeof(W))
+    end
 
-    VC = SumSpace(V1, V1) # TODO: finish tests with these
+    @test leftoneunit(WMop) == WD && rightoneunit(WMop) == WC
+    @test leftoneunit(WM) == WC && rightoneunit(WM) == WD
+    @test_throws ArgumentError("non-diagonal SumSpace $WM") oneunit(WM)
+    @test_throws ArgumentError("non-diagonal SumSpace $WMop") oneunit(WMop)
+
+    VC = SumSpace(V1, V1)
     VCM = SumSpace(V1, V3)
     VMD = SumSpace(V2, V3)
 
     @test @constinferred(⊕(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
-    @test @constinferred(⊕(V, oneunit(V))) == SumSpace(vcat(V.spaces, oneunit(V1)))
+    @test @constinferred(⊕(VC, oneunit(VC))) == SumSpace(vcat(VC.spaces, oneunit(VC)))
+    @test @constinferred(⊕(VCM, leftoneunit(VCM))) == SumSpace(vcat(VCM.spaces, leftoneunit(VCM)))
+    @test @constinferred(⊕(VMD, rightoneunit(VMD))) == SumSpace(vcat(VMD.spaces, rightoneunit(VMD)))
+
     @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
     @test @constinferred(fuse(VC, VC)) ≅ SumSpace(Vect[I](C0 => 8, C1 => 8))
     @test @constinferred(fuse(VC, VC', VC, VC')) ≅
@@ -221,4 +235,16 @@ end
     @test flip(V) ≿ V
     @test V ≺ ⊕(V, V)
     @test !(V ≻ ⊕(V, V))
+
+    # blocksectors tests
+    @test @constinferred(blocksectors(one(V) ← one(V))) == [C0, D0]
+    @test @constinferred(blocksectors(V ← V)) == sort(collect(sectors(V))) # convert set to vector
+    @test @constinferred(blocksectors(one(V))) == [C0, D0]
+    for v in [VC, VCM, VMD]
+        @test @constinferred(blocksectors(v^2)) == blocksectors(v ← v)
+    end
+    for v in [WM, WMop]
+        @test isempty(@constinferred(blocksectors(v^2)))
+        @test @constinferred(blocksectors(v ← v)) == blocksectors(v)
+    end
 end
