@@ -1,7 +1,7 @@
 # custom methods for SumSpaces
 
 function Base.oneunit(S::SumSpace{Vect[IsingBimodule]})
-    @assert !isempty(S) "Cannot determine type of empty space"
+    @assert !isempty(sectors(S)) "Cannot determine type of empty space"
     allequal(a.row for a in sectors(S)) && allequal(a.col for a in sectors(S)) ||
         throw(ArgumentError("sectors of $S are not all equal"))
     first(sectors(S)).row == first(sectors(S)).col || throw(ArgumentError("non-diagonal SumSpace $S"))
@@ -9,13 +9,13 @@ function Base.oneunit(S::SumSpace{Vect[IsingBimodule]})
 end
 
 function TensorKit.rightoneunit(S::SumSpace{Vect[IsingBimodule]})
-    @assert !isempty(S) "Cannot determine type of empty space"
+    @assert !isempty(sectors(S)) "Cannot determine type of empty space"
     allequal(a.col for a in sectors(S)) || throw(ArgumentError("sectors of $S do not have the same rightone"))
     return SumSpace(TensorKit.rightoneunit(first(S.spaces)))
 end
 
 function TensorKit.leftoneunit(S::SumSpace{Vect[IsingBimodule]})
-    @assert !isempty(S) "Cannot determine type of empty space"
+    @assert !isempty(sectors(S)) "Cannot determine type of empty space"
     allequal(a.row for a in sectors(S)) || throw(ArgumentError("sectors of $S do not have the same leftone"))
     return SumSpace(TensorKit.leftoneunit(first(S.spaces)))
 end
