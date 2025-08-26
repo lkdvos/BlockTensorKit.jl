@@ -24,7 +24,7 @@ function TensorKit.blocksectors(W::TensorMapSpace{SumSpace{Vect[IsingBimodule]},
     codom = codomain(W)
     dom = domain(W)
     if N₁ == 0 && N₂ == 0
-        return (IsingBimodule(1, 1, 0), IsingBimodule(2, 2, 0)) # should this be a vector?
+        return [IsingBimodule(1, 1, 0), IsingBimodule(2, 2, 0)]
     elseif N₁ == 0
         @assert N₂ != 0 "one of Type IsingBimodule doesn't exist"
         return filter!(isone, collect(blocksectors(dom)))
@@ -36,4 +36,25 @@ function TensorKit.blocksectors(W::TensorMapSpace{SumSpace{Vect[IsingBimodule]},
     else
         return filter!(c -> TK.hasblock(dom, c), collect(blocksectors(codom)))
     end
+end
+
+function TensorKit.blocksectors(P::ProductSpace{SumSpace{Vect[IsingBimodule]},N}) where {N}
+    I = sectortype(P) # IsingBimodule
+    bs = Vector{I}()
+    if N == 0
+        return [IsingBimodule(1, 1, 0), IsingBimodule(2, 2, 0)]
+    elseif N == 1
+        for s in sectors(P)
+            push!(bs, first(s))
+        end
+    else
+        for s in sectors(P)
+            for c in ⊗(s...)
+                if !(c in bs)
+                    push!(bs, c)
+                end
+            end
+        end
+    end
+    return sort!(bs)
 end
