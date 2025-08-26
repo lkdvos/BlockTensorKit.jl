@@ -152,6 +152,14 @@ end
 
 Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
 
+function TensorKit.leftoneunit(S::SumSpace{<:GradedSpace})
+    return SumSpace(leftoneunit(first(S)))
+end
+
+function TensorKit.rightoneunit(S::SumSpace{<:GradedSpace})
+    return SumSpace(rightoneunit(first(S)))
+end
+
 # Promotion and conversion
 # ------------------------
 Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S <: ElementarySpace} = SumSpace{S}
