@@ -152,13 +152,9 @@ end
 
 Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
 
-function TensorKit.leftoneunit(S::SumSpace{<:GradedSpace})
-    return SumSpace(leftoneunit(first(S)))
-end
+TensorKit.leftoneunit(S::SumSpace{<:GradedSpace}) = SumSpace(leftoneunit(first(S)))
 
-function TensorKit.rightoneunit(S::SumSpace{<:GradedSpace})
-    return SumSpace(rightoneunit(first(S)))
-end
+TensorKit.rightoneunit(S::SumSpace{<:GradedSpace}) = SumSpace(rightoneunit(first(S)))
 
 # Promotion and conversion
 # ------------------------
