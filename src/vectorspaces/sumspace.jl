@@ -79,8 +79,10 @@ TensorKit.dim(S::SumSpace, n::Int) = dim(S.spaces[n])
 TensorKit.dim(S::SumSpace) = sum(dims(S))
 
 TensorKit.isdual(S::SumSpace) = S.dual
+TensorKit.dual(S::SumSpace{CartesianSpace}) = SumSpace(map(dual, S.spaces); dual = false)
 TensorKit.dual(S::SumSpace) = SumSpace(map(dual, S.spaces); dual = !isdual(S))
 Base.conj(S::SumSpace) = dual(S)
+TensorKit.flip(S::SumSpace{CartesianSpace}) = SumSpace(map(flip, S.spaces); dual = false)
 TensorKit.flip(S::SumSpace) = SumSpace(map(flip, S.spaces); dual = isdual(S))
 
 function TensorKit.hassector(S::SumSpace, s::Sector)
