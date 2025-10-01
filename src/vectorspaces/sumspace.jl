@@ -124,6 +124,10 @@ end
 function Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSumSpace{S}) where {S <: IndexSpace}
     return @invoke ==(V::HomSpace, W::HomSpace)
 end
+
+TensorKit.infimum(V::S, W::S) where {S <: SumSpace} = infimum(TensorKit.oplus(V), TensorKit.oplus(W))
+TensorKit.supremum(V::S, W::S) where {S <: SumSpace} = supremum(TensorKit.oplus(V), TensorKit.oplus(W))
+
 # this conflicts with the definition in TensorKit, so users always need to specify
 # ⊕(Vs::IndexSpace...) = SumSpace(Vs...)
 
