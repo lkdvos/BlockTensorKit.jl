@@ -12,4 +12,4 @@ permissions:
 
 jobs:
   runic:
-    uses: "QuantumKitHub/QuantumKitHubActions/.github/workflows/FormatCheck.yml@main"mKitHub/QuantumKitHubActions/.github/workflows/FormatCheck.yml@main"
+    uses: "QuantumKitHub/QuantumKitHubActions/.github/workflows/FormatCheck.yml@main"
