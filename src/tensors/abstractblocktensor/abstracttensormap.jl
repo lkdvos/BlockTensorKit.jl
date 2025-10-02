@@ -50,21 +50,41 @@ end
     return setindex!(t, v′, f₁, f₂)
 end
 
-function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)
+function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)::TK.blocktype(t)
     sectortype(t) == typeof(c) || throw(SectorMismatch())
 
     rows = prod(TT.getindices(size(t), codomainind(t)))
     cols = prod(TT.getindices(size(t), domainind(t)))
-    @assert rows != 0 && cols != 0 "to be added"
+
+    if rows == cols == 0
+        allblocks = Matrix{TK.blocktype(eltype(t))}()
+        return mortar(allblocks)
+    end
 
     allblocks = map(Base.Fix2(block, c), parent(t))
     return mortar(reshape(allblocks, rows, cols))
 end
 
 # TODO: this might get fixed once new tensormap is implemented
-TensorKit.blocks(t::AbstractBlockTensorMap) = ((c => block(t, c)) for c in blocksectors(t))
 TensorKit.blocksectors(t::AbstractBlockTensorMap) = blocksectors(space(t))
 TensorKit.hasblock(t::AbstractBlockTensorMap, c::Sector) = c in blocksectors(t)
+
+TensorKit.blocks(t::AbstractBlockTensorMap) = TK.BlockIterator(t, blocksectors(t))
+Base.@assume_effects :foldable function TensorKit.blocktype(::Type{TT}) where {TT <: AbstractBlockTensorMap}
+    T = scalartype(TT)
+    B = TK.blocktype(eltype(TT))
+    (B <: AbstractMatrix{T}) || (B = AbstractMatrix{T}) # safeguard against type-instability
+    BS = NTuple{2, BlockedOneTo{Int, Vector{Int}}}
+    return BlockMatrix{T, Matrix{B}, BS}
+end
+
+function Base.iterate(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, state...)
+    next = iterate(iter.structure, state...)
+    isnothing(next) && return next
+    c, newstate = next
+    return c => block(iter.t, c), newstate
+end
+Base.getindex(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, c::Sector) = block(iter.t, c)
 
 function TensorKit.storagetype(::Type{TT}) where {TT <: AbstractBlockTensorMap}
     return if isconcretetype(eltype(TT))
