@@ -114,6 +114,8 @@ TensorKit.compose(V, W) = TensorKit.compose(promote(V, W)...)
 # bit of a hack to make spacechecks happy?
 Base.:(==)(V::SumSpace{S}, W::S) where {S} = ==(promote(V, W)...)
 Base.:(==)(V::S, W::SumSpace{S}) where {S} = ==(promote(V, W)...)
+Base.:(==)(V::ProductSumSpace{S}, W::ProductSpace{S}) where {S <: ElementarySpace} = ==(promote(V, W)...)
+Base.:(==)(V::ProductSpace{S}, W::ProductSumSpace{S}) where {S <: ElementarySpace} = ==(promote(V, W)...)
 function Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSpace{S}) where {S <: IndexSpace}
     return ==(promote(V, W)...)
 end
@@ -125,9 +127,10 @@ function Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSumSpace{S}) where {S <
     return @invoke ==(V::HomSpace, W::HomSpace)
 end
 
+
 TensorKit.infimum(V::S, W::S) where {S <: SumSpace} = infimum(TensorKit.oplus(V), TensorKit.oplus(W))
 TensorKit.supremum(V::S, W::S) where {S <: SumSpace} = supremum(TensorKit.oplus(V), TensorKit.oplus(W))
-
+TensorKit.ominus(V::S, W::S) where {S <: SumSpace} = ominus(TensorKit.oplus(V), TensorKit.oplus(W))
 # this conflicts with the definition in TensorKit, so users always need to specify
 # ⊕(Vs::IndexSpace...) = SumSpace(Vs...)
 
@@ -152,21 +155,16 @@ function ⊕(V₁::SumSpace{S}, V₂::SumSpace{S}) where {S}
 end
 
 #! format: off
-function TensorKit.:⊕(S::SumSpace)
-    if length(S) == 1
-        return only(S.spaces)
-    else
-        return TensorKit.oplus(S.spaces...)
-    end
-end
-TensorKit.:⊕(V1::SumSpace, V2::SumSpace...) = TensorKit.oplus(⊕(V1, V2...))
+TensorKit.:⊕(V::SumSpace{S}) where {S} = reduce(TK.oplus, V.spaces; init = isdual(V) ? zero(S)' : zero(S))
+TensorKit.:⊕(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = TensorKit.oplus(⊕(V1, V2...))
 #! format: on
 
-function TensorKit.fuse(V1::S, V2::S) where {S <: SumSpace}
-    return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
-end
+TensorKit.fuse(V1::SumSpace) = fuse(TK.oplus(V1))
+TK.fuse(V1::S, V2::S) where {S <: SumSpace} = fuse(TK.oplus(V1), TK.oplus(V2))
 
 Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
+Base.zero(V::SumSpace{S}) where {S} = SumSpace{S}(; dual = isdual(V))
+Base.zero(::Type{SumSpace{S}}) where {S} = SumSpace{S}()
 
 # Promotion and conversion
 # ------------------------
