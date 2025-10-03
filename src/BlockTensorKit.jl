@@ -52,7 +52,6 @@ include("tensors/vectorinterface.jl")
 include("tensors/tensoroperations.jl")
 
 include("linalg/linalg.jl")
-# include("linalg/matrixalgebra.jl")
 include("linalg/factorizations.jl")
 
 include("auxiliary/sparsetensorarray.jl")
