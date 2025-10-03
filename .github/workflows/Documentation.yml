@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  documentation:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
