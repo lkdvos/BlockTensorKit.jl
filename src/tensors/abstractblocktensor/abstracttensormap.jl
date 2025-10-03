@@ -56,9 +56,26 @@ function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)::TK.blocktype(t)
     rows = prod(TT.getindices(size(t), codomainind(t)))
     cols = prod(TT.getindices(size(t), domainind(t)))
 
-    if rows == cols == 0
-        allblocks = Matrix{TK.blocktype(eltype(t))}()
-        return mortar(allblocks)
+    if rows == 0 || cols == 0
+        allblocks = Matrix{TK.blocktype(eltype(t))}(undef, rows, cols)
+
+        rowaxes = Int[]
+        if rows != 0
+            W′ = codomain(t) ← zero(spacetype(t))
+            for V in eachspace(W′)
+                push!(rowaxes, blockdim(codomain(V), c))
+            end
+        end
+
+        colaxes = Int[]
+        if cols != 0
+            W′ = zero(spacetype(t)) ← domain(t)
+            for V in eachspace(W′)
+                push!(colaxes, blockdim(domain(V), c))
+            end
+        end
+
+        return mortar(allblocks, rowaxes, colaxes)
     end
 
     allblocks = map(Base.Fix2(block, c), parent(t))
