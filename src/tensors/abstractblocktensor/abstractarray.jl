@@ -241,8 +241,18 @@ Base.similar(t::AbstractBlockTensorMap, P::TensorMapSumSpace) = similar(t, eltyp
 function Base.similar(
         t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
     ) where {S, TorA}
+    return issparse(t) ? sparse_similar(t, TorA, P) : dense_similar(t, TorA, P)
+end
+
+dense_similar(t::AbstractTensorMap, P::TensorMapSumSpace) = dense_similar(t, TK.similarstoragetype(t), P)
+function dense_similar(t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace) where {TorA}
     TT = similar_tensormaptype(t, TorA, P)
-    return issparse(t) ? SparseBlockTensorMap{TT}(undef, P) : BlockTensorMap{TT}(undef, P)
+    return BlockTensorMap{TT}(undef, P)
+end
+sparse_similar(t::AbstractTensorMap, P::TensorMapSumSpace) = sparse_similar(t, TK.similarstoragetype(t), P)
+function sparse_similar(t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace) where {TorA}
+    TT = similar_tensormaptype(t, TorA, P)
+    return SparseBlockTensorMap{TT}(undef, P)
 end
 
 function similar_tensormaptype(

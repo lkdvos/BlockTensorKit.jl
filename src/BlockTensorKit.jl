@@ -15,25 +15,12 @@ export dropzeros!, droptol!
 export undef_blocks
 
 using TensorKit
-using TensorKit:
-    OneOrNoneIterator,
-    HomSpace,
-    MatrixAlgebra,
-    SectorDict,
-    AdjointTensorMap,
-    adjointtensorindices,
-    compose,
-    sectorscalartype
+using TensorKit: OneOrNoneIterator, HomSpace, SectorDict, AdjointTensorMap,
+    adjointtensorindices, compose, sectorscalartype
 using VectorInterface
 using TensorOperations
-using TensorOperations:
-    dimcheck_tensoradd,
-    dimcheck_tensorcontract,
-    dimcheck_tensortrace,
-    argcheck_tensoradd,
-    argcheck_tensorcontract,
-    argcheck_tensortrace,
-    AbstractBackend
+using TensorOperations: dimcheck_tensoradd, dimcheck_tensorcontract, dimcheck_tensortrace,
+    argcheck_tensoradd, argcheck_tensorcontract, argcheck_tensortrace, AbstractBackend
 using LinearAlgebra
 using Strided
 using BlockArrays
@@ -48,6 +35,7 @@ import VectorInterface as VI
 import TensorKit as TK
 import TensorOperations as TO
 import TupleTools as TT
+import MatrixAlgebraKit as MAK
 
 # Spaces
 include("vectorspaces/sumspace.jl")
@@ -64,7 +52,6 @@ include("tensors/vectorinterface.jl")
 include("tensors/tensoroperations.jl")
 
 include("linalg/linalg.jl")
-include("linalg/matrixalgebra.jl")
 include("linalg/factorizations.jl")
 
 include("auxiliary/sparsetensorarray.jl")
