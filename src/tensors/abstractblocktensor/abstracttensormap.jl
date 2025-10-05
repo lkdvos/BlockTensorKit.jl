@@ -50,7 +50,7 @@ end
     return setindex!(t, v′, f₁, f₂)
 end
 
-function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)::TK.blocktype(t)
+function TensorKit.block(t::AbstractBlockTensorMap, c::Sector)
     sectortype(t) == typeof(c) || throw(SectorMismatch())
 
     rows = prod(TT.getindices(size(t), codomainind(t)))
@@ -94,6 +94,14 @@ Base.@assume_effects :foldable function TensorKit.blocktype(::Type{TT}) where {T
     BS = NTuple{2, BlockedOneTo{Int, Vector{Int}}}
     return BlockMatrix{T, Matrix{B}, BS}
 end
+
+# piracy:
+function TK.blocktype(
+        ::Type{Union{TM, TB}}
+    ) where {T, S, TM <: TensorMap{T, S}, TB <: BraidingTensor{T, S}}
+    return Union{TK.blocktype(TM), TK.blocktype(TB)}
+end
+
 
 function Base.iterate(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, state...)
     next = iterate(iter.structure, state...)
