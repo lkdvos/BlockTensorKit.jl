@@ -159,8 +159,9 @@ TensorKit.:⊕(V::SumSpace{S}) where {S} = reduce(TK.oplus, V.spaces; init = isd
 TensorKit.:⊕(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = TensorKit.oplus(⊕(V1, V2...))
 #! format: on
 
-TensorKit.fuse(V1::SumSpace) = fuse(TK.oplus(V1))
-TK.fuse(V1::S, V2::S) where {S <: SumSpace} = fuse(TK.oplus(V1), TK.oplus(V2))
+function TensorKit.fuse(V1::S, V2::S) where {S <: SumSpace}
+    return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
+end
 
 Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
 Base.zero(V::SumSpace{S}) where {S} = SumSpace{S}(; dual = isdual(V))
