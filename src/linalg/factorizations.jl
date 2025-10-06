@@ -72,7 +72,7 @@ function MAK.check_input(::typeof(qr_full!), t::AbstractBlockTensorMap, QR, ::Ab
     @check_scalar R t
 
     # space checks
-    V_Q = TK.oplus(fuse(codomain(t)))
+    V_Q = ⊕(fuse(codomain(t)))
     @check_space(Q, codomain(t) ← V_Q)
     @check_space(R, V_Q ← domain(t))
 
@@ -81,7 +81,7 @@ end
 MAK.check_input(::typeof(qr_full!), t::AbstractBlockTensorMap, QR, ::DiagonalAlgorithm) = error()
 
 function MAK.initialize_output(::typeof(qr_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
-    V_Q = TK.oplus(fuse(codomain(t)))
+    V_Q = ⊕(fuse(codomain(t)))
     Q = dense_similar(t, codomain(t) ← V_Q)
     R = dense_similar(t, V_Q ← domain(t))
     return Q, R
@@ -111,7 +111,7 @@ function MAK.check_input(::typeof(lq_full!), t::AbstractBlockTensorMap, LQ, ::Ab
     @check_scalar Q t
 
     # space checks
-    V_Q = TK.oplus(fuse(domain(t)))
+    V_Q = ⊕(fuse(domain(t)))
     @check_space(L, codomain(t) ← V_Q)
     @check_space(Q, V_Q ← domain(t))
 
@@ -120,7 +120,7 @@ end
 MAK.check_input(::typeof(lq_full!), t::AbstractBlockTensorMap, LQ, ::DiagonalAlgorithm) = error()
 
 function MAK.initialize_output(::typeof(lq_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
-    V_Q = TK.oplus(fuse(domain(t)))
+    V_Q = ⊕(fuse(domain(t)))
     L = dense_similar(t, codomain(t) ← V_Q)
     Q = dense_similar(t, V_Q ← domain(t))
     return L, Q
@@ -151,7 +151,7 @@ function MAK.check_input(::typeof(MAK.left_orth_polar!), t::AbstractBlockTensorM
     @check_scalar P t
 
     # space checks
-    VW = TK.oplus(fuse(domain(t)))
+    VW = ⊕(fuse(domain(t)))
     @check_space(W, codomain(t) ← VW)
     @check_space(P, VW ← domain(t))
 
@@ -176,7 +176,7 @@ function MAK.check_input(::typeof(MAK.right_orth_polar!), t::AbstractBlockTensor
     @check_scalar Wᴴ t
 
     # space checks
-    VW = TK.oplus(fuse(codomain(t)))
+    VW = ⊕(fuse(codomain(t)))
     @check_space(P, codomain(t) ← VW)
     @check_space(Wᴴ, VW ← domain(t))
 
@@ -214,7 +214,7 @@ function MAK.check_input(::typeof(eigh_full!), t::AbstractBlockTensorMap, DV, ::
     @check_scalar V t
 
     # space checks
-    V_D = TK.oplus(fuse(domain(t)))
+    V_D = ⊕(fuse(domain(t)))
     @check_space(D, V_D ← V_D)
     @check_space(V, codomain(t) ← V_D)
 
@@ -225,14 +225,14 @@ MAK.check_input(::typeof(eigh_full!), t::AbstractBlockTensorMap, DV, ::DiagonalA
 function MAK.check_input(::typeof(eigh_vals!), t::AbstractBlockTensorMap, D, ::AbstractAlgorithm)
     @check_scalar D t real
     @assert D isa DiagonalTensorMap
-    V_D = TK.oplus(fuse(domain(t)))
+    V_D = ⊕(fuse(domain(t)))
     @check_space(D, V_D ← V_D)
     return nothing
 end
 MAK.check_input(::typeof(eigh_vals!), t::AbstractBlockTensorMap, D, ::DiagonalAlgorithm) = error()
 
 function MAK.initialize_output(::typeof(eigh_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
-    V_D = TK.oplus(fuse(domain(t)))
+    V_D = ⊕(fuse(domain(t)))
     T = real(scalartype(t))
     D = DiagonalTensorMap{T}(undef, V_D)
     V = dense_similar(t, codomain(t) ← V_D)
@@ -255,7 +255,7 @@ function MAK.check_input(::typeof(eig_full!), t::AbstractBlockTensorMap, DV, ::A
     @check_scalar V t complex
 
     # space checks
-    V_D = TK.oplus(fuse(domain(t)))
+    V_D = ⊕(fuse(domain(t)))
     @check_space(D, V_D ← V_D)
     @check_space(V, codomain(t) ← V_D)
 
@@ -264,7 +264,7 @@ end
 MAK.check_input(::typeof(eig_full!), t::AbstractBlockTensorMap, DV, ::DiagonalAlgorithm) = error()
 
 function MAK.initialize_output(::typeof(eig_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
-    V_D = TK.oplus(fuse(domain(t)))
+    V_D = ⊕(fuse(domain(t)))
     Tc = complex(scalartype(t))
     D = DiagonalTensorMap{Tc}(undef, V_D)
     V = dense_similar(t, Tc, codomain(t) ← V_D)
@@ -285,8 +285,8 @@ function MAK.check_input(::typeof(svd_full!), t::AbstractBlockTensorMap, USVᴴ,
     @check_scalar Vᴴ t
 
     # space checks
-    V_cod = TK.oplus(fuse(codomain(t)))
-    V_dom = TK.oplus(fuse(domain(t)))
+    V_cod = ⊕(fuse(codomain(t)))
+    V_dom = ⊕(fuse(domain(t)))
     @check_space(U, codomain(t) ← V_cod)
     @check_space(S, V_cod ← V_dom)
     @check_space(Vᴴ, V_dom ← domain(t))
@@ -294,8 +294,8 @@ function MAK.check_input(::typeof(svd_full!), t::AbstractBlockTensorMap, USVᴴ,
     return nothing
 end
 function MAK.initialize_output(::typeof(svd_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
-    V_cod = TK.oplus(fuse(codomain(t)))
-    V_dom = TK.oplus(fuse(domain(t)))
+    V_cod = ⊕(fuse(codomain(t)))
+    V_dom = ⊕(fuse(domain(t)))
     U = dense_similar(t, codomain(t) ← V_cod)
     S = similar(t, real(scalartype(t)), V_cod ← V_dom)
     Vᴴ = dense_similar(t, V_dom ← domain(t))

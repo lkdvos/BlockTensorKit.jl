@@ -128,36 +128,32 @@ function Base.:(==)(V::TensorMapSumSpace{S}, W::TensorMapSumSpace{S}) where {S <
 end
 
 
-TensorKit.infimum(V::S, W::S) where {S <: SumSpace} = infimum(TensorKit.oplus(V), TensorKit.oplus(W))
-TensorKit.supremum(V::S, W::S) where {S <: SumSpace} = supremum(TensorKit.oplus(V), TensorKit.oplus(W))
-TensorKit.ominus(V::S, W::S) where {S <: SumSpace} = ominus(TensorKit.oplus(V), TensorKit.oplus(W))
-# this conflicts with the definition in TensorKit, so users always need to specify
-# ⊕(Vs::IndexSpace...) = SumSpace(Vs...)
+TensorKit.infimum(V::S, W::S) where {S <: SumSpace} = infimum(⊕(V), ⊕(W))
+TensorKit.supremum(V::S, W::S) where {S <: SumSpace} = supremum(⊕(V), ⊕(W))
+TensorKit.ominus(V::S, W::S) where {S <: SumSpace} = ominus(⊕(V), ⊕(W))
 
-function ⊕ end
-⊕(V₁::VectorSpace, V₂::VectorSpace) = ⊕(promote(V₁, V₂)...)
-⊕(V::Vararg{VectorSpace}) = foldl(⊕, V)
-const oplus = ⊕
+function ⊞ end
+⊞(V₁::VectorSpace, V₂::VectorSpace) = ⊞(promote(V₁, V₂)...)
+⊞(V::Vararg{VectorSpace}) = reduce(⊞, V)
+const boxplus = ⊞
 
-⊕(V::ElementarySpace) = V isa SumSpace ? V : SumSpace(V)
-function ⊕(V₁::S, V₂::S) where {S <: ElementarySpace}
+⊞(V::ElementarySpace) = V isa SumSpace ? V : SumSpace(V)
+function ⊞(V₁::S, V₂::S) where {S <: ElementarySpace}
     return if isdual(V₁) == isdual(V₂)
         SumSpace(V₁, V₂)
     else
         throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
     end
 end
-function ⊕(V₁::SumSpace{S}, V₂::SumSpace{S}) where {S}
+function ⊞(V₁::SumSpace{S}, V₂::SumSpace{S}) where {S}
     V = SumSpace(vcat(V₁.spaces, V₂.spaces))
     allequal(isdual, V.spaces) ||
         throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
     return V
 end
 
-#! format: off
-TensorKit.:⊕(V::SumSpace{S}) where {S} = reduce(TK.oplus, V.spaces; init = isdual(V) ? zero(S)' : zero(S))
-TensorKit.:⊕(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = TensorKit.oplus(⊕(V1, V2...))
-#! format: on
+⊕(V::SumSpace{S}) where {S} = reduce(⊕, V.spaces; init = isdual(V) ? zero(S)' : zero(S))
+⊕(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = mapreduce(⊕, ⊕, (V1, V2...))
 
 function TensorKit.fuse(V1::S, V2::S) where {S <: SumSpace}
     return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
@@ -186,7 +182,7 @@ function Base.promote_rule(
     return TensorMapSumSpace{S}
 end
 
-Base.convert(::Type{I}, S::SumSpace{I}) where {I <: ElementarySpace} = TensorKit.oplus(S)
+Base.convert(::Type{I}, S::SumSpace{I}) where {I <: ElementarySpace} = ⊕(S)
 Base.convert(::Type{SumSpace{S}}, V::S) where {S <: ElementarySpace} = SumSpace(V)
 function Base.convert(::Type{<:ProductSumSpace{S, N}}, V::ProductSpace{S, N}) where {S, N}
     return ProductSumSpace{S, N}(SumSpace.(V.spaces)...)
@@ -195,7 +191,7 @@ function Base.convert(::Type{<:ProductSumSpace{S}}, V::ProductSpace{S, N}) where
     return ProductSumSpace{S, N}(SumSpace.(V.spaces)...)
 end
 function Base.convert(::Type{<:ProductSpace{S, N}}, V::ProductSumSpace{S, N}) where {S, N}
-    return ProductSpace{S, N}(TensorKit.oplus.(V.spaces)...)
+    return ProductSpace{S, N}(map(⊕, V.spaces)...)
 end
 function Base.convert(
         ::Type{<:TensorMapSumSpace{S}}, V::TensorMapSpace{S, N₁, N₂}
@@ -216,7 +212,7 @@ end
 const SUMSPACE_SHOW_LIMIT = Ref(5)
 function Base.show(io::IO, V::SumSpace)
     if length(V) == 1
-        print(io, "⊕(")
+        print(io, "⊞(")
         show(io, V[1])
         print(io, ")")
         return nothing
@@ -227,11 +223,11 @@ function Base.show(io::IO, V::SumSpace)
         ax = axes(V.spaces, 1)
         f, l = first(ax), last(ax)
         h = SUMSPACE_SHOW_LIMIT[] ÷ 2
-        Base.show_delim_array(io, V.spaces, "(", " ⊕", "", false, f, f + h)
-        print(io, " ⊕ ⋯ ⊕ ")
-        Base.show_delim_array(io, V.spaces, "", " ⊗", ")", false, l - h, l)
+        Base.show_delim_array(io, V.spaces, "(", " ⊞", "", false, f, f + h)
+        print(io, " ⊞ ⋯ ⊞ ")
+        Base.show_delim_array(io, V.spaces, "", " ⊞", ")", false, l - h, l)
     else
-        Base.show_delim_array(io, V.spaces, "(", " ⊕", ")", false)
+        Base.show_delim_array(io, V.spaces, "(", " ⊞", ")", false)
     end
     return nothing
 end

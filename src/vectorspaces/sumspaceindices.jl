@@ -126,7 +126,7 @@ function Base._cat(
     allA = (A, As...)
     Vs = ntuple(N₁ + N₂) do i
         return if i <= length(catdims) && catdims[i]
-            ⊕((allA[j].sumspaces[i] for j in 1:length(allA))...)
+            ⊞((allA[j].sumspaces[i] for j in 1:length(allA))...)
         else
             A.sumspaces[i]
         end
