@@ -34,7 +34,10 @@ end
         t::AbstractBlockTensorMap, v::AbstractBlockArray, f₁::FusionTree, f₂::FusionTree
     )
     for I in eachindex(t)
-        getindex!(t, I)[f₁, f₂] = v[Block(I.I)]
+        b = v[Block(I.I)]
+        if !isempty(b)
+            getindex!(t, I)[f₁, f₂] = v[Block(I.I)]
+        end
     end
     return t
 end
