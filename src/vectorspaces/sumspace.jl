@@ -161,8 +161,8 @@ TensorKit.infimum(V::S, W::S) where {S <: SumSpace} = infimum(⊕(V), ⊕(W))
 TensorKit.supremum(V::S, W::S) where {S <: SumSpace} = supremum(⊕(V), ⊕(W))
 TensorKit.ominus(V::S, W::S) where {S <: SumSpace} = ominus(⊕(V), ⊕(W))
 
-⊕(V::SumSpace{S}) where {S} = reduce(⊕, V.spaces; init = isdual(V) ? zero(S)' : zero(S))
-⊕(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = mapreduce(⊕, ⊕, (V1, V2...))
+TensorKit.oplus(V::SumSpace{S}) where {S} = reduce(⊕, V.spaces; init = isdual(V) ? zero(S)' : zero(S))
+TensorKit.oplus(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = mapreduce(⊕, ⊕, (V1, V2...))
 
 function TensorKit.fuse(V1::S, V2::S) where {S <: SumSpace}
     return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
