@@ -25,6 +25,35 @@ const ProductSumSpace{S, N} = ProductSpace{SumSpace{S}, N}
 const TensorSumSpace{S} = TensorSpace{SumSpace{S}}
 const TensorMapSumSpace{S, N₁, N₂} = TensorMapSpace{SumSpace{S}, N₁, N₂}
 
+# unicode name
+"""
+    V1 ⊞ V2...
+    boxplus(V1::ElementarySpace, V2::ElementarySpace...)
+
+Create a lazy representation of the direct sum of the supplied vector spaces, which retains the order.
+See also [`SumSpace`](@ref).
+"""
+function ⊞ end
+const boxplus = ⊞
+
+⊞(V₁::VectorSpace, V₂::VectorSpace) = ⊞(promote(V₁, V₂)...)
+⊞(V::Vararg{VectorSpace}) = reduce(⊞, V)
+
+⊞(V::ElementarySpace) = V isa SumSpace ? V : SumSpace(V)
+function (V₁::S ⊞ V₂::S) where {S <: ElementarySpace}
+    return if isdual(V₁) == isdual(V₂)
+        SumSpace(V₁, V₂)
+    else
+        throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
+    end
+end
+function (V₁::SumSpace{S} ⊞ V₂::SumSpace{S}) where {S}
+    V = SumSpace(vcat(V₁.spaces, V₂.spaces))
+    allequal(isdual, V.spaces) ||
+        throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
+    return V
+end
+
 # AbstractArray behavior
 # ----------------------
 Base.size(S::SumSpace) = size(S.spaces)
@@ -131,26 +160,6 @@ end
 TensorKit.infimum(V::S, W::S) where {S <: SumSpace} = infimum(⊕(V), ⊕(W))
 TensorKit.supremum(V::S, W::S) where {S <: SumSpace} = supremum(⊕(V), ⊕(W))
 TensorKit.ominus(V::S, W::S) where {S <: SumSpace} = ominus(⊕(V), ⊕(W))
-
-function ⊞ end
-⊞(V₁::VectorSpace, V₂::VectorSpace) = ⊞(promote(V₁, V₂)...)
-⊞(V::Vararg{VectorSpace}) = reduce(⊞, V)
-const boxplus = ⊞
-
-⊞(V::ElementarySpace) = V isa SumSpace ? V : SumSpace(V)
-function ⊞(V₁::S, V₂::S) where {S <: ElementarySpace}
-    return if isdual(V₁) == isdual(V₂)
-        SumSpace(V₁, V₂)
-    else
-        throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
-    end
-end
-function ⊞(V₁::SumSpace{S}, V₂::SumSpace{S}) where {S}
-    V = SumSpace(vcat(V₁.spaces, V₂.spaces))
-    allequal(isdual, V.spaces) ||
-        throw(SpaceMismatch("Direct sum of a vector space and its dual does not exist"))
-    return V
-end
 
 ⊕(V::SumSpace{S}) where {S} = reduce(⊕, V.spaces; init = isdual(V) ? zero(S)' : zero(S))
 ⊕(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = mapreduce(⊕, ⊕, (V1, V2...))
