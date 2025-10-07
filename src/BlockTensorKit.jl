@@ -1,6 +1,6 @@
 module BlockTensorKit
 
-export SumSpace, ProductSumSpace
+export SumSpace, ProductSumSpace, ⊞, boxplus
 export eachspace, SumSpaceIndices, sumspacetype
 
 export AbstractBlockTensorMap, BlockTensorMap, SparseBlockTensorMap

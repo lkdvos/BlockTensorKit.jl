@@ -6,7 +6,7 @@ These spaces are a natural extension of the `TensorKit` vector spaces, and you c
 ### `SumSpace`
 
 In `BlockTensorKit`, we provide a type `SumSpace` that allows you to define such direct sums.
-They can be defined either directly via the constructor, or by using the `⊕` operator.
+They can be defined either directly via the constructor, or by using the `⊞` (`\boxplus<TAB>`) operator.
 In order for the direct sum to be wll-defined, all components must have the same value of `isdual`.
 
 Essentially, that is all there is to it, and you can now use these `SumSpace` objects much in the same way as you would use an `IndexSpace` object in `TensorKit`.
@@ -14,14 +14,13 @@ In particular, it adheres to the interface of `ElementarySpace`, which means tha
 
 !!! note
 
-    The operator `⊕` is used in both TensorKit and BlockTensorKit, and therefore it must be explicitly imported to avoid name clashes.
-    Both functions achieve almost the same thing, as `BlockTensorKit.⊕` can be thought of as a _lazy_ version of `TensorKit.⊕`.
+    The notion of a direct sum of vector spaces is used in both TensorKit (`⊕` or `oplus`) and BlockTensorKit (`⊞` or `boxplus`).
+    Both functions achieve almost the same thing, and `BlockTensorKit.⊞` can be thought of as a _lazy_ version of `TensorKit.⊕`.
 
 ```@repl sumspaces
 using TensorKit, BlockTensorKit
-using BlockTensorKit: ⊕
-V = ℂ^1 ⊕ ℂ^2 ⊕ ℂ^3
-ℂ^2 ⊕ (ℂ^2)' ⊕ ℂ^2 # error
+V = ℂ^1 ⊞ ℂ^2 ⊞ ℂ^3
+ℂ^2 ⊞ (ℂ^2)' ⊞ ℂ^2 # error
 dim(V)
 isdual(V)
 isdual(V')
@@ -43,7 +42,7 @@ Because these objects are naturally `ElementarySpace` objects, they can be used 
 Additionally, when mixing spaces and their sumspaces, all components are promoted to `SumSpace` instances.
 
 ```@repl sumspaces
-V1 = ℂ^1 ⊕ ℂ^2 ⊕ ℂ^3 
+V1 = ℂ^1 ⊞ ℂ^2 ⊞ ℂ^3
 V2 = ℂ^2
 V1 ⊗ V2 ⊗ V1' == V1 * V2 * V1' == ProductSpace(V1,V2,V1') == ProductSpace(V1,V2) ⊗ V1'
 V1^3

@@ -6,7 +6,6 @@ using TensorKit, BlockTensorKit
     using Test, TestExtras
 
     using TensorKit: hassector
-    using BlockTensorKit: ⊕
 
     ds = [2, 3, 2]
     d = sum(ds)
@@ -42,17 +41,17 @@ using TensorKit, BlockTensorKit
     @test @constinferred(axes(V)) == Base.OneTo(d)
     W = @constinferred SumSpace(ℝ^1)
     @test @constinferred(oneunit(V)) == W == oneunit(typeof(V))
-    @test @constinferred(⊕(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
-    @test @constinferred(⊕(V, oneunit(V))) == SumSpace(vcat(V.spaces, ℝ^1))
-    @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
+    @test @constinferred(⊞(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
+    @test @constinferred(⊞(V, oneunit(V))) == SumSpace(vcat(V.spaces, ℝ^1))
+    @test @constinferred(⊞(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
     @test @constinferred(fuse(V, V)) ≅ SumSpace(ℝ^(d^2))
     @test @constinferred(fuse(V, V', V, V')) ≅ SumSpace(ℝ^(d^4))
     @test @constinferred(flip(V)) ≅ V'
     @test flip(V) ≅ V
     @test flip(V) ≾ V
     @test flip(V) ≿ V
-    @test V ≺ ⊕(V, V)
-    @test !(V ≻ ⊕(V, V))
+    @test V ≺ ⊞(V, V)
+    @test !(V ≻ ⊞(V, V))
 end
 
 @testset "ComplexSpace" begin
@@ -60,7 +59,6 @@ end
     using Test, TestExtras
 
     using TensorKit: hassector
-    using BlockTensorKit: ⊕
 
     ds = [2, 3, 2]
     d = sum(ds)
@@ -90,17 +88,17 @@ end
     @test @constinferred(axes(V)) == Base.OneTo(d)
     W = @constinferred SumSpace(ℂ^1)
     @test @constinferred(oneunit(V)) == W == oneunit(typeof(V))
-    @test @constinferred(⊕(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
-    @test @constinferred(⊕(V, oneunit(V))) == SumSpace(vcat(V.spaces, ℂ^1))
-    @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
+    @test @constinferred(⊞(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
+    @test @constinferred(⊞(V, oneunit(V))) == SumSpace(vcat(V.spaces, ℂ^1))
+    @test @constinferred(⊞(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
     @test @constinferred(fuse(V, V)) ≅ SumSpace(ℂ^(d^2))
     @test @constinferred(fuse(V, V', V, V')) ≅ SumSpace(ℂ^(d^4))
     @test @constinferred(flip(V)) ≅ V'
     @test flip(V) ≅ V
     @test flip(V) ≾ V
     @test flip(V) ≿ V
-    @test V ≺ ⊕(V, V)
-    @test !(V ≻ ⊕(V, V))
+    @test V ≺ ⊞(V, V)
+    @test !(V ≻ ⊞(V, V))
 end
 
 @testset"GradedSpace" begin
@@ -108,7 +106,6 @@ end
     using Test, TestExtras
 
     using TensorKit: hassector
-    using BlockTensorKit: ⊕
 
     V1 = U1Space(0 => 1, 1 => 1)
     V2 = U1Space(0 => 1, 1 => 2)
@@ -143,9 +140,9 @@ end
     @test @constinferred(axes(V)) == Base.OneTo(d)
     W = @constinferred SumSpace(U1Space(0 => 1))
     @test @constinferred(oneunit(V)) == W == @constinferred(oneunit(typeof(V)))
-    @test @constinferred(⊕(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
-    @test @constinferred(⊕(V, oneunit(V))) == SumSpace(vcat(V.spaces, oneunit(V1)))
-    @test @constinferred(⊕(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
+    @test @constinferred(⊞(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
+    @test @constinferred(⊞(V, oneunit(V))) == SumSpace(vcat(V.spaces, oneunit(V1)))
+    @test @constinferred(⊞(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
     @test @constinferred(fuse(V, V)) ≅ SumSpace(U1Space(0 => 9, 1 => 24, 2 => 16))
     @test @constinferred(fuse(V, V', V, V')) ≅
         SumSpace(U1Space(0 => 913, 1 => 600, -1 => 600, 2 => 144, -2 => 144))
@@ -153,6 +150,6 @@ end
     @test flip(V) ≅ V
     @test flip(V) ≾ V
     @test flip(V) ≿ V
-    @test V ≺ ⊕(V, V)
-    @test !(V ≻ ⊕(V, V))
+    @test V ≺ ⊞(V, V)
+    @test !(V ≻ ⊞(V, V))
 end
