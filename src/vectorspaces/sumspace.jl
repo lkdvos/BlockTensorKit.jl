@@ -227,16 +227,37 @@ function Base.show(io::IO, V::SumSpace)
     end
 
     limited = get(io, :limited, true)
+    ioc = IOContext(io, :compact => true)
     if limited && length(V) > SUMSPACE_SHOW_LIMIT[]
         ax = axes(V.spaces, 1)
         f, l = first(ax), last(ax)
         h = SUMSPACE_SHOW_LIMIT[] ÷ 2
-        Base.show_delim_array(io, V.spaces, "(", " ⊞", "", false, f, f + h)
+        Base.show_delim_array(ioc, V.spaces, "(", " ⊞", "", false, f, f + h)
         print(io, " ⊞ ⋯ ⊞ ")
-        Base.show_delim_array(io, V.spaces, "", " ⊞", ")", false, l - h, l)
+        Base.show_delim_array(ioc, V.spaces, "", " ⊞", ")", false, l - h, l)
     else
-        Base.show_delim_array(io, V.spaces, "(", " ⊞", ")", false)
+        Base.show_delim_array(ioc, V.spaces, "(", " ⊞", ")", false)
     end
+    return nothing
+end
+
+function Base.show(io::IO, ::MIME"text/plain", V::SumSpace)
+    # print small summary, e.g.: l-element SumSpace(Vect[I](…)) of dim d
+    l = length(V.spaces)
+    d = dim(V)
+    print(io, l, "-element ⊞(::", TK.type_repr(eltype(V)), "…)")
+    isdual(V) && print(io, "'")
+    print(io, " of dim ", d)
+
+    compact = get(io, :compact, false)::Bool
+    (iszero(d) || compact) && return nothing
+
+    # print detailed space information - hijack Base.Vector printing
+    print(io, ":\n")
+    print_data = V.spaces
+    ioc = IOContext(io, :typeinfo => eltype(print_data))
+    Base.print_matrix(ioc, print_data)
+
     return nothing
 end
 
