@@ -161,16 +161,15 @@ TensorKit.infimum(V::S, W::S) where {S <: SumSpace} = infimum(⊕(V), ⊕(W))
 TensorKit.supremum(V::S, W::S) where {S <: SumSpace} = supremum(⊕(V), ⊕(W))
 TensorKit.ominus(V::S, W::S) where {S <: SumSpace} = ominus(⊕(V), ⊕(W))
 
-TensorKit.oplus(V::SumSpace{S}) where {S} = reduce(⊕, V.spaces; init = isdual(V) ? zero(S)' : zero(S))
+TensorKit.oplus(V::SumSpace{S}) where {S} = reduce(⊕, V.spaces; init = isdual(V) ? zerospace(S)' : zerospace(S))
 TensorKit.oplus(V1::SumSpace{S}, V2::SumSpace{S}...) where {S} = mapreduce(⊕, ⊕, (V1, V2...))
 
 function TensorKit.fuse(V1::S, V2::S) where {S <: SumSpace}
     return SumSpace(vec([fuse(v1, v2) for (v1, v2) in Base.product(V1.spaces, V2.spaces)]))
 end
 
-Base.oneunit(S::Type{<:SumSpace}) = SumSpace(oneunit(eltype(S)))
-Base.zero(V::SumSpace{S}) where {S} = SumSpace{S}(; dual = isdual(V))
-Base.zero(::Type{SumSpace{S}}) where {S} = SumSpace{S}()
+TensorKit.unitspace(S::Type{<:SumSpace}) = SumSpace(TensorKit.unitspace(eltype(S)))
+TensorKit.zerospace(::Type{SumSpace{S}}) where {S} = SumSpace{S}()
 
 # Promotion and conversion
 # ------------------------
@@ -228,16 +227,37 @@ function Base.show(io::IO, V::SumSpace)
     end
 
     limited = get(io, :limited, true)
+    ioc = IOContext(io, :compact => true)
     if limited && length(V) > SUMSPACE_SHOW_LIMIT[]
         ax = axes(V.spaces, 1)
         f, l = first(ax), last(ax)
         h = SUMSPACE_SHOW_LIMIT[] ÷ 2
-        Base.show_delim_array(io, V.spaces, "(", " ⊞", "", false, f, f + h)
+        Base.show_delim_array(ioc, V.spaces, "(", " ⊞", "", false, f, f + h)
         print(io, " ⊞ ⋯ ⊞ ")
-        Base.show_delim_array(io, V.spaces, "", " ⊞", ")", false, l - h, l)
+        Base.show_delim_array(ioc, V.spaces, "", " ⊞", ")", false, l - h, l)
     else
-        Base.show_delim_array(io, V.spaces, "(", " ⊞", ")", false)
+        Base.show_delim_array(ioc, V.spaces, "(", " ⊞", ")", false)
     end
+    return nothing
+end
+
+function Base.show(io::IO, ::MIME"text/plain", V::SumSpace)
+    # print small summary, e.g.: l-element SumSpace(Vect[I](…)) of dim d
+    l = length(V.spaces)
+    d = dim(V)
+    print(io, l, "-element ⊞(::", TK.type_repr(eltype(V)), "…)")
+    isdual(V) && print(io, "'")
+    print(io, " of dim ", d)
+
+    compact = get(io, :compact, false)::Bool
+    (iszero(d) || compact) && return nothing
+
+    # print detailed space information - hijack Base.Vector printing
+    print(io, ":\n")
+    print_data = V.spaces
+    ioc = IOContext(io, :typeinfo => eltype(print_data))
+    Base.print_matrix(ioc, print_data)
+
     return nothing
 end
 
