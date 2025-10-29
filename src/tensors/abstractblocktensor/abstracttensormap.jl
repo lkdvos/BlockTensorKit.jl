@@ -10,15 +10,14 @@ end
 
 eachspace(t::AbstractBlockTensorMap) = SumSpaceIndices(space(t))
 
-# TODO: delete this method
-@inline function Base.getindex(t::AbstractBlockTensorMap, ::Nothing, ::Nothing)
-    sectortype(t) === Trivial || throw(SectorMismatch())
-    return mortar(map(x -> x[nothing, nothing], parent(t)))
-end
-@inline function Base.getindex(
-        t::AbstractBlockTensorMap{E, S, N₁, N₂}, f₁::FusionTree{I, N₁}, f₂::FusionTree{I, N₂}
-    ) where {E, S, I, N₁, N₂}
-    sectortype(S) === I || throw(SectorMismatch())
+@inline function TensorKit.subblock(
+        t::AbstractBlockTensorMap, (f₁, f₂)::Tuple{FusionTree, FusionTree}
+    )
+    sectortype(t) === sectortype(f₁) === sectortype(f₂) ||
+        throw(SectorMismatch("Not a valid sectortype for this tensor"))
+    numout(t) == length(f₁) && numin(t) == length(f₂) ||
+        throw(DimensionMismatch("Invalid number of fusiontree legs for this tensor"))
+
     subblocks = map(eachspace(t), parent(t)) do V, x
         sz = (dims(codomain(V), f₁.uncoupled)..., dims(domain(V), f₂.uncoupled)...)
         if prod(sz) == 0
@@ -28,6 +27,7 @@ end
             return x[f₁, f₂]
         end
     end
+
     return mortar(subblocks)
 end
 @inline function Base.setindex!(
