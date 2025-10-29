@@ -1,13 +1,10 @@
 # Show
 # ----
-function Base.show(io::IO, t::AbstractBlockTensorMap)
-    summary(io, t)
-    get(io, :compact, false) && return nothing
-    println(io, ":")
-    for (c, b) in TensorKit.blocks(t)
-        println(io, "* Block for sector $c:")
-        show(io, b)
-    end
+function Base.summary(io::IO, t::AbstractBlockTensorMap)
+    V = space(t)
+    sz = size(t)
+    print(io, Base.dims2string(sz), "-blocked ", Base.dims2string(V), " ")
+    Base.showarg(io, t, true)
     return nothing
 end
 
@@ -15,9 +12,14 @@ function Base.show(io::IO, ::MIME"text/plain", t::AbstractBlockTensorMap)
     # header:
     summary(io, t)
     nnz = nonzero_length(t)
-    println(
-        io, " with ", nnz, " stored entr", isone(nnz) ? "y" : "ies", iszero(nnz) ? "" : ":"
-    )
+    if issparse(t)
+        println(
+            io, " with ", nnz, " stored entr", isone(nnz) ? "y" : "ies", iszero(nnz) ? "" : ":"
+        )
+    end
+    println(io, ":")
+    println(io, " codomain: ", codomain(t))
+    println(io, " domain: ", domain(t))
 
     # body:
     compact = get(io, :compact, false)::Bool
@@ -44,7 +46,10 @@ function show_elements(io::IO, x::AbstractBlockTensorMap)
     nz_pairs = sort(vec(collect(nonzero_pairs(x))); by = first)
     for (k, (ind, val)) in enumerate(nz_pairs)
         if k < half_screen_rows || k > length(nzind) - half_screen_rows
-            println(io, "  ", '[', Base.join(lpad.(Tuple(ind), pads), ","), "]  =  ", val)
+            print(io, "  ", '[', Base.join(lpad.(Tuple(ind), pads), ","), "]  =  ")
+            show(io, MIME"text/plain"(), val)
+            println(io)
+
         elseif k == half_screen_rows
             println(io, "   ", Base.join(" " .^ pads, " "), "   \u22ee")
         end

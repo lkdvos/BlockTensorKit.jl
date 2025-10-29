@@ -181,15 +181,12 @@ end
 
 # Show
 # ----
-function Base.summary(io::IO, t::SparseBlockTensorMap)
-    szstring = Base.dims2string(size(t))
-    TT = eltype(t)
-    typeinfo = get(io, :typeinfo, Any)
-    if typeinfo <: typeof(t) || typeinfo <: TT
-        typestring = ""
-    else
-        typestring = "{$TT}"
-    end
-    V = space(t)
-    return print(io, "$szstring SparseBlockTensorMap$typestring($V)")
+function Base.showarg(io::IO, t::SparseBlockTensorMap, toplevel::Bool)
+    !toplevel && print(io, "::")
+    print(io, TK.type_repr(typeof(t)))
+    return nothing
+end
+
+function TK.type_repr(::Type{SparseBlockTensorMap{T, E, S, N₁, N₂, N}}) where {T, E, S, N₁, N₂, N}
+    return "SparseBlockTensorMap{" * join((TK.type_repr(T), E, TK.type_repr(S), N₁, N₂, N), ", ") * "}"
 end
