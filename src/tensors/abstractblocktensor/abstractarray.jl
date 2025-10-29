@@ -142,6 +142,14 @@ end
     setindex!(parent(t), v, args...); t
 )
 
+# ambiguity fix
+function Base.setindex!(::AbstractBlockTensorMap, ::AbstractTensorMap, sectors::Tuple{I, Vararg{I}}) where {I <: Sector}
+    error("invalid indexing for blocktensormap")
+end
+function Base.setindex!(::AbstractBlockTensorMap, ::AbstractTensorMap, ::FusionTree, ::FusionTree)
+    error("invalid indexing for blocktensormap")
+end
+
 # setindex verifies structure is correct
 @inline function Base.setindex!(
         t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{SliceIndex}
