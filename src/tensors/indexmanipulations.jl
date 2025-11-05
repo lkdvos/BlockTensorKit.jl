@@ -230,38 +230,38 @@ function TK.add_braid!(
     return TK.add_braid!(tdst, only(tsrc), (p₁, p₂), levels, α, β, backend...)
 end
 
-Base.@constprop :aggressive function TK.insertleftunitspace(
+Base.@constprop :aggressive function TK.insertleftunit(
         t::AbstractBlockTensorMap, i::Int = numind(t) + 1; kwargs...
     )
-    W = TK.insertleftunitspace(space(t), i; kwargs...)
+    W = TK.insertleftunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(TT.insertafter(I.I, i - 1, (1,)))
-        tdst[I′] = TK.insertleftunitspace(v, i; kwargs...)
+        tdst[I′] = TK.insertleftunit(v, i; kwargs...)
     end
     return tdst
 end
 
-Base.@constprop :aggressive function TK.insertrightunitspace(
+Base.@constprop :aggressive function TK.insertrightunit(
         t::AbstractBlockTensorMap, i::Int = numind(t) + 1; kwargs...
     )
-    W = TK.insertrightunitspace(space(t), i; kwargs...)
+    W = TK.insertrightunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(TT.insertafter(I.I, i, (1,)))
-        tdst[I′] = TK.insertrightunitspace(v, i; kwargs...)
+        tdst[I′] = TK.insertrightunit(v, i; kwargs...)
     end
     return tdst
 end
 
-Base.@constprop :aggressive function TK.removeunitspace(
+Base.@constprop :aggressive function TK.removeunit(
         t::AbstractBlockTensorMap, i::Int; kwargs...
     )
-    W = TK.removeunitspace(space(t), i)
+    W = TK.removeunit(space(t), i)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(TT.deleteat(I.I, i))
-        tdst[I′] = TK.removeunitspace(v, i)
+        tdst[I′] = TK.removeunit(v, i)
     end
     return tdst
 end
