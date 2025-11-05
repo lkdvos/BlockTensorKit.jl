@@ -142,6 +142,14 @@ end
     setindex!(parent(t), v, args...); t
 )
 
+# ambiguity fix
+function Base.setindex!(::AbstractBlockTensorMap, ::AbstractTensorMap, sectors::Tuple{I, Vararg{I}}) where {I <: Sector}
+    error("invalid indexing for blocktensormap")
+end
+function Base.setindex!(::AbstractBlockTensorMap, ::AbstractTensorMap, ::FusionTree, ::FusionTree)
+    error("invalid indexing for blocktensormap")
+end
+
 # setindex verifies structure is correct
 @inline function Base.setindex!(
         t::AbstractBlockTensorMap, v::AbstractTensorMap, indices::Vararg{SliceIndex}
@@ -241,8 +249,18 @@ Base.similar(t::AbstractBlockTensorMap, P::TensorMapSumSpace) = similar(t, eltyp
 function Base.similar(
         t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace{S}
     ) where {S, TorA}
+    return issparse(t) ? sparse_similar(t, TorA, P) : dense_similar(t, TorA, P)
+end
+
+dense_similar(t::AbstractTensorMap, P::TensorMapSumSpace) = dense_similar(t, TK.similarstoragetype(t), P)
+function dense_similar(t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace) where {TorA}
     TT = similar_tensormaptype(t, TorA, P)
-    return issparse(t) ? SparseBlockTensorMap{TT}(undef, P) : BlockTensorMap{TT}(undef, P)
+    return BlockTensorMap{TT}(undef, P)
+end
+sparse_similar(t::AbstractTensorMap, P::TensorMapSumSpace) = sparse_similar(t, TK.similarstoragetype(t), P)
+function sparse_similar(t::AbstractTensorMap, ::Type{TorA}, P::TensorMapSumSpace) where {TorA}
+    TT = similar_tensormaptype(t, TorA, P)
+    return SparseBlockTensorMap{TT}(undef, P)
 end
 
 function similar_tensormaptype(

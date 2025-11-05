@@ -175,22 +175,18 @@ Base.delete!(t::BlockTensorMap, I...) = (zerovector!(getindex(t, I...)); t)
 
 # Show
 # ----
-function Base.summary(io::IO, t::BlockTensorMap)
-    szstring = Base.dims2string(size(t))
-    TT = eltype(t)
-    typeinfo = get(io, :typeinfo, Any)
-    if typeinfo <: typeof(t) || typeinfo <: TT
-        typestring = ""
-    else
-        typestring = "{$TT}"
-    end
-    V = space(t)
-    return print(io, "$szstring BlockTensorMap$typestring($V)")
+function Base.showarg(io::IO, t::BlockTensorMap, toplevel::Bool)
+    !toplevel && print(io, "::")
+    print(io, TK.type_repr(typeof(t)))
+    return nothing
+end
+
+function TK.type_repr(::Type{BlockTensorMap{T, E, S, N₁, N₂, N}}) where {T, E, S, N₁, N₂, N}
+    return "BlockTensorMap{" * TK.type_repr(T) * ", …}"
 end
 
 # Converters
 # ----------
-
 function Base.promote_rule(
         ::Type{<:BlockTensorMap{TT₁}}, ::Type{<:BlockTensorMap{TT₂}}
     ) where {TT₁, TT₂}

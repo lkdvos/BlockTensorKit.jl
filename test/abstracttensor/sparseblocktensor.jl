@@ -123,7 +123,7 @@ end
         @test i1 * i2 == @constinferred(id(storagetype(t), V1 ⊗ V2))
         @test i2 * i1 == @constinferred(id(storagetype(t), V2 ⊗ V1))
 
-        w = @constinferred(isometry(storagetype(t), V1 ⊗ (oneunit(V1) ⊕ oneunit(V1)), V1))
+        w = @constinferred(isometry(storagetype(t), V1 ⊗ (unitspace(V1) ⊞ unitspace(V1)), V1))
         @test dim(w) == 2 * dim(V1 ← V1)
         @test w' * w == id(storagetype(t), V1)
         @test w * w' == (w * w')^2
