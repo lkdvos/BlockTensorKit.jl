@@ -40,7 +40,6 @@ import MatrixAlgebraKit as MAK
 # Spaces
 include("vectorspaces/sumspace.jl")
 include("vectorspaces/sumspaceindices.jl")
-include("vectorspaces/multifusionsumspace.jl")
 
 # Tensors
 include("tensors/abstractblocktensor/abstractblocktensor.jl")
