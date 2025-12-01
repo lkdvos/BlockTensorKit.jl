@@ -172,8 +172,8 @@ TensorKit.unitspace(S::Type{<:SumSpace}) = SumSpace(TensorKit.unitspace(eltype(S
 TensorKit.zerospace(::Type{SumSpace{S}}) where {S} = SumSpace{S}()
 
 TensorKit.leftunitspace(S::SumSpace{<:GradedSpace}) = SumSpace(leftunitspace(first(S)))
-
 TensorKit.rightunitspace(S::SumSpace{<:GradedSpace}) = SumSpace(rightunitspace(first(S)))
+TensorKit.isunitspace(S::SumSpace{<:GradedSpace}) = all(isunitspace, S.spaces)
 
 # Promotion and conversion
 # ------------------------
