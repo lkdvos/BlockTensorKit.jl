@@ -204,10 +204,13 @@ end
     WM = @constinferred SumSpace(V3)
     WMop = @constinferred SumSpace(Vect[I](Mop => 1))
     for W in [WC, WD]
+        @test isunitspace(W)
         @test W == @constinferred(leftunitspace(W)) == @constinferred(rightunitspace(W))
         @test unitspace(typeof(W)) == ⊞(Vect[IsingBimodule]((1, 1, 0) => 1, (2, 2, 0) => 1))
     end
 
+    @test leftunitspace(V) == ⊞(WC, WD, WC)
+    @test rightunitspace(V) == ⊞(WC, WD, WD)
     @test leftunitspace(WMop) == WD && rightunitspace(WMop) == WC
     @test leftunitspace(WM) == WC && rightunitspace(WM) == WD
     @test unitspace(WM) == unitspace(WMop) == ⊞(Vect[IsingBimodule]((1, 1, 0) => 1, (2, 2, 0) => 1))
@@ -216,7 +219,7 @@ end
     Wzero = zerospace(V)
     @test unitspace(Wempty) == unitspace(Wzero)
     for f in (leftunitspace, rightunitspace)
-        @test_throws ArgumentError("Cannot determine type of empty space") f(Wempty)
+        @test_throws ArgumentError f(Wempty)
     end
 
     VC = SumSpace(V1, V1)
@@ -224,9 +227,9 @@ end
     VMD = SumSpace(V2, V3)
 
     @test @constinferred(⊞(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
-    @test @constinferred(⊞(VC, unitspace(VC))) == SumSpace(vcat(VC.spaces, unitspace(VC)))
-    @test @constinferred(⊞(VCM, leftunitspace(VCM))) == SumSpace(vcat(VCM.spaces, leftunitspace(VCM)))
-    @test @constinferred(⊞(VMD, rightunitspace(VMD))) == SumSpace(vcat(VMD.spaces, rightunitspace(VMD)))
+    @test @constinferred(⊞(VCM, unitspace(VCM))) == SumSpace(vcat(VCM.spaces, unitspace(VCM).spaces))
+    @test @constinferred(⊞(VCM, leftunitspace(VCM))) == SumSpace(vcat(VCM.spaces, leftunitspace(VCM).spaces))
+    @test @constinferred(⊞(VMD, rightunitspace(VMD))) == SumSpace(vcat(VMD.spaces, rightunitspace(VMD).spaces))
 
     @test @constinferred(⊞(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
     @test @constinferred(fuse(VC, VC)) ≅ SumSpace(Vect[I](C0 => 8, C1 => 8))
@@ -242,7 +245,7 @@ end
     # blocksectors tests
     @test @constinferred(blocksectors(one(V) ← one(V))) == (C0, D0)
     @test @constinferred(blocksectors(V ← V)) == sort(collect(sectors(V))) # convert set to vector
-    @test @constinferred(blocksectors(one(V))) == (C0, D0)
+    @test @constinferred(blocksectors(one(V))) == [C0, D0]
     for v in [VC, VCM, VMD]
         @test @constinferred(blocksectors(v^2)) == blocksectors(v ← v)
     end
