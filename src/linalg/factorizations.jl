@@ -1,7 +1,6 @@
 using MatrixAlgebraKit
 using MatrixAlgebraKit: AbstractAlgorithm, YALAPACK.BlasMat, Algorithm
 import MatrixAlgebraKit as MAK
-using TensorKit.Factorizations: @check_space, @check_scalar
 
 # Type piracy for defining the MAK rules on BlockArrays!
 # -----------------------------------------------------
@@ -16,70 +15,74 @@ function MatrixAlgebraKit.one!(A::BlockBlasMat)
     return A
 end
 
-for f in (
-        :svd_compact, :svd_full, :svd_vals, :qr_compact, :qr_full, :qr_null,
-        :lq_compact, :lq_full, :lq_null, :eig_full, :eig_vals, :eigh_full,
-        :eigh_vals, :left_polar, :right_polar,
-    )
+for f in
+    [
+        :svd_compact, :svd_full, :svd_vals,
+        :qr_compact, :qr_full, :qr_null,
+        :lq_compact, :lq_full, :lq_null,
+        :eig_full, :eig_vals, :eigh_full, :eigh_vals,
+        :left_polar, :right_polar,
+        :project_hermitian, :project_antihermitian, :project_isometric,
+    ]
     f! = Symbol(f, :!)
-    @eval MAK.$f!(t::BlockBlasMat, F, alg::AbstractAlgorithm) = $f!(Array(t), alg)
-    @eval MAK.$f!(t::BlockBlasMat, F, alg::MAK.DiagonalAlgorithm) = error("Not diagonal")
+    @eval MAK.default_algorithm(::typeof($f!), ::Type{T}; kwargs...) where {T <: AbstractBlockTensorMap} =
+        MAK.default_algorithm($f!, eltype(T); kwargs...)
 end
 
-# disambiguations
-for (f!, Alg) in (
-        (:lq_compact!, :LAPACK_HouseholderLQ), (:lq_full!, :LAPACK_HouseholderLQ), (:lq_null!, :LAPACK_HouseholderLQ),
-        (:lq_compact!, :LQViaTransposedQR), (:lq_full!, :LQViaTransposedQR), (:lq_null!, :LQViaTransposedQR),
-        (:qr_compact!, :LAPACK_HouseholderQR), (:qr_full!, :LAPACK_HouseholderQR), (:qr_null!, :LAPACK_HouseholderQR),
-        (:svd_compact!, :LAPACK_SVDAlgorithm), (:svd_full!, :LAPACK_SVDAlgorithm), (:svd_vals!, :LAPACK_SVDAlgorithm),
-        (:eig_full!, :LAPACK_EigAlgorithm), (:eig_trunc!, :TruncatedAlgorithm), (:eig_vals!, :LAPACK_EigAlgorithm),
-        (:eigh_full!, :LAPACK_EighAlgorithm), (:eigh_trunc!, :TruncatedAlgorithm), (:eigh_vals!, :LAPACK_EighAlgorithm),
-        (:left_polar!, :PolarViaSVD), (:right_polar!, :PolarViaSVD),
+for f! in (
+        :qr_compact!, :qr_full!, :lq_compact!, :lq_full!,
+        :eig_full!, :eigh_full!, :svd_compact!, :svd_full!,
+        :left_polar!, :right_polar!,
     )
-    @eval MAK.$f!(t::BlockBlasMat, F, alg::MAK.$Alg) = $f!(Array(t), alg)
+    @eval function MAK.$f!(t::AbstractBlockTensorMap, F, alg::AbstractAlgorithm)
+        TensorKit.foreachblock(t, F...) do _, (tblock, Fblocks...)
+            Fblocks′ = MAK.$f!(Array(tblock), alg)
+            # deal with the case where the output is not in-place
+            for (b′, b) in zip(Fblocks′, Fblocks)
+                b === b′ || copy!(b, b′)
+            end
+            return nothing
+        end
+        return F
+    end
 end
 
-const GPU_QRAlgorithm = Union{MAK.CUSOLVER_HouseholderQR, MAK.ROCSOLVER_HouseholderQR}
-for f! in (:qr_compact!, :qr_full!, :qr_null!)
-    @eval MAK.$f!(t::BlockBlasMat, QR, alg::GPU_QRAlgorithm) = error()
-end
-
-for (f!, Alg) in (
-        (:eigh_full!, :GPU_EighAlgorithm), (:eigh_vals!, :GPU_EighAlgorithm),
-        (:eig_full!, :GPU_EigAlgorithm), (:eig_vals!, :GPU_EigAlgorithm),
-        (:svd_full!, :GPU_SVDAlgorithm), (:svd_compact!, :GPU_SVDAlgorithm), (:svd_vals!, :GPU_SVDAlgorithm),
+# Handle these separately because single output instead of tuple
+for f! in (
+        :qr_null!, :lq_null!,
+        :svd_vals!, :eig_vals!, :eigh_vals!,
+        :project_hermitian!, :project_antihermitian!, :project_isometric!,
     )
-    @eval MAK.$f!(t::BlockBlasMat, F, alg::MAK.$Alg) = error()
+    @eval function MAK.$f!(t::AbstractBlockTensorMap, N, alg::AbstractAlgorithm)
+        TensorKit.foreachblock(t, N) do _, (tblock, Nblock)
+            Nblock′ = MAK.$f!(Array(tblock), alg)
+            # deal with the case where the output is not the same as the input
+            Nblock === Nblock′ || copy!(Nblock, Nblock′)
+            return nothing
+        end
+        return N
+    end
 end
 
-
-for f in (:qr, :lq, :eig, :eigh, :gen_eig, :svd, :polar)
-    default_f_algorithm = Symbol(:default_, f, :_algorithm)
-    @eval MAK.$default_f_algorithm(::Type{<:BlockBlasMat{T}}; kwargs...) where {T} =
-        MAK.$default_f_algorithm(Matrix{T}; kwargs...)
+# specializations until fixes in base package
+function MAK.is_left_isometric(A::BlockMatrix; atol::Real = 0, rtol::Real = MAK.defaulttol(A), norm = LinearAlgebra.norm)
+    P = A' * A
+    nP = norm(P) # isapprox would use `rtol * max(norm(P), norm(I))`
+    for I in MAK.diagind(P)
+        P[I] -= 1
+    end
+    return norm(P) <= max(atol, rtol * nP) # assume that the norm of I is `sqrt(n)`
+end
+function MAK.is_right_isometric(A::BlockMatrix; atol::Real = 0, rtol::Real = MAK.defaulttol(A), norm = LinearAlgebra.norm)
+    P = A * A'
+    nP = norm(P) # isapprox would use `rtol * max(norm(P), norm(I))`
+    for I in MAK.diagind(P)
+        P[I] -= 1
+    end
+    return norm(P) <= max(atol, rtol * nP) # assume that the norm of I is `sqrt(n)`
 end
 
 # Make sure sparse blocktensormaps have dense outputs
-function MAK.check_input(::typeof(qr_full!), t::AbstractBlockTensorMap, QR, ::AbstractAlgorithm)
-    Q, R = QR
-
-    # type checks
-    @assert Q isa AbstractTensorMap
-    @assert R isa AbstractTensorMap
-
-    # scalartype checks
-    @check_scalar Q t
-    @check_scalar R t
-
-    # space checks
-    V_Q = ⊕(fuse(codomain(t)))
-    @check_space(Q, codomain(t) ← V_Q)
-    @check_space(R, V_Q ← domain(t))
-
-    return nothing
-end
-MAK.check_input(::typeof(qr_full!), t::AbstractBlockTensorMap, QR, ::DiagonalAlgorithm) = error()
-
 function MAK.initialize_output(::typeof(qr_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_Q = ⊕(fuse(codomain(t)))
     Q = dense_similar(t, codomain(t) ← V_Q)
@@ -98,26 +101,6 @@ function MAK.initialize_output(::typeof(qr_null!), t::AbstractBlockTensorMap, ::
     N = dense_similar(t, codomain(t) ← V_N)
     return N
 end
-
-function MAK.check_input(::typeof(lq_full!), t::AbstractBlockTensorMap, LQ, ::AbstractAlgorithm)
-    L, Q = LQ
-
-    # type checks
-    @assert L isa AbstractTensorMap
-    @assert Q isa AbstractTensorMap
-
-    # scalartype checks
-    @check_scalar L t
-    @check_scalar Q t
-
-    # space checks
-    V_Q = ⊕(fuse(domain(t)))
-    @check_space(L, codomain(t) ← V_Q)
-    @check_space(Q, V_Q ← domain(t))
-
-    return nothing
-end
-MAK.check_input(::typeof(lq_full!), t::AbstractBlockTensorMap, LQ, ::DiagonalAlgorithm) = error()
 
 function MAK.initialize_output(::typeof(lq_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_Q = ⊕(fuse(domain(t)))
@@ -138,98 +121,17 @@ function MAK.initialize_output(::typeof(lq_null!), t::AbstractBlockTensorMap, ::
     return N
 end
 
-function MAK.check_input(::typeof(MAK.left_orth_polar!), t::AbstractBlockTensorMap, WP, ::AbstractAlgorithm)
-    codomain(t) ≿ domain(t) ||
-        throw(ArgumentError("Polar decomposition requires `codomain(t) ≿ domain(t)`"))
-
-    W, P = WP
-    @assert W isa AbstractTensorMap
-    @assert P isa AbstractTensorMap
-
-    # scalartype checks
-    @check_scalar W t
-    @check_scalar P t
-
-    # space checks
-    VW = ⊕(fuse(domain(t)))
-    @check_space(W, codomain(t) ← VW)
-    @check_space(P, VW ← domain(t))
-
-    return nothing
-end
 function MAK.initialize_output(::typeof(left_polar!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     W = dense_similar(t, space(t))
     P = dense_similar(t, domain(t) ← domain(t))
     return W, P
 end
 
-function MAK.check_input(::typeof(MAK.right_orth_polar!), t::AbstractBlockTensorMap, PWᴴ, ::AbstractAlgorithm)
-    codomain(t) ≾ domain(t) ||
-        throw(ArgumentError("Polar decomposition requires `domain(t) ≿ codomain(t)`"))
-
-    P, Wᴴ = PWᴴ
-    @assert P isa AbstractTensorMap
-    @assert Wᴴ isa AbstractTensorMap
-
-    # scalartype checks
-    @check_scalar P t
-    @check_scalar Wᴴ t
-
-    # space checks
-    VW = ⊕(fuse(codomain(t)))
-    @check_space(P, codomain(t) ← VW)
-    @check_space(Wᴴ, VW ← domain(t))
-
-    return nothing
-end
 function MAK.initialize_output(::typeof(right_polar!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     P = dense_similar(t, codomain(t) ← codomain(t))
     Wᴴ = dense_similar(t, space(t))
     return P, Wᴴ
 end
-
-function MAK.initialize_output(::typeof(left_null!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
-    V_Q = infimum(fuse(codomain(t)), fuse(domain(t)))
-    V_N = ⊖(fuse(codomain(t)), V_Q)
-    return dense_similar(t, codomain(t) ← V_N)
-end
-function MAK.initialize_output(::typeof(right_null!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
-    V_Q = infimum(fuse(codomain(t)), fuse(domain(t)))
-    V_N = ⊖(fuse(domain(t)), V_Q)
-    return dense_similar(t, V_N ← domain(t))
-end
-
-function MAK.check_input(::typeof(eigh_full!), t::AbstractBlockTensorMap, DV, ::AbstractAlgorithm)
-    domain(t) == codomain(t) ||
-        throw(ArgumentError("Eigenvalue decomposition requires square input tensor"))
-
-    D, V = DV
-
-    # type checks
-    @assert D isa DiagonalTensorMap
-    @assert V isa AbstractTensorMap
-
-    # scalartype checks
-    @check_scalar D t real
-    @check_scalar V t
-
-    # space checks
-    V_D = ⊕(fuse(domain(t)))
-    @check_space(D, V_D ← V_D)
-    @check_space(V, codomain(t) ← V_D)
-
-    return nothing
-end
-MAK.check_input(::typeof(eigh_full!), t::AbstractBlockTensorMap, DV, ::DiagonalAlgorithm) = error()
-
-function MAK.check_input(::typeof(eigh_vals!), t::AbstractBlockTensorMap, D, ::AbstractAlgorithm)
-    @check_scalar D t real
-    @assert D isa DiagonalTensorMap
-    V_D = ⊕(fuse(domain(t)))
-    @check_space(D, V_D ← V_D)
-    return nothing
-end
-MAK.check_input(::typeof(eigh_vals!), t::AbstractBlockTensorMap, D, ::DiagonalAlgorithm) = error()
 
 function MAK.initialize_output(::typeof(eigh_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_D = ⊕(fuse(domain(t)))
@@ -239,30 +141,6 @@ function MAK.initialize_output(::typeof(eigh_full!), t::AbstractBlockTensorMap, 
     return D, V
 end
 
-
-function MAK.check_input(::typeof(eig_full!), t::AbstractBlockTensorMap, DV, ::AbstractAlgorithm)
-    domain(t) == codomain(t) ||
-        throw(ArgumentError("Eigenvalue decomposition requires square input tensor"))
-
-    D, V = DV
-
-    # type checks
-    @assert D isa DiagonalTensorMap
-    @assert V isa AbstractTensorMap
-
-    # scalartype checks
-    @check_scalar D t complex
-    @check_scalar V t complex
-
-    # space checks
-    V_D = ⊕(fuse(domain(t)))
-    @check_space(D, V_D ← V_D)
-    @check_space(V, codomain(t) ← V_D)
-
-    return nothing
-end
-MAK.check_input(::typeof(eig_full!), t::AbstractBlockTensorMap, DV, ::DiagonalAlgorithm) = error()
-
 function MAK.initialize_output(::typeof(eig_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_D = ⊕(fuse(domain(t)))
     Tc = complex(scalartype(t))
@@ -271,28 +149,6 @@ function MAK.initialize_output(::typeof(eig_full!), t::AbstractBlockTensorMap, :
     return D, V
 end
 
-function MAK.check_input(::typeof(svd_full!), t::AbstractBlockTensorMap, USVᴴ, ::AbstractAlgorithm)
-    U, S, Vᴴ = USVᴴ
-
-    # type checks
-    @assert U isa AbstractTensorMap
-    @assert S isa AbstractTensorMap
-    @assert Vᴴ isa AbstractTensorMap
-
-    # scalartype checks
-    @check_scalar U t
-    @check_scalar S t real
-    @check_scalar Vᴴ t
-
-    # space checks
-    V_cod = ⊕(fuse(codomain(t)))
-    V_dom = ⊕(fuse(domain(t)))
-    @check_space(U, codomain(t) ← V_cod)
-    @check_space(S, V_cod ← V_dom)
-    @check_space(Vᴴ, V_dom ← domain(t))
-
-    return nothing
-end
 function MAK.initialize_output(::typeof(svd_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_cod = ⊕(fuse(codomain(t)))
     V_dom = ⊕(fuse(domain(t)))
@@ -312,8 +168,13 @@ end
 # Disambiguate Diagonal implementations
 # -------------------------------------
 # these shouldn't ever happen as blocktensors aren't diagonal
-for f! in (:eig_full!, :eigh_full!, :lq_compact!, :lq_full!, :qr_compact!, :qr_full!, :svd_full!)
-    @eval function MAK.initialize_output(::typeof($f!), t::AbstractBlockTensorMap, alg::DiagonalAlgorithm)
+for f! in (
+        :eig_full!, :eig_vals!, :eigh_full!, :eigh_vals!,
+        :lq_compact!, :lq_full!, :qr_compact!, :qr_full!,
+        :svd_full!, :svd_compact!, :svd_vals!,
+    )
+    @eval MAK.initialize_output(::typeof($f!), t::AbstractBlockTensorMap, ::DiagonalAlgorithm) =
         error("Blocktensors are incompatible with diagonal algorithm")
-    end
+    @eval MAK.$f!(::AbstractBlockTensorMap, x, ::DiagonalAlgorithm) =
+        error("Blocktensors are incompatible with diagonal algorithm")
 end
