@@ -64,16 +64,6 @@ for f! in (
     end
 end
 
-for f in (
-        :svd_compact, :svd_full, :svd_vals, :qr_compact, :qr_full, :qr_null,
-        :lq_compact, :lq_full, :lq_null, :eig_full, :eig_vals, :eigh_full,
-        :eigh_vals, :left_polar, :right_polar,
-    )
-    f! = Symbol(f, :!)
-    @eval MAK.$f!(t::BlockBlasMat, F, alg::AbstractAlgorithm) = $f!(Array(t), alg)
-    @eval MAK.$f!(t::BlockBlasMat, F, alg::MAK.DiagonalAlgorithm) = error("Not diagonal")
-end
-
 # specializations until fixes in base package
 function MAK.is_left_isometric(A::BlockMatrix; atol::Real = 0, rtol::Real = MAK.defaulttol(A), norm = LinearAlgebra.norm)
     P = A' * A
@@ -91,39 +81,6 @@ function MAK.is_right_isometric(A::BlockMatrix; atol::Real = 0, rtol::Real = MAK
     end
     return norm(P) <= max(atol, rtol * nP) # assume that the norm of I is `sqrt(n)`
 end
-
-# disambiguations
-# for (f!, Alg) in (
-#         (:lq_compact!, :LAPACK_HouseholderLQ), (:lq_full!, :LAPACK_HouseholderLQ), (:lq_null!, :LAPACK_HouseholderLQ),
-#         (:lq_compact!, :LQViaTransposedQR), (:lq_full!, :LQViaTransposedQR), (:lq_null!, :LQViaTransposedQR),
-#         (:qr_compact!, :LAPACK_HouseholderQR), (:qr_full!, :LAPACK_HouseholderQR), (:qr_null!, :LAPACK_HouseholderQR),
-#         (:svd_compact!, :LAPACK_SVDAlgorithm), (:svd_full!, :LAPACK_SVDAlgorithm), (:svd_vals!, :LAPACK_SVDAlgorithm),
-#         (:eig_full!, :LAPACK_EigAlgorithm), (:eig_trunc!, :TruncatedAlgorithm), (:eig_vals!, :LAPACK_EigAlgorithm),
-#         (:eigh_full!, :LAPACK_EighAlgorithm), (:eigh_trunc!, :TruncatedAlgorithm), (:eigh_vals!, :LAPACK_EighAlgorithm),
-#         (:left_polar!, :PolarViaSVD), (:right_polar!, :PolarViaSVD),
-#     )
-#     @eval MAK.$f!(t::BlockBlasMat, F, alg::MAK.$Alg) = $f!(Array(t), alg)
-# end
-#
-# const GPU_QRAlgorithm = Union{MAK.CUSOLVER_HouseholderQR, MAK.ROCSOLVER_HouseholderQR}
-# for f! in (:qr_compact!, :qr_full!, :qr_null!)
-#     @eval MAK.$f!(t::BlockBlasMat, QR, alg::GPU_QRAlgorithm) = error()
-# end
-#
-# for (f!, Alg) in (
-#         (:eigh_full!, :GPU_EighAlgorithm), (:eigh_vals!, :GPU_EighAlgorithm),
-#         (:eig_full!, :GPU_EigAlgorithm), (:eig_vals!, :GPU_EigAlgorithm),
-#         (:svd_full!, :GPU_SVDAlgorithm), (:svd_compact!, :GPU_SVDAlgorithm), (:svd_vals!, :GPU_SVDAlgorithm),
-#     )
-#     @eval MAK.$f!(t::BlockBlasMat, F, alg::MAK.$Alg) = error()
-# end
-
-
-# for f in (:qr, :lq, :eig, :eigh, :gen_eig, :svd, :polar)
-#     default_f_algorithm = Symbol(:default_, f, :_algorithm)
-#     @eval MAK.$default_f_algorithm(::Type{<:BlockBlasMat{T}}; kwargs...) where {T} =
-#         MAK.$default_f_algorithm(Matrix{T}; kwargs...)
-# end
 
 # Make sure sparse blocktensormaps have dense outputs
 function MAK.initialize_output(::typeof(qr_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
@@ -211,8 +168,13 @@ end
 # Disambiguate Diagonal implementations
 # -------------------------------------
 # these shouldn't ever happen as blocktensors aren't diagonal
-for f! in (:eig_full!, :eigh_full!, :lq_compact!, :lq_full!, :qr_compact!, :qr_full!, :svd_full!)
-    @eval function MAK.initialize_output(::typeof($f!), t::AbstractBlockTensorMap, alg::DiagonalAlgorithm)
+for f! in (
+        :eig_full!, :eig_vals!, :eigh_full!, :eigh_vals!,
+        :lq_compact!, :lq_full!, :qr_compact!, :qr_full!,
+        :svd_full!, :svd_compact!, :svd_vals!,
+    )
+    @eval MAK.initialize_output(::typeof($f!), t::AbstractBlockTensorMap, ::DiagonalAlgorithm) =
         error("Blocktensors are incompatible with diagonal algorithm")
-    end
+    @eval MAK.$f!(::AbstractBlockTensorMap, x, ::DiagonalAlgorithm) =
+        error("Blocktensors are incompatible with diagonal algorithm")
 end
