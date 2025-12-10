@@ -154,6 +154,80 @@ function TO.tensoralloc(
     return C
 end
 
+# unfortunate overlaod until TK fix
+function TK.blas_contract!(
+        C::AbstractBlockTensorMap,
+        A::AbstractBlockTensorMap, pA::Index2Tuple,
+        B::AbstractBlockTensorMap, pB::Index2Tuple,
+        pAB::Index2Tuple, α, β,
+        backend, allocator
+    )
+    bstyle = BraidingStyle(sectortype(C))
+    bstyle isa SymmetricBraiding ||
+        throw(SectorMismatch("only tensors with symmetric braiding rules can be contracted; try `@planar` instead"))
+    TC = scalartype(C)
+
+    # check which tensors have to be permuted/copied
+    copyA = !(TO.isblascontractable(A, pA) && eltype(A) === TC)
+    copyB = !(TO.isblascontractable(B, pB) && eltype(B) === TC)
+
+    if bstyle isa Fermionic && any(isdual ∘ Base.Fix1(space, B), pB[1])
+        # twist smallest object if neither or both already have to be permuted
+        # otherwise twist the one that already is copied
+        if !(copyA ⊻ copyB)
+            twistA = dim(A) < dim(B)
+        else
+            twistA = copyA
+        end
+        twistB = !twistA
+        copyA |= twistA
+        copyB |= twistB
+    else
+        twistA = false
+        twistB = false
+    end
+
+    # Bring A in the correct form for BLAS contraction
+    if copyA
+        Anew = TO.tensoralloc_add(TC, A, pA, false, Val(true), allocator)
+        Anew = TO.tensoradd!(Anew, A, pA, false, One(), Zero(), backend, allocator)
+        twistA && twist!(Anew, filter(!isdual ∘ Base.Fix1(space, Anew), domainind(Anew)))
+    else
+        Anew = permute(A, pA)
+    end
+    pAnew = (codomainind(Anew), domainind(Anew))
+
+    # Bring B in the correct form for BLAS contraction
+    if copyB
+        Bnew = TO.tensoralloc_add(TC, B, pB, false, Val(true), allocator)
+        Bnew = TO.tensoradd!(Bnew, B, pB, false, One(), Zero(), backend, allocator)
+        twistB && twist!(Bnew, filter(isdual ∘ Base.Fix1(space, Bnew), codomainind(Bnew)))
+    else
+        Bnew = permute(B, pB)
+    end
+    pBnew = (codomainind(Bnew), domainind(Bnew))
+
+    # Bring C in the correct form for BLAS contraction
+    ipAB = TO.oindABinC(pAB, pAnew, pBnew)
+    copyC = !TO.isblasdestination(C, ipAB)
+
+    if copyC
+        Cnew = TO.tensoralloc_add(TC, C, ipAB, false, Val(true), allocator)
+        mul!(Cnew, Anew, Bnew)
+        TO.tensoradd!(C, Cnew, pAB, false, α, β, backend, allocator)
+        TO.tensorfree!(Cnew, allocator)
+    else
+        Cnew = permute(C, ipAB)
+        mul!(Cnew, Anew, Bnew, α, β)
+    end
+
+    copyA && TO.tensorfree!(Anew, allocator)
+    copyB && TO.tensorfree!(Bnew, allocator)
+
+    return C
+end
+
+
 # tensorfree!
 # -----------
 function TO.tensorfree!(t::BlockTensorMap, allocator = TO.DefaultAllocator())
