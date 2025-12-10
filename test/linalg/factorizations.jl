@@ -45,18 +45,18 @@ for V in spacelist
 
                 Q, R = @constinferred qr_compact(t)
                 @test Q * R ≈ t
-                @test isisometry(Q)
+                @test isisometric(Q)
 
-                Q, R = @constinferred left_orth(t; kind = :qr)
+                Q, R = @constinferred left_orth(t; alg = :qr)
                 @test Q * R ≈ t
-                @test isisometry(Q)
+                @test isisometric(Q)
 
                 N = @constinferred qr_null(t)
-                @test isisometry(N)
+                @test isisometric(N)
                 @test norm(N' * t) ≈ 0 atol = 100 * eps(norm(t))
 
-                N = @constinferred left_null(t; kind = :qr)
-                @test isisometry(N)
+                N = @constinferred left_null(t; alg = :qr)
+                @test isisometric(N)
                 @test norm(N' * t) ≈ 0 atol = 100 * eps(norm(t))
             end
 
@@ -71,12 +71,12 @@ for V in spacelist
 
                 Q, R = @constinferred qr_compact(t)
                 @test Q * R ≈ t
-                @test isisometry(Q)
+                @test isisometric(Q)
                 @test dim(Q) == dim(R) == dim(t)
 
-                Q, R = @constinferred left_orth(t; kind = :qr)
+                Q, R = @constinferred left_orth(t; alg = :qr)
                 @test Q * R ≈ t
-                @test isisometry(Q)
+                @test isisometric(Q)
                 @test dim(Q) == dim(R) == dim(t)
 
                 N = @constinferred qr_null(t)
@@ -97,14 +97,14 @@ for V in spacelist
 
                 L, Q = @constinferred lq_compact(t)
                 @test L * Q ≈ t
-                @test isisometry(Q; side = :right)
+                @test isisometric(Q; side = :right)
 
-                L, Q = @constinferred right_orth(t; kind = :lq)
+                L, Q = @constinferred right_orth(t; alg = :lq)
                 @test L * Q ≈ t
-                @test isisometry(Q; side = :right)
+                @test isisometric(Q; side = :right)
 
                 Nᴴ = @constinferred lq_null(t)
-                @test isisometry(Nᴴ; side = :right)
+                @test isisometric(Nᴴ; side = :right)
                 @test norm(t * Nᴴ') ≈ 0 atol = 100 * eps(norm(t))
             end
 
@@ -119,12 +119,12 @@ for V in spacelist
 
                 L, Q = @constinferred lq_compact(t)
                 @test L * Q ≈ t
-                @test isisometry(Q; side = :right)
+                @test isisometric(Q; side = :right)
                 @test dim(Q) == dim(L) == dim(t)
 
-                L, Q = @constinferred right_orth(t; kind = :lq)
+                L, Q = @constinferred right_orth(t; alg = :lq)
                 @test L * Q ≈ t
-                @test isisometry(Q; side = :right)
+                @test isisometric(Q; side = :right)
                 @test dim(Q) == dim(L) == dim(t)
 
                 Nᴴ = @constinferred lq_null(t)
@@ -142,12 +142,12 @@ for V in spacelist
                 @assert domain(t) ≾ codomain(t)
                 w, p = @constinferred left_polar(t)
                 @test w * p ≈ t
-                @test isisometry(w)
+                @test isisometric(w)
                 # @test isposdef(p)
 
-                w, p = @constinferred left_orth(t; kind = :polar)
+                w, p = @constinferred left_orth(t; alg = :polar)
                 @test w * p ≈ t
-                @test isisometry(w)
+                @test isisometric(w)
             end
 
             for T in eltypes,
@@ -156,12 +156,12 @@ for V in spacelist
                 @assert codomain(t) ≾ domain(t)
                 p, wᴴ = @constinferred right_polar(t)
                 @test p * wᴴ ≈ t
-                @test isisometry(wᴴ; side = :right)
+                @test isisometric(wᴴ; side = :right)
                 # @test isposdef(p)
 
-                p, wᴴ = @constinferred right_orth(t; kind = :polar)
+                p, wᴴ = @constinferred right_orth(t; alg = :polar)
                 @test p * wᴴ ≈ t
-                @test isisometry(wᴴ; side = :right)
+                @test isisometric(wᴴ; side = :right)
             end
         end
 
@@ -180,25 +180,25 @@ for V in spacelist
 
                 u, s, vᴴ = @constinferred svd_compact(t)
                 @test u * s * vᴴ ≈ t
-                @test isisometry(u)
+                @test isisometric(u)
                 # @test isposdef(s)
-                @test isisometry(vᴴ; side = :right)
+                @test isisometric(vᴴ; side = :right)
 
                 s′ = LinearAlgebra.diag(s)
-                for (c, b) in LinearAlgebra.svdvals(t)
+                for (c, b) in pairs(LinearAlgebra.svdvals(t))
                     @test b ≈ s′[c]
                 end
 
-                v, c = @constinferred left_orth(t; kind = :svd)
+                v, c = @constinferred left_orth(t; alg = :svd)
                 @test v * c ≈ t
-                @test isisometry(v)
+                @test isisometric(v)
 
-                N = @constinferred left_null(t; kind = :svd)
-                @test isisometry(N)
+                N = @constinferred left_null(t; alg = :svd)
+                @test isisometric(N)
                 @test norm(N' * t) ≈ 0 atol = 100 * eps(norm(t))
 
-                Nᴴ = @constinferred right_null(t; kind = :svd)
-                @test isisometry(Nᴴ; side = :right)
+                Nᴴ = @constinferred right_null(t; alg = :svd)
+                @test isisometric(Nᴴ; side = :right)
                 @test norm(t * Nᴴ') ≈ 0 atol = 100 * eps(norm(t))
             end
 
@@ -227,22 +227,22 @@ for V in spacelist
 
                 U, S, Vᴴ = @constinferred svd_trunc(t; trunc = notrunc())
                 @test U * S * Vᴴ ≈ t
-                @test isisometry(U)
-                @test isisometry(Vᴴ; side = :right)
+                @test isisometric(U)
+                @test isisometric(Vᴴ; side = :right)
 
                 trunc = truncrank(dim(domain(S)) ÷ 2)
                 U1, S1, Vᴴ1 = @constinferred svd_trunc(t; trunc)
                 @test t * Vᴴ1' ≈ U1 * S1
-                @test isisometry(U1)
-                @test isisometry(Vᴴ1; side = :right)
+                @test isisometric(U1)
+                @test isisometric(Vᴴ1; side = :right)
                 @test dim(domain(S1)) <= trunc.howmany
 
                 λ = minimum(minimum, values(LinearAlgebra.diag(S1)))
                 trunc = trunctol(; atol = λ - 10eps(λ))
                 U2, S2, Vᴴ2 = @constinferred svd_trunc(t; trunc)
                 @test t * Vᴴ2' ≈ U2 * S2
-                @test isisometry(U2)
-                @test isisometry(Vᴴ2; side = :right)
+                @test isisometric(U2)
+                @test isisometric(Vᴴ2; side = :right)
                 @test minimum(minimum, values(LinearAlgebra.diag(S1))) >= λ
                 @test U2 ≈ U1
                 @test S2 ≈ S1
@@ -251,15 +251,15 @@ for V in spacelist
                 trunc = truncspace(space(S2, 1))
                 U3, S3, Vᴴ3 = @constinferred svd_trunc(t; trunc)
                 @test t * Vᴴ3' ≈ U3 * S3
-                @test isisometry(U3)
-                @test isisometry(Vᴴ3; side = :right)
+                @test isisometric(U3)
+                @test isisometric(Vᴴ3; side = :right)
                 @test space(S3, 1) ≾ space(S2, 1)
 
                 trunc = truncerror(; atol = 0.5)
                 U4, S4, Vᴴ4 = @constinferred svd_trunc(t; trunc)
                 @test t * Vᴴ4' ≈ U4 * S4
-                @test isisometry(U4)
-                @test isisometry(Vᴴ4; side = :right)
+                @test isisometric(U4)
+                @test isisometric(Vᴴ4; side = :right)
                 @test norm(t - U4 * S4 * Vᴴ4) <= 0.5
             end
         end
@@ -274,7 +274,7 @@ for V in spacelist
                 @test t * v ≈ v * d
 
                 d′ = LinearAlgebra.diag(d)
-                for (c, b) in LinearAlgebra.eigvals(t)
+                for (c, b) in pairs(LinearAlgebra.eigvals(t))
                     @test sort(b; by = abs) ≈ sort(d′[c]; by = abs)
                 end
 
@@ -289,7 +289,7 @@ for V in spacelist
 
                 t2 = (t + t')
                 D, V = eigen(t2)
-                @test isisometry(V)
+                @test isisometric(V)
                 D̃, Ṽ = @constinferred eigh_full(t2)
                 @test D ≈ D̃
                 @test V ≈ Ṽ
