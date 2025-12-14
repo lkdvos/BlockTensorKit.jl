@@ -12,7 +12,7 @@ BlockTensorMap <: AbstractBlockTensorMap <: AbstractTensorMap
 SparseBlockTensorMap <: AbstractBlockTensorMap <: AbstractTensorMap
 ```
 
-In particular, these structures hold the structural information as a `HomSpace` of `SumSpace`s, as defined in [`SumSpaces`](@ref), as well as the individual tensors that make up the block tensor.
+In particular, these structures hold the structural information as a `HomSpace` of `SumSpace`s, as defined in [`SumSpaces`](@ref sec_sumspaces), as well as the individual tensors that make up the block tensor.
 For `BlockTensorMap`, the list of tensors is dense, thus they are stored in an `Array{AbstractTensorMap,N}`, where `N` is the total number of indices of a tensor.
 For `SparseBlockTensorMap`, this is not the case, and the list of tensors is stored in a `Dict{CartesianIndex{N},AbstractTensorMap}`.
 
@@ -41,8 +41,7 @@ Typically though, the most convenient way of obtaining a block tensor is by usin
 
 ```@repl blocktensors
 using TensorKit, BlockTensorKit
-using BlockTensorKit: ⊕
-V = ℂ^1 ⊕ ℂ^2;
+V = ℂ^1 ⊞ ℂ^2;
 W = V * V → V;
 t = rand(W)
 eltype(t)

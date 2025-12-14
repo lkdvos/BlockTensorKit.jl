@@ -1,4 +1,4 @@
-## Direct Sum Spaces
+## [Direct Sum Spaces](@id sec_sumspaces)
 
 The underlying concept that defines any array (or operator) that has some blocked structure is that of a direct sum of vector spaces.
 These spaces are a natural extension of the `TensorKit` vector spaces, and you can think of them as a way to lazily concatenate multiple vector spaces into one.
