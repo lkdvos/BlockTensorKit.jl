@@ -209,8 +209,10 @@ end
         @test unitspace(typeof(W)) == ⊞(Vect[IsingBimodule]((1, 1, 0) => 1, (2, 2, 0) => 1))
     end
 
-    @test leftunitspace(V) == ⊞(WC, WD, WC)
-    @test rightunitspace(V) == ⊞(WC, WD, WD)
+    @test_throws ArgumentError leftunitspace(V)
+    @test_throws ArgumentError rightunitspace(V)
+    @test leftunitspace(SumSpace(V1, V3)) == WC
+    @test rightunitspace(SumSpace(V2, V3)) == WD
     @test leftunitspace(WMop) == WD && rightunitspace(WMop) == WC
     @test leftunitspace(WM) == WC && rightunitspace(WM) == WD
     @test unitspace(WM) == unitspace(WMop) == ⊞(Vect[IsingBimodule]((1, 1, 0) => 1, (2, 2, 0) => 1))

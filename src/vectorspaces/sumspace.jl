@@ -171,8 +171,27 @@ end
 TensorKit.unitspace(S::Type{<:SumSpace}) = SumSpace(TensorKit.unitspace(eltype(S)))
 TensorKit.zerospace(::Type{SumSpace{S}}) where {S} = SumSpace{S}()
 
-TensorKit.leftunitspace(S::SumSpace{<:GradedSpace}) = SumSpace(leftunitspace(first(S)))
-TensorKit.rightunitspace(S::SumSpace{<:GradedSpace}) = SumSpace(rightunitspace(first(S)))
+function TensorKit.leftunitspace(S::SumSpace{<:GradedSpace})
+    I = sectortype(S)
+    if UnitStyle(I) isa GenericUnit
+        !isempty(sectors(S)) || throw(ArgumentError("Cannot determine the left unit of an empty SumSpace"))
+        TensorKit._allequal(leftunit, sectors(S)) ||
+            throw(ArgumentError("sectors of $S do not have the same left unit"))
+    end
+
+    return SumSpace(leftunitspace(first(S)))
+end
+
+function TensorKit.rightunitspace(S::SumSpace{<:GradedSpace})
+    I = sectortype(S)
+    if UnitStyle(I) isa GenericUnit
+        !isempty(sectors(S)) || throw(ArgumentError("Cannot determine the right unit of an empty SumSpace"))
+        TensorKit._allequal(rightunit, sectors(S)) ||
+            throw(ArgumentError("sectors of $S do not have the same right unit"))
+    end
+
+    return SumSpace(rightunitspace(first(S)))
+end
 TensorKit.isunitspace(S::SumSpace{<:GradedSpace}) = all(isunitspace, S.spaces)
 
 # Promotion and conversion
