@@ -7,6 +7,8 @@ function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
     dom = ProductSpace{S, N₂}(oplus.(domain(t).spaces))
     tdst = similar(t, cod ← dom)
 
+    issparse(t) && zerovector!(tdst)
+
     for ((f₁, f₂), arr) in subblocks(tdst)
         blockax = ntuple(N₁ + N₂) do i
             return if i <= N₁
