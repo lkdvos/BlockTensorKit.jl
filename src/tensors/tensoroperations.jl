@@ -157,8 +157,8 @@ end
 # unfortunate overlaod until TK fix
 function TK.blas_contract!(
         C::AbstractBlockTensorMap,
-        A::AbstractBlockTensorMap, pA::Index2Tuple,
-        B::AbstractBlockTensorMap, pB::Index2Tuple,
+        A::AbstractTensorMap, pA::Index2Tuple,
+        B::AbstractTensorMap, pB::Index2Tuple,
         pAB::Index2Tuple, α, β,
         backend, allocator
     )
