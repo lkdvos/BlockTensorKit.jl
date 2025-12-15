@@ -1,27 +1,35 @@
 # Conversion
 # ----------
-function Base.convert(::Type{T}, t::AbstractBlockTensorMap) where {T <: TensorMap}
-    cod = ProductSpace{spacetype(t), numout(t)}(oplus.(codomain(t).spaces))
-    dom = ProductSpace{spacetype(t), numin(t)}(oplus.(domain(t).spaces))
-
-    tdst = similar(t, cod ← dom)
-    for (f₁, f₂) in fusiontrees(tdst)
-        tdst[f₁, f₂] .= t[f₁, f₂]
-    end
-
-    return convert(T, tdst)
-end
-# disambiguate
 function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
-    cod = ProductSpace{spacetype(t), numout(t)}(oplus.(codomain(t).spaces))
-    dom = ProductSpace{spacetype(t), numin(t)}(oplus.(domain(t).spaces))
-
+    S = spacetype(t)
+    N₁, N₂ = numout(t), numin(t)
+    cod = ProductSpace{S, N₁}(oplus.(codomain(t).spaces))
+    dom = ProductSpace{S, N₂}(oplus.(domain(t).spaces))
     tdst = similar(t, cod ← dom)
-    for (f₁, f₂) in fusiontrees(tdst)
-        copyto!(tdst[f₁, f₂], t[f₁, f₂])
+
+    issparse(t) && zerovector!(tdst)
+
+    for ((f₁, f₂), arr) in subblocks(tdst)
+        blockax = ntuple(N₁ + N₂) do i
+            return if i <= N₁
+                blockedrange(map(Base.Fix2(dim, f₁.uncoupled[i]), space(t, i)))
+            else
+                blockedrange(map(Base.Fix2(dim, f₂.uncoupled[i - N₁]), space(t, i)'))
+            end
+        end
+
+        for (k, v) in nonzero_pairs(t)
+            indices = getindex.(blockax, Block.(Tuple(k)))
+            copy!(arr[indices...], v[f₁, f₂])
+        end
     end
 
     return tdst
+end
+
+function Base.convert(::Type{T}, t::AbstractBlockTensorMap) where {T <: TensorMap}
+    tdst = convert(TensorMap, t)
+    return convert(T, tdst)
 end
 
 function Base.convert(::Type{TT}, t::AbstractTensorMap) where {TT <: AbstractBlockTensorMap}
