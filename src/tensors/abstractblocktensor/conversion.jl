@@ -20,7 +20,9 @@ function Base.convert(::Type{TensorMap}, t::AbstractBlockTensorMap)
 
         for (k, v) in nonzero_pairs(t)
             indices = getindex.(blockax, Block.(Tuple(k)))
-            copy!(arr[indices...], v[f₁, f₂])
+            arr_slice = arr[indices...]
+            # need to check for empty since fusion tree pair might not be present
+            isempty(arr_slice) || copy!(arr_slice, v[f₁, f₂])
         end
     end
 
