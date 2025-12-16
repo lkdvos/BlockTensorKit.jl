@@ -171,10 +171,10 @@ end
 TensorKit.unitspace(S::Type{<:SumSpace}) = SumSpace(TensorKit.unitspace(eltype(S)))
 TensorKit.zerospace(::Type{SumSpace{S}}) where {S} = SumSpace{S}()
 
-function TensorKit.leftunitspace(S::SumSpace{<:GradedSpace})
+function TensorKit.leftunitspace(S::SumSpace)
     return SumSpace(leftunitspace(oplus(S)))
 end
-function TensorKit.rightunitspace(S::SumSpace{<:GradedSpace})
+function TensorKit.rightunitspace(S::SumSpace)
     return SumSpace(rightunitspace(oplus(S)))
 end
 TensorKit.isunitspace(S::SumSpace) = !isempty(S) && all(isunitspace, S.spaces)
