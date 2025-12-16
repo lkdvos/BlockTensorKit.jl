@@ -246,7 +246,7 @@ end
 
     # blocksectors tests
     @test @constinferred(blocksectors(one(V) ← one(V))) == (C0, D0)
-    @test @constinferred(blocksectors(V ← V)) == sort(collect(sectors(V))) # convert set to vector
+    @test issetequal(@constinferred(blocksectors(V ← V)), sectors(V))
     @test @constinferred(blocksectors(one(V))) == [C0, D0]
     for v in [VC, VCM, VMD]
         @test @constinferred(blocksectors(v^2)) == blocksectors(v ← v)
