@@ -245,7 +245,7 @@ end
     @test !(V ≻ ⊕(V, V))
 
     # blocksectors tests
-    @test @constinferred(blocksectors(one(V) ← one(V))) == (C0, D0)
+    @test issetequal(@constinferred(blocksectors(one(V) ← one(V))), (C0, D0))
     @test issetequal(@constinferred(blocksectors(V ← V)), sectors(V))
     @test @constinferred(blocksectors(one(V))) == [C0, D0]
     for v in [VC, VCM, VMD]
