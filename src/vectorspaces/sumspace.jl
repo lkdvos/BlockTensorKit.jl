@@ -192,7 +192,7 @@ function TensorKit.rightunitspace(S::SumSpace{<:GradedSpace})
 
     return SumSpace(rightunitspace(first(S)))
 end
-TensorKit.isunitspace(S::SumSpace{<:GradedSpace}) = all(isunitspace, S.spaces)
+TensorKit.isunitspace(S::SumSpace) = !isempty(S) && all(isunitspace, S.spaces)
 
 # Promotion and conversion
 # ------------------------
