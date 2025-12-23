@@ -171,6 +171,14 @@ end
 TensorKit.unitspace(S::Type{<:SumSpace}) = SumSpace(TensorKit.unitspace(eltype(S)))
 TensorKit.zerospace(::Type{SumSpace{S}}) where {S} = SumSpace{S}()
 
+function TensorKit.leftunitspace(S::SumSpace)
+    return SumSpace(leftunitspace(oplus(S)))
+end
+function TensorKit.rightunitspace(S::SumSpace)
+    return SumSpace(rightunitspace(oplus(S)))
+end
+TensorKit.isunitspace(S::SumSpace) = !isempty(S) && all(isunitspace, S.spaces)
+
 # Promotion and conversion
 # ------------------------
 Base.promote_rule(::Type{S}, ::Type{SumSpace{S}}) where {S <: ElementarySpace} = SumSpace{S}

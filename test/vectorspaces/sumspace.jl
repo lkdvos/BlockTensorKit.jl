@@ -101,7 +101,7 @@ end
     @test !(V ≻ ⊞(V, V))
 end
 
-@testset"GradedSpace" begin
+@testset "GradedSpace" begin
     using TensorKit, BlockTensorKit
     using Test, TestExtras
 
@@ -152,4 +152,107 @@ end
     @test flip(V) ≿ V
     @test V ≺ ⊞(V, V)
     @test !(V ≻ ⊞(V, V))
+end
+
+@testset "Multifusion" begin
+    using TensorKit, BlockTensorKit
+    using Test, TestExtras
+
+    using TensorKit: hassector
+    using BlockTensorKit: ⊕
+
+    I = IsingBimodule
+
+    C0, C1, D0, D1, M, Mop = I(1, 1, 0), I(1, 1, 1), I(2, 2, 0), I(2, 2, 1), I(1, 2, 0), I(2, 1, 0)
+
+    V1 = Vect[I](C0 => 1, C1 => 1)
+    V2 = Vect[I](D0 => 1, D1 => 1)
+    V3 = Vect[I](M => 1) # no Mop
+    d = dim(V1) + dim(V2) + dim(V3)
+    V = SumSpace(V1, V2, V3)
+
+    @test isa(V, VectorSpace)
+    @test isa(V, ElementarySpace)
+
+    @test isa(InnerProductStyle(V), HasInnerProduct)
+    @test isa(InnerProductStyle(V), EuclideanInnerProduct)
+    @test isa(V, SumSpace)
+
+    @test !isdual(V)
+    @test isdual(V')
+
+    @test @constinferred(hash(V)) == hash(deepcopy(V))
+    @test @constinferred(dual(V)) == @constinferred(conj(V)) == @constinferred(adjoint(V))
+    @test field(V) == ℂ
+
+    @test unitspace(V) == unitspace(V1)
+
+    @test @constinferred(sectortype(V)) == sectortype(V1)
+    @test ((@constinferred sectors(V))...,) == (C1, C0, D1, D0, M) # ordering matters
+    @test length(sectors(V)) == 5
+    @test @constinferred(hassector(V, M))
+    @test !@constinferred(hassector(V, Mop))
+    @test @constinferred(dim(V)) ==
+        d ==
+        @constinferred(sum(dim(s) for s in sectors(V)))
+    @test dim(@constinferred(typeof(V)())) == 0
+    @test (sectors(typeof(V)())...,) == ()
+
+    # (left/right)unitspace tests
+    WC = @constinferred SumSpace(Vect[I](C0 => 1))
+    WD = @constinferred SumSpace(Vect[I](D0 => 1))
+    WM = @constinferred SumSpace(V3)
+    WMop = @constinferred SumSpace(Vect[I](Mop => 1))
+    for W in [WC, WD]
+        @test isunitspace(W)
+        @test W == @constinferred(leftunitspace(W)) == @constinferred(rightunitspace(W))
+        @test unitspace(typeof(W)) == ⊞(Vect[IsingBimodule]((1, 1, 0) => 1, (2, 2, 0) => 1))
+    end
+
+    @test_throws ArgumentError leftunitspace(V)
+    @test_throws ArgumentError rightunitspace(V)
+    @test leftunitspace(SumSpace(V1, V3)) == WC
+    @test rightunitspace(SumSpace(V2, V3)) == WD
+    @test leftunitspace(WMop) == WD && rightunitspace(WMop) == WC
+    @test leftunitspace(WM) == WC && rightunitspace(WM) == WD
+    @test unitspace(WM) == unitspace(WMop) == ⊞(Vect[IsingBimodule]((1, 1, 0) => 1, (2, 2, 0) => 1))
+
+    Wempty = SumSpace(Vect[I]())
+    Wzero = zerospace(V)
+    @test unitspace(Wempty) == unitspace(Wzero)
+    for f in (leftunitspace, rightunitspace)
+        @test_throws ArgumentError f(Wempty)
+    end
+
+    VC = SumSpace(V1, V1)
+    VCM = SumSpace(V1, V3)
+    VMD = SumSpace(V2, V3)
+
+    @test @constinferred(⊞(V, V)) == SumSpace(vcat(V.spaces, V.spaces))
+    @test @constinferred(⊞(VCM, unitspace(VCM))) == SumSpace(vcat(VCM.spaces, unitspace(VCM).spaces))
+    @test @constinferred(⊞(VCM, leftunitspace(VCM))) == SumSpace(vcat(VCM.spaces, leftunitspace(VCM).spaces))
+    @test @constinferred(⊞(VMD, rightunitspace(VMD))) == SumSpace(vcat(VMD.spaces, rightunitspace(VMD).spaces))
+
+    @test @constinferred(⊞(V, V, V, V)) == SumSpace(repeat(V.spaces, 4))
+    @test @constinferred(fuse(VC, VC)) ≅ SumSpace(Vect[I](C0 => 8, C1 => 8))
+    @test @constinferred(fuse(VC, VC', VC, VC')) ≅
+        SumSpace(Vect[I](C0 => 128, C1 => 128))
+    @test @constinferred(flip(V)) ≅ SumSpace(flip.(V.spaces)...)
+    @test flip(V) ≅ V
+    @test flip(V) ≾ V
+    @test flip(V) ≿ V
+    @test V ≺ ⊕(V, V)
+    @test !(V ≻ ⊕(V, V))
+
+    # blocksectors tests
+    @test issetequal(@constinferred(blocksectors(one(V) ← one(V))), (C0, D0))
+    @test issetequal(@constinferred(blocksectors(V ← V)), sectors(V))
+    @test @constinferred(blocksectors(one(V))) == [C0, D0]
+    for v in [VC, VCM, VMD]
+        @test @constinferred(blocksectors(v^2)) == blocksectors(v ← v)
+    end
+    for v in [WM, WMop]
+        @test isempty(@constinferred(blocksectors(v^2)))
+        @test @constinferred(blocksectors(v ← v)) == blocksectors(v)
+    end
 end
