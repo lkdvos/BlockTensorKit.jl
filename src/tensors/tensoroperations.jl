@@ -131,9 +131,6 @@ function promote_storagetype(::Type{T}, ::Type{T₁}, ::Type{T₂}) where {T, T�
     return Union{M₁, M₂}
 end
 
-# EVIL HACK!!!
-TK.storagetype(::Type{AbstractTensorMap{TT, S, N₁, N₂}}) where {TT, S, N₁, N₂} = Vector{TT}
-
 function promote_blocktype(::Type{TT}, ::Type{A₁}, ::Type{A₂}) where {TT, A₁, A₂}
     N = similarblocktype(A₁, TT)
     @assert N === similarblocktype(A₂, TT) "incompatible block types"
