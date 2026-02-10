@@ -1,13 +1,3 @@
-@noinline function _check_spacetype(
-        ::Type{S₁}, ::Type{S₂}
-    ) where {S₁ <: ElementarySpace, S₂ <: ElementarySpace}
-    S₁ === S₂ ||
-        S₁ === SumSpace{S₂} ||
-        SumSpace{S₁} === S₂ ||
-        throw(SpaceMismatch(lazy"incompatible spacetypes: $S₁ and $S₂"))
-    return nothing
-end
-
 # TensorOperations
 # ----------------
 function TO.tensoradd_type(
@@ -75,20 +65,6 @@ function TO.tensoralloc_contract(
     end
 end
 
-function promote_storagetype(::Type{T}, ::Type{T₁}, ::Type{T₂}) where {T, T₁, T₂}
-    if T₁ isa Union
-        M₁ = Union{TK.similarstoragetype(T₁.a, T), TK.similarstoragetype(T₁.b, T)}
-    else
-        M₁ = TK.similarstoragetype(T₁, T)
-    end
-    if T₂ isa Union
-        M₂ = Union{TK.similarstoragetype(T₂.a, T), TK.similarstoragetype(T₂.b, T)}
-    else
-        M₂ = TK.similarstoragetype(T₂, T)
-    end
-    return Union{M₁, M₂}
-end
-
 function promote_blocktype(::Type{TT}, ::Type{A₁}, ::Type{A₂}) where {TT, A₁, A₂}
     N = similarblocktype(A₁, TT)
     @assert N === similarblocktype(A₂, TT) "incompatible block types"
@@ -129,7 +105,7 @@ function TK.trace_permute!(
         backend::AbstractBackend = TO.DefaultBackend(),
     )
     # some input checks
-    _check_spacetype(spacetype(tdst), spacetype(tsrc))
+    TK.check_spacetype(tdst, tsrc)
     if !(BraidingStyle(sectortype(tdst)) isa SymmetricBraiding)
         throw(
             SectorMismatch(
