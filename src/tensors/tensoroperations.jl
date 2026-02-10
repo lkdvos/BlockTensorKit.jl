@@ -13,18 +13,12 @@ end
 function TO.tensoradd_type(
         TC, A::AbstractBlockTensorMap, ::Index2Tuple{N₁, N₂}, ::Bool
     ) where {N₁, N₂}
-    TA = eltype(A)
-    I = sectortype(A)
-    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
-    if TA isa Union
-        M = Union{TK.similarstoragetype(TA.a, Tnew), TK.similarstoragetype(TA.b, Tnew)}
-    else
-        M = TK.similarstoragetype(TA, Tnew)
-    end
+    S = spacetype(A)
+    M = TK.similarstoragetype(A, TK.promote_permute(TC, sectortype(S)))
     return if issparse(A)
-        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
+        sparseblocktensormaptype(S, N₁, N₂, M)
     else
-        blocktensormaptype(spacetype(A), N₁, N₂, M)
+        blocktensormaptype(S, N₁, N₂, M)
     end
 end
 function TO.tensoradd_type(TC, A::AdjointBlockTensorMap, pA::Index2Tuple, conjA::Bool)
@@ -33,58 +27,22 @@ end
 
 # tensoralloc_contract
 # --------------------
-function TO.tensorcontract_type(
-        TC,
-        A::AbstractBlockTensorMap, ::Index2Tuple, ::Bool,
-        B::AbstractBlockTensorMap, ::Index2Tuple, ::Bool,
-        ::Index2Tuple{N₁, N₂},
-    ) where {N₁, N₂}
-    _check_spacetype(spacetype(A), spacetype(B))
-
-    I = sectortype(A)
-    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
-    M = promote_storagetype(Tnew, eltype(A), eltype(B))
-
-    return if issparse(A) && issparse(B)
-        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
-    else
-        blocktensormaptype(spacetype(A), N₁, N₂, M)
-    end
-end
-function TO.tensorcontract_type(
-        TC,
-        A::AbstractTensorMap, pA::Index2Tuple, conjA::Bool,
-        B::AbstractBlockTensorMap, pB::Index2Tuple, conjB::Bool,
-        pAB::Index2Tuple{N₁, N₂},
-    ) where {N₁, N₂}
-    _check_spacetype(spacetype(A), spacetype(B))
-
-    I = sectortype(A)
-    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
-    M = promote_storagetype(Tnew, typeof(A), eltype(B))
-
-    return if issparse(A) && issparse(B)
-        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
-    else
-        blocktensormaptype(spacetype(A), N₁, N₂, M)
-    end
-end
-function TO.tensorcontract_type(
-        TC,
-        A::AbstractBlockTensorMap, ::Index2Tuple, ::Bool,
-        B::AbstractTensorMap, ::Index2Tuple, ::Bool,
-        ::Index2Tuple{N₁, N₂},
-    ) where {N₁, N₂}
-    _check_spacetype(spacetype(A), spacetype(B))
-
-    I = sectortype(A)
-    Tnew = sectorscalartype(I) <: Real ? TC : complex(TC)
-    M = promote_storagetype(Tnew, eltype(A), typeof(B))
-
-    return if issparse(A) && issparse(B)
-        sparseblocktensormaptype(spacetype(A), N₁, N₂, M)
-    else
-        blocktensormaptype(spacetype(A), N₁, N₂, M)
+for TTA in (:AbstractTensorMap, :AbstractBlockTensorMap), TTB in (:AbstractTensorMap, :AbstractBlockTensorMap)
+    TTA == TTB == :AbstractTensorMap && continue
+    @eval function TO.tensorcontract_type(
+            TC,
+            A::$TTA, ::Index2Tuple, ::Bool,
+            B::$TTB, ::Index2Tuple, ::Bool,
+            ::Index2Tuple{N₁, N₂},
+        ) where {N₁, N₂}
+        S = TK.check_spacetype(A, B)
+        TC′ = TK.promote_permute(TC, sectortype(S))
+        M = TK.promote_storagetype(TK.similarstoragetype(A, TC′), TK.similarstoragetype(B, TC′))
+        return if issparse(A) && issparse(B)
+            sparseblocktensormaptype(S, N₁, N₂, M)
+        else
+            blocktensormaptype(S, N₁, N₂, M)
+        end
     end
 end
 
