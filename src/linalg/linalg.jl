@@ -51,6 +51,23 @@ function LinearAlgebra.mul!(C::BlockTensorMap, α::Number, A::BlockTensorMap)
     return C
 end
 
+for TA in (:AbstractBlockTensorMap, :(TK.DiagonalTensorMap), :(TK.AdjointTensorMap), :TensorMap),
+        TB in (:AbstractBlockTensorMap, :(TK.DiagonalTensorMap), :(TK.AdjointTensorMap), :TensorMap)
+    (TA === :AbstractBlockTensorMap || TB === :AbstractBlockTensorMap) || continue
+    @eval function TK.compose_dest(A::$TA, B::$TB)
+        S = TK.check_spacetype(A, B)
+        TC = TO.promote_contract(scalartype(A), scalartype(B), One)
+        M = TK.promote_storagetype(TK.similarstoragetype(A, TC), TK.similarstoragetype(B, TC))
+        TTC = if issparse(A) && issparse(B)
+            sparseblocktensormaptype(S, numout(A), numin(B), M)
+        else
+            blocktensormaptype(S, numout(A), numin(B), M)
+        end
+        structure = codomain(A) ← domain(B)
+        return TO.tensoralloc(TTC, structure, Val(false))
+    end
+end
+
 # This is a generic implementation of `mul!` for BlockTensors that is used to make it easier
 # to work with abstract element types, that might not support in-place operations.
 # For now, the implementation might not be hyper-optimized, but the assumption is that we
