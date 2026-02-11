@@ -35,12 +35,23 @@ Base.keys(A::SparseTensorArray) = keys(A.data)
 Base.values(A::SparseTensorArray) = values(A.data)
 
 TensorKit.space(A::SparseTensorArray) = A.space
+TensorKit.codomain(A::SparseTensorArray) = codomain(space(A))
+TensorKit.domain(A::SparseTensorArray) = domain(space(A))
+
+TensorKit.numout(A::SparseTensorArray) = numout(eltype(A))
+TensorKit.numout(::Type{T}) where {T <: SparseTensorArray} = numout(eltype(A))
+TensorKit.numin(A::SparseTensorArray) = numin(eltype(A))
+TensorKit.numin(::Type{T}) where {T <: SparseTensorArray} = numin(eltype(A))
 
 # AbstractArray interface
 # -----------------------
-Base.size(A::SparseTensorArray) = ntuple(i -> length(space(A)[i]), ndims(A))
+Base.size(A::SparseTensorArray) = ntuple(Base.Fix1(size, A), ndims(A))
+function Base.size(A::SparseTensorArray, i::Int)
+    1 ≤ i ≤ ndims(A) || throw(ArgumentError("Invalid number of dimensions"))
+    return i <= numout(A) ? length(codomain(A)[i]) : length(domain(A)[i - numout(A)])
+end
 
-@inline function Base.getindex(
+@propagate_inbounds function Base.getindex(
         A::SparseTensorArray{S, N₁, N₂, T, N}, I::Vararg{Int, N}
     ) where {S, N₁, N₂, T, N}
     @boundscheck checkbounds(A, I...)
@@ -48,7 +59,7 @@ Base.size(A::SparseTensorArray) = ntuple(i -> length(space(A)[i]), ndims(A))
         return fill!(similar(T, eachspace(A)[I...]), zero(scalartype(T)))
     end
 end
-@inline function getindex!(
+@propagate_inbounds function getindex!(
         A::SparseTensorArray{S, N₁, N₂, T, N}, I::CartesianIndex{N}
     ) where {S, N₁, N₂, T, N}
     @boundscheck checkbounds(A, I)
@@ -56,12 +67,12 @@ end
         return fill!(similar(T, eachspace(A)[I]), zero(scalartype(T)))
     end
 end
-@inline function getindex!(
+@propagate_inbounds function getindex!(
         A::SparseTensorArray{S, N₁, N₂, T, N}, I::Vararg{Int, N}
     ) where {S, N₁, N₂, T, N}
     return getindex!(A, CartesianIndex(I))
 end
-@inline function Base.setindex!(
+@propagate_inbounds function Base.setindex!(
         A::SparseTensorArray{S, N₁, N₂, T, N}, v, I::Vararg{Int, N}
     ) where {S, N₁, N₂, T, N}
     @boundscheck begin
