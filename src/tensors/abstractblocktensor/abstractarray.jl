@@ -80,13 +80,13 @@ function checkspaces(t::AbstractBlockTensorMap)
 end
 
 # scalar indexing is dispatched through:
-@inline Base.getindex(t::AbstractBlockTensorMap, I::Vararg{Int, N}) where {N} =
+@propagate_inbounds Base.getindex(t::AbstractBlockTensorMap, I::Vararg{Int, N}) where {N} =
     getindex(parent(t), I...)
-@inline Base.getindex(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
+@propagate_inbounds Base.getindex(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
     getindex(parent(t), I)
-@inline getindex!(t::AbstractBlockTensorMap, I::Vararg{Int, N}) where {N} =
+@propagate_inbounds getindex!(t::AbstractBlockTensorMap, I::Vararg{Int, N}) where {N} =
     getindex!(parent(t), I...)
-@inline getindex!(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
+@propagate_inbounds getindex!(t::AbstractBlockTensorMap, I::CartesianIndex{N}) where {N} =
     getindex!(parent(t), I)
 
 # slicing getindex needs to correctly allocate output blocktensor:
@@ -115,7 +115,7 @@ Base.@propagate_inbounds function Base.getindex(
 end
 
 # disambiguate:
-Base.@propagate_inbounds function Base.getindex(
+@propagate_inbounds function Base.getindex(
         t::AbstractBlockTensorMap, indices::Vararg{Strided.SliceIndex}
     )
     V = space(eachspace(t)[indices...])
@@ -138,7 +138,7 @@ Base.@propagate_inbounds function Base.getindex(
 end
 
 # TODO: check if this fallback is fair
-@inline Base.setindex!(t::AbstractBlockTensorMap, v::AbstractTensorMap, args...) = (
+@propagate_inbounds Base.setindex!(t::AbstractBlockTensorMap, v::AbstractTensorMap, args...) = (
     setindex!(parent(t), v, args...); t
 )
 

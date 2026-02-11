@@ -40,7 +40,7 @@ TensorKit.space(A::SparseTensorArray) = A.space
 # -----------------------
 Base.size(A::SparseTensorArray) = ntuple(i -> length(space(A)[i]), ndims(A))
 
-@inline function Base.getindex(
+@propagate_inbounds function Base.getindex(
         A::SparseTensorArray{S, N₁, N₂, T, N}, I::Vararg{Int, N}
     ) where {S, N₁, N₂, T, N}
     @boundscheck checkbounds(A, I...)
@@ -48,7 +48,7 @@ Base.size(A::SparseTensorArray) = ntuple(i -> length(space(A)[i]), ndims(A))
         return fill!(similar(T, eachspace(A)[I...]), zero(scalartype(T)))
     end
 end
-@inline function getindex!(
+@propagate_inbounds function getindex!(
         A::SparseTensorArray{S, N₁, N₂, T, N}, I::CartesianIndex{N}
     ) where {S, N₁, N₂, T, N}
     @boundscheck checkbounds(A, I)
@@ -56,12 +56,12 @@ end
         return fill!(similar(T, eachspace(A)[I]), zero(scalartype(T)))
     end
 end
-@inline function getindex!(
+@propagate_inbounds function getindex!(
         A::SparseTensorArray{S, N₁, N₂, T, N}, I::Vararg{Int, N}
     ) where {S, N₁, N₂, T, N}
     return getindex!(A, CartesianIndex(I))
 end
-@inline function Base.setindex!(
+@propagate_inbounds function Base.setindex!(
         A::SparseTensorArray{S, N₁, N₂, T, N}, v, I::Vararg{Int, N}
     ) where {S, N₁, N₂, T, N}
     @boundscheck begin

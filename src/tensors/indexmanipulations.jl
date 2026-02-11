@@ -33,7 +33,7 @@ function TK.add_transform!(
     end
     scale!(tdst, β)
     p = (p₁..., p₂...)
-    for (I, v) in nonzero_pairs(tsrc)
+    @inbounds for (I, v) in nonzero_pairs(tsrc)
         I′ = CartesianIndex(TT.getindices(I.I, p))
         tdst[I′] = TK.add_transform!(
             tdst[I′], v, (p₁, p₂), fusiontreetransform, α, One(), backend...
@@ -55,7 +55,7 @@ function TK.add_transform!(
     end
     scale!(tdst, β)
     p = (p₁..., p₂...)
-    for (I, v) in nonzero_pairs(tsrc)
+    @inbounds for (I, v) in nonzero_pairs(tsrc)
         I′ = CartesianIndex(TT.getindices(I.I, p))
         tdst[I′] = TK.add_transform!(
             tdst[I′], v, (p₁, p₂), fusiontreetransform, α, One(), backend...
@@ -121,7 +121,7 @@ for f! in (:add_permute!, :add_transpose!)
         end
         scale!(tdst, β)
         p = (p₁..., p₂...)
-        for (I, v) in nonzero_pairs(tsrc)
+        @inbounds for (I, v) in nonzero_pairs(tsrc)
             I′ = CartesianIndex(TT.getindices(I.I, p))
             tdst[I′] = TK.$f!(tdst[I′], v, (p₁, p₂), α, One(), backend...)
         end
@@ -140,7 +140,7 @@ for f! in (:add_permute!, :add_transpose!)
         end
         scale!(tdst, β)
         p = (p₁..., p₂...)
-        for (I, v) in nonzero_pairs(tsrc)
+        @inbounds for (I, v) in nonzero_pairs(tsrc)
             I′ = CartesianIndex(TT.getindices(I.I, p))
             tdst[I′] = TK.$f!(tdst[I′], v, (p₁, p₂), α, One(), backend...)
         end
@@ -193,7 +193,7 @@ function TK.add_braid!(
     end
     scale!(tdst, β)
     p = (p₁..., p₂...)
-    for (I, v) in nonzero_pairs(tsrc)
+    @inbounds for (I, v) in nonzero_pairs(tsrc)
         I′ = CartesianIndex(TT.getindices(I.I, p))
         tdst[I′] = TK.add_braid!(tdst[I′], v, (p₁, p₂), levels, α, One(), backend...)
     end
@@ -213,7 +213,7 @@ function TK.add_braid!(
     end
     scale!(tdst, β)
     p = (p₁..., p₂...)
-    for (I, v) in nonzero_pairs(tsrc)
+    @inbounds for (I, v) in nonzero_pairs(tsrc)
         I′ = CartesianIndex(TT.getindices(I.I, p))
         tdst[I′] = TK.add_braid!(tdst[I′], v, (p₁, p₂), levels, α, One(), backend...)
     end
