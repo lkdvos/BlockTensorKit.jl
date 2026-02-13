@@ -10,7 +10,11 @@ const BlockBlasMat{T <: MAK.BlasFloat} = BlockMatrix{T}
 function MatrixAlgebraKit.one!(A::BlockBlasMat)
     _one, _zero = one(eltype(A)), zero(eltype(A))
     A .= _zero
-    diagview(A) .= _one
+    n_blocks = blocksize(A)[1]
+    # awful workaround to BlockArrays indexing interface
+    for bi in 1:n_blocks
+        A[Block(bi), Block(bi)] .= diagm(fill(_one, blocksizes(A)[bi, bi][1]))
+    end
     return A
 end
 
