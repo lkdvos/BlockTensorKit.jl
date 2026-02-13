@@ -106,10 +106,4 @@ function Base.iterate(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, state...
 end
 Base.getindex(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, c::Sector) = block(iter.t, c)
 
-function TensorKit.storagetype(::Type{TT}) where {TT <: AbstractBlockTensorMap}
-    return if isconcretetype(eltype(TT))
-        storagetype(eltype(TT))
-    else
-        Vector{scalartype(TT)}
-    end
-end
+TensorKit.storagetype(::Type{TT}) where {TT <: AbstractBlockTensorMap} = storagetype(eltype(TT))
