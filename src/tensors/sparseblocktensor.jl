@@ -46,6 +46,11 @@ function SparseBlockTensorMap{TT}(
     ) where {E, S, N₁, N₂, N, TT <: AbstractTensorMap{E, S, N₁, N₂}}
     return SparseBlockTensorMap{TT, E, S, N₁, N₂, N}(data, space)
 end
+function SparseBlockTensorMap(
+        data::Dict{CartesianIndex{N}, TT}, space::TensorMapSumSpace{S, N₁, N₂}
+    ) where {E, S, N₁, N₂, N, TT <: AbstractTensorMap{E, S, N₁, N₂}}
+    return SparseBlockTensorMap{TT}(data, space)
+end
 
 function sparseblocktensormaptype(::Type{S}, N₁::Int, N₂::Int, ::Type{T}) where {S, T}
     TT = tensormaptype(S, N₁, N₂, T)
