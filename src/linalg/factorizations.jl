@@ -7,10 +7,18 @@ import MatrixAlgebraKit as MAK
 
 const BlockBlasMat{T <: MAK.BlasFloat} = BlockMatrix{T}
 
+function MatrixAlgebraKit.zero!(A::BlockBlasMat)
+    for bj in blockaxes(A, 2), bi in blockaxes(A, 1)
+        a = view(A, bi, bj)
+        MAK.zero!(a)
+    end
+    return A
+end
+
 function MatrixAlgebraKit.one!(A::BlockBlasMat)
-    _one, _zero = one(eltype(A)), zero(eltype(A))
-    @inbounds for j in axes(A, 2), i in axes(A, 1)
-        A[i, j] = ifelse(i == j, _one, _zero)
+    for bj in blockaxes(A, 2), bi in blockaxes(A, 1)
+        a = view(A, bi, bj)
+        bi == bj ? MAK.one!(a) : MAK.zero!(a)
     end
     return A
 end

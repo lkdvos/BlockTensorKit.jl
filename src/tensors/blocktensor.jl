@@ -123,10 +123,10 @@ end
 # ------------------------
 for (fname, felt) in ((:zeros, :zero), (:ones, :one))
     @eval begin
-        function Base.$fname(::Type{T}, V::TensorMapSumSpace) where {T}
-            TT = blocktensormaptype(spacetype(V), numout(V), numin(V), T)
+        function Base.$fname(::Type{TorA}, V::TensorMapSumSpace) where {TorA}
+            TT = blocktensormaptype(spacetype(V), numout(V), numin(V), TorA)
             t = TT(undef, V)
-            fill!(t, $felt(T))
+            fill!(t, $felt(scalartype(t)))
             return t
         end
     end
@@ -136,9 +136,9 @@ for randfun in (:rand, :randn, :randexp)
     randfun! = Symbol(randfun, :!)
     @eval begin
         function Random.$randfun(
-                rng::Random.AbstractRNG, ::Type{T}, V::TensorMapSumSpace
-            ) where {T}
-            TT = blocktensormaptype(spacetype(V), numout(V), numin(V), T)
+                rng::Random.AbstractRNG, ::Type{TorA}, V::TensorMapSumSpace
+            ) where {TorA}
+            TT = blocktensormaptype(spacetype(V), numout(V), numin(V), TorA)
             t = TT(undef, V)
             Random.$randfun!(rng, t)
             return t
