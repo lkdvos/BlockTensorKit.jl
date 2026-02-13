@@ -3,6 +3,7 @@ using TensorKit
 using BlockTensorKit
 using Random
 using Combinatorics
+using Adapt
 
 Vtr = (
     SumSpace(ℂ^3),
@@ -89,6 +90,20 @@ end
         @test t2 ≈ t2″
     end
 end
+
+@testset "Adapt" begin
+    W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
+    t1 = sprand(Float32, W, 0.5)
+    for T in (Float64, ComplexF64)
+        t2 = @testinferred adapt(Vector{T}, t1)
+        @test t2 isa SparseBlockTensorMap
+        @test scalartype(t2) == T
+        @test storagetype(t2) == Vector{T}
+        @test space(t1) == space(t2)
+        @test norm(t1) ≈ norm(t2)
+    end
+end
+
 
 @testset "Basic linear algebra" begin
     W = V1 ⊗ V2 ⊗ V3 ← V4 ⊗ V5
