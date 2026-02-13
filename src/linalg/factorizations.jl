@@ -1,5 +1,5 @@
 using MatrixAlgebraKit
-using MatrixAlgebraKit: AbstractAlgorithm, YALAPACK.BlasMat, Algorithm
+using MatrixAlgebraKit: AbstractAlgorithm, YALAPACK.BlasMat, Algorithm, diagview
 import MatrixAlgebraKit as MAK
 
 # Type piracy for defining the MAK rules on BlockArrays!
@@ -9,9 +9,8 @@ const BlockBlasMat{T <: MAK.BlasFloat} = BlockMatrix{T}
 
 function MatrixAlgebraKit.one!(A::BlockBlasMat)
     _one, _zero = one(eltype(A)), zero(eltype(A))
-    @inbounds for j in axes(A, 2), i in axes(A, 1)
-        A[i, j] = ifelse(i == j, _one, _zero)
-    end
+    A .= _zero
+    diagview(A) .= _one
     return A
 end
 
