@@ -16,8 +16,7 @@ function MatrixAlgebraKit.zero!(A::BlockBlasMat)
 end
 
 function MatrixAlgebraKit.one!(A::BlockBlasMat)
-    mb, nb = blocksize(A)
-    mb == nb || throw(DimensionMismatch("A is not block-square. Number of row-blocks ($mb) does not match number of column-blocks ($nb)"))
+    blockaxes(A, 1) == blockaxes(A, 2) || throw(DimensionMismatch("A is not block-square"))
     for bj in blockaxes(A, 2), bi in blockaxes(A, 1)
         a = view(A, bi, bj)
         bi == bj ? MAK.one!(a) : MAK.zero!(a)
