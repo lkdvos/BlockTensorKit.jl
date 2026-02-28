@@ -86,6 +86,8 @@ end
         # test conversion to TensorMap that isn't backed by a Vector
         jl_bt1 = rand(JLVector{T}, W)
         TT = TensorKit.TensorMap{T, spacetype(t1′), numout(t1′), numin(t1′), JLVector{T}}
+        # The @allowscalar here can be removed once QuantumKitHub/Strided.jl#44 and
+        # QuantumKitHub/StridedViews.jl#31 are merged and new versions are tagged
         JLArrays.@allowscalar begin # to avoid scalar indexing error in Strided
             jl_bt1′ = @constinferred convert(TT, jl_bt1)
             jl_bt1″ = @inferred BlockTensorMap(jl_bt1′, W)
