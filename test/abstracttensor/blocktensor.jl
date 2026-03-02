@@ -5,7 +5,7 @@ using BlockTensorKit
 using Random
 using Combinatorics
 using Adapt
-using Strided, JLArrays
+using JLArrays
 
 Vtr = (
     SumSpace(ℂ^3),
@@ -87,9 +87,7 @@ end
         jl_bt1 = rand(JLVector{T}, W)
         TT = TensorKit.TensorMap{T, spacetype(t1′), numout(t1′), numin(t1′), JLVector{T}}
         jl_bt1′ = @constinferred convert(TT, jl_bt1)
-        JLArrays.@allowscalar begin
-            jl_bt1″ = @inferred BlockTensorMap(jl_bt1′, W)
-        end # still need some logic for copying to a BlockArray of StridedViews
+        jl_bt1″ = @inferred BlockTensorMap(jl_bt1′, W)
         @test jl_bt1 ≈ jl_bt1″
     end
 end
