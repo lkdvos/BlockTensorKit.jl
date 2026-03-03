@@ -15,11 +15,8 @@ function TO.tensoradd_type(TC, A::AdjointBlockTensorMap, pA::Index2Tuple, conjA:
     return TO.tensoradd_type(TC, A', adjointtensorindices(A, pA), !conjA)
 end
 
-# copy blocks back to CPU/collect them into an array
-# seems necessary for GPU-backed BlockTensorMaps but
-# maybe not the most efficient approach?
 function TO.tensorscalar(t::AbstractBlockTensorMap{T, S, 0, 0}) where {T, S}
-    return prod(TO.tensorscalar, nonzero_values(t))
+    return nonzero_length(t) == 0 ? zero(T) : TO.tensorscalar(only(nonzero_values(t)))
 end
 
 # tensoralloc_contract
