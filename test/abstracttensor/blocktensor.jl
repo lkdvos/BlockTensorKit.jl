@@ -5,6 +5,7 @@ using BlockTensorKit
 using Random
 using Combinatorics
 using Adapt
+using JLArrays
 
 Vtr = (
     SumSpace(ℂ^3),
@@ -82,7 +83,20 @@ end
         t2″ = @inferred BlockTensorMap(t2′, W)
         @test t1 ≈ t1″
         @test t2 ≈ t2″
+        # test conversion to TensorMap that isn't backed by a Vector
+        jl_bt1 = rand(JLVector{T}, W)
+        TT = TensorKit.TensorMap{T, spacetype(t1′), numout(t1′), numin(t1′), JLVector{T}}
+        jl_bt1′ = @constinferred convert(TT, jl_bt1)
+        jl_bt1″ = @inferred BlockTensorMap(jl_bt1′, W)
+        @test jl_bt1 ≈ jl_bt1″
     end
+    # test conversion to TensorMap with a different element type
+    t1 = rand(ComplexF32, W)
+    TT = TensorKit.TensorMap{ComplexF64, spacetype(t1), numout(t1), numin(t1), Vector{ComplexF64}}
+    t1′ = @constinferred convert(TT, t1)
+    @test norm(t1) ≈ norm(t1′)
+    t1″ = @inferred BlockTensorMap(t1′, W)
+    @test t1 ≈ t1″
 end
 
 @testset "Adapt" begin

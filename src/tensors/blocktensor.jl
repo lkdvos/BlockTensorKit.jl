@@ -114,7 +114,7 @@ function BlockTensorMap(t::AbstractTensorMap, space::TensorMapSumSpace)
     TT = tensormaptype(spacetype(t), numout(t), numin(t), storagetype(t))
     tdst = BlockTensorMap{TT}(undef, space)
     for (f₁, f₂) in fusiontrees(tdst)
-        tdst[f₁, f₂] .= t[f₁, f₂]
+        copy!(tdst[f₁, f₂], t[f₁, f₂])
     end
     return tdst
 end

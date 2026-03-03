@@ -15,6 +15,10 @@ function TO.tensoradd_type(TC, A::AdjointBlockTensorMap, pA::Index2Tuple, conjA:
     return TO.tensoradd_type(TC, A', adjointtensorindices(A, pA), !conjA)
 end
 
+function TO.tensorscalar(t::AbstractBlockTensorMap{T, S, 0, 0}) where {T, S}
+    return nonzero_length(t) == 0 ? zero(T) : TO.tensorscalar(only(nonzero_values(t)))
+end
+
 # tensoralloc_contract
 # --------------------
 for TTA in (:AbstractTensorMap, :AbstractBlockTensorMap), TTB in (:AbstractTensorMap, :AbstractBlockTensorMap)
