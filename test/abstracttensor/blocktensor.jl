@@ -89,6 +89,18 @@ end
         jl_bt1′ = @constinferred convert(TT, jl_bt1)
         jl_bt1″ = @inferred BlockTensorMap(jl_bt1′, W)
         @test jl_bt1 ≈ jl_bt1″
+        # test conversion to TensorMap with a different element type
+        t1 = rand(ComplexF32, W)
+        t2 = rand(ComplexF32, W)
+        t1′ = @constinferred convert(TensorMap, t1)
+        t2′ = @constinferred convert(TensorMap, t2)
+        @test norm(t1) ≈ norm(t1′)
+        @test norm(t2) ≈ norm(t2′)
+        @test inner(t1, t2) ≈ inner(t1′, t2′)
+        t1″ = @inferred BlockTensorMap(t1′, W)
+        t2″ = @inferred BlockTensorMap(t2′, W)
+        @test t1 ≈ t1″
+        @test t2 ≈ t2″
     end
 end
 
