@@ -23,6 +23,8 @@ function MatrixAlgebraKit.one!(A::BlockBlasMat)
     return A
 end
 
+_full(A) = Array(A)
+
 for f in
     [
         :svd_compact, :svd_full, :svd_vals,
@@ -44,7 +46,8 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, F, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, F...) do _, (tblock, Fblocks...)
-            Fblocks′ = MAK.$f!(Array(tblock), alg)
+            full_block = _full(tblock)
+            Fblocks′ = MAK.$f!(full_block, alg)
             # deal with the case where the output is not in-place
             for (b′, b) in zip(Fblocks′, Fblocks)
                 b === b′ || copy!(b, b′)
@@ -63,7 +66,7 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, N, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, N) do _, (tblock, Nblock)
-            Nblock′ = MAK.$f!(Array(tblock), alg)
+            Nblock′ = MAK.$f!(_full(tblock), alg)
             # deal with the case where the output is not the same as the input
             Nblock === Nblock′ || copy!(Nblock, Nblock′)
             return nothing

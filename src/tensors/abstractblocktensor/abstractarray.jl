@@ -328,7 +328,7 @@ Base.eltypeof(t::AbstractBlockTensorMap) = eltype(t)
     ) where {T <: AbstractTensorMap}
     catdims = Base.dims2cat(dims)
     V = space(Base._cat(dims, eachspace.(ts)...))
-    A = similar(ts[1], T, V)
+    A = similar(ts[1], TK.storagetype(ts[1]), V)
     shape = size(A)
     if count(!iszero, catdims)::Int > 1
         zerovector!(A)
