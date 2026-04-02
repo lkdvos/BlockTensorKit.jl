@@ -171,7 +171,9 @@ end
 function MAK.initialize_output(::typeof(svd_compact!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_cod = V_dom = infimum(fuse(codomain(t)), fuse(domain(t)))
     U = dense_similar(t, codomain(t) ← V_cod)
-    S = DiagonalTensorMap{real(scalartype(t))}(undef, V_cod)
+    Tr = real(scalartype(t))
+    TAr = TK.similarstoragetype(t, Tr)
+    S = DiagonalTensorMap{Tr, spacetype(V_cod), TAr}(undef, V_cod)
     Vᴴ = dense_similar(t, V_dom ← domain(t))
     return U, S, Vᴴ
 end

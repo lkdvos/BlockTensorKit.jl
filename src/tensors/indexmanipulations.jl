@@ -231,26 +231,26 @@ end
 
 Base.@constprop :aggressive function TK.insertleftunit(
         t::AbstractBlockTensorMap, i::Int = numind(t) + 1;
-        storage_type = TK.storagetype(t), kwargs...
+        kwargs...
     )
     W = TK.insertleftunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(TT.insertafter(I.I, i - 1, (1,)))
-        tdst[I′] = TK.insertleftunit(v, i; storage_type, kwargs...)
+        tdst[I′] = TK.insertleftunit(v, i; kwargs...)
     end
     return tdst
 end
 
 Base.@constprop :aggressive function TK.insertrightunit(
         t::AbstractBlockTensorMap, i::Int = numind(t) + 1;
-        storage_type = TK.storagetype(t), kwargs...
+        kwargs...
     )
     W = TK.insertrightunit(space(t), i; kwargs...)
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(TT.insertafter(I.I, i, (1,)))
-        tdst[I′] = TK.insertrightunit(v, i; storage_type, kwargs...)
+        tdst[I′] = TK.insertrightunit(v, i; kwargs...)
     end
     return tdst
 end
@@ -262,10 +262,14 @@ Base.@constprop :aggressive function TK.removeunit(
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(TT.deleteat(I.I, i))
-        # pass the storagetype to account for the BraidingTensor
-        # case, to ensure the output TensorMap has the correct
-        # type of backing array
-        tdst[I′] = TK.removeunit(v, i; storage_type = TK.storagetype(t))
+        if v isa TK.BraidingTensor
+            v′ = TK.removeunit(v, i)
+            tdst′ = similar(v′, TK.storagetype(t))
+            copy!(tdst′, v′)
+            tdst[I′] = tdst′
+        else
+            tdst[I′] = TK.removeunit(v, i)
+        end
     end
     return tdst
 end
