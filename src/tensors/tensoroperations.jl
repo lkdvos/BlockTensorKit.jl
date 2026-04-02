@@ -53,7 +53,7 @@ TO.tensorcontract_type(
     A::AbstractTensorMap, pA::Index2Tuple, conjA::Bool,
     B::AbstractBlockTensorMap, pB::Index2Tuple, conjB::Bool,
     pAB::Index2Tuple{N₁, N₂},
-   ) where {N₁, N₂} = TO.tensorcontract_type(TC, B, pB, conjB, A, pA, conjA, pAB)
+) where {N₁, N₂} = TO.tensorcontract_type(TC, B, pB, conjB, A, pA, conjA, pAB)
 
 function similarblocktype(::Type{A}, ::Type{TT}) where {A, TT}
     return Core.Compiler.return_type(similar, Tuple{A, Type{TT}, NTuple{numind(TT), Int}})
