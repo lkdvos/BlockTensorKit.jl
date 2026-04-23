@@ -109,8 +109,8 @@ Base.getindex(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, c::Sector) = blo
 function TensorKit.storagetype(::Type{TT}) where {TT <: AbstractBlockTensorMap}
     if eltype(TT) isa Union
         TU = eltype(TT)
-        return promote_storagetype(TU.a, TU.b)
+        return TensorKit.promote_storagetype(TU.a, TU.b)
     else
-        return storagetype(eltype(TT))
+        return TensorKit.storagetype(eltype(TT))
     end
 end
