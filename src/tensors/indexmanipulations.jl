@@ -262,14 +262,7 @@ Base.@constprop :aggressive function TK.removeunit(
     tdst = similar(t, W)
     for (I, v) in nonzero_pairs(t)
         I′ = CartesianIndex(TT.deleteat(I.I, i))
-        if v isa TK.BraidingTensor
-            v′ = TK.removeunit(v, i)
-            tdst′ = similar(v′, TK.storagetype(t))
-            copy!(tdst′, v′)
-            tdst[I′] = tdst′
-        else
-            tdst[I′] = TK.removeunit(v, i)
-        end
+        tdst[I′] = TK.removeunit(v, i)
     end
     return tdst
 end
