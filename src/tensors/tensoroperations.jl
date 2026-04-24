@@ -21,26 +21,17 @@ end
 
 # tensoralloc_contract
 # --------------------
-for TTB in (:AbstractTensorMap, :AbstractBlockTensorMap)
+for TTA in (:AbstractTensorMap, :AbstractBlockTensorMap), TTB in (:AbstractTensorMap, :AbstractBlockTensorMap)
+    TTA == TTB == :AbstractTensorMap && continue
     @eval function TO.tensorcontract_type(
             TC,
-            A::AbstractBlockTensorMap, ::Index2Tuple, ::Bool,
+            A::$TTA, ::Index2Tuple, ::Bool,
             B::$TTB, ::Index2Tuple, ::Bool,
             ::Index2Tuple{N₁, N₂},
         ) where {N₁, N₂}
         S = TK.check_spacetype(A, B)
         TC′ = TK.promote_permute(TC, sectortype(S))
-        ATT = AbstractTensorMap{scalartype(A), spacetype(A), numout(A), numin(A)}
-        BTT = AbstractTensorMap{scalartype(B), spacetype(B), numout(B), numin(B)}
-        # handle case with BraidingTensors, so that they assume the backing
-        # array type of the concrete element type
-        M = if eltype(A) == ATT
-            TK.similarstoragetype(B, TC′)
-        elseif eltype(B) == BTT
-            TK.similarstoragetype(A, TC′)
-        else
-            TK.similarstoragetype(TK.similarstoragetype(A, TC′), TK.similarstoragetype(B, TC′))
-        end
+        M = TK.promote_storagetype(TK.similarstoragetype(A, TC′), TK.similarstoragetype(B, TC′))
         return if issparse(A) && issparse(B)
             sparseblocktensormaptype(S, N₁, N₂, M)
         else
@@ -48,12 +39,6 @@ for TTB in (:AbstractTensorMap, :AbstractBlockTensorMap)
         end
     end
 end
-TO.tensorcontract_type(
-    TC,
-    A::AbstractTensorMap, pA::Index2Tuple, conjA::Bool,
-    B::AbstractBlockTensorMap, pB::Index2Tuple, conjB::Bool,
-    pAB::Index2Tuple{N₁, N₂},
-) where {N₁, N₂} = TO.tensorcontract_type(TC, B, pB, conjB, A, pA, conjA, pAB)
 
 function similarblocktype(::Type{A}, ::Type{TT}) where {A, TT}
     return Core.Compiler.return_type(similar, Tuple{A, Type{TT}, NTuple{numind(TT), Int}})
