@@ -113,8 +113,13 @@ end
 function BlockTensorMap(t::AbstractTensorMap, space::TensorMapSumSpace)
     TT = tensormaptype(spacetype(t), numout(t), numin(t), storagetype(t))
     tdst = BlockTensorMap{TT}(undef, space)
-    for (f₁, f₂) in fusiontrees(tdst)
-        copy!(tdst[f₁, f₂], t[f₁, f₂])
+    @inbounds for (f₁, f₂) in fusiontrees(t)
+        dst = tdst[f₁, f₂]
+        src = t[f₁, f₂]
+        for block_index in Iterators.product(blockaxes(dst)...)
+            indices = getindex.(axes(dst), block_index)
+            dst[block_index...] .= @view src[indices...]
+        end
     end
     return tdst
 end

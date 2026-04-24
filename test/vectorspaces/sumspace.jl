@@ -249,10 +249,10 @@ end
     @test issetequal(@constinferred(blocksectors(V ← V)), sectors(V))
     @test @constinferred(blocksectors(one(V))) == [C0, D0]
     for v in [VC, VCM, VMD]
-        @test @constinferred(blocksectors(v^2)) == blocksectors(v ← v)
+        @test issetequal(@constinferred(blocksectors(v^2)), blocksectors(v ← v))
     end
     for v in [WM, WMop]
         @test isempty(@constinferred(blocksectors(v^2)))
-        @test @constinferred(blocksectors(v ← v)) == blocksectors(v)
+        @test issetequal(@constinferred(blocksectors(v ← v)), blocksectors(v))
     end
 end
