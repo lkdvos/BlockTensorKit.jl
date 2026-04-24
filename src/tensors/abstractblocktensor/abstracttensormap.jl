@@ -106,4 +106,4 @@ function Base.iterate(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, state...
 end
 Base.getindex(iter::TK.BlockIterator{<:AbstractBlockTensorMap}, c::Sector) = block(iter.t, c)
 
-TensorKit.storagetype(::Type{TT}) where {TT <: AbstractBlockTensorMap} = storagetype(eltype(TT))
+TK.storagetype(::Type{TT}) where {TT <: AbstractBlockTensorMap} = storagetype(eltype(TT))

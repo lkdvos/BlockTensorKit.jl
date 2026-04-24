@@ -4,25 +4,6 @@ import MatrixAlgebraKit as MAK
 
 # Type piracy for defining the MAK rules on BlockArrays!
 # -----------------------------------------------------
-
-const BlockBlasMat{T <: MAK.BlasFloat} = BlockMatrix{T}
-
-function MatrixAlgebraKit.zero!(A::BlockBlasMat)
-    for bj in blockaxes(A, 2), bi in blockaxes(A, 1)
-        a = view(A, bi, bj)
-        MAK.zero!(a)
-    end
-    return A
-end
-
-function MatrixAlgebraKit.one!(A::BlockBlasMat)
-    for bj in blockaxes(A, 2), bi in blockaxes(A, 1)
-        a = view(A, bi, bj)
-        bi == bj ? MAK.one!(a) : MAK.zero!(a)
-    end
-    return A
-end
-
 for f in
     [
         :svd_compact, :svd_full, :svd_vals,
@@ -44,7 +25,7 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, F, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, F...) do _, (tblock, Fblocks...)
-            Fblocks′ = MAK.$f!(Array(tblock), alg)
+            Fblocks′ = MAK.$f!(copy_dense!(similar(tblock, size(tblock)), tblock), alg)
             # deal with the case where the output is not in-place
             for (b′, b) in zip(Fblocks′, Fblocks)
                 b === b′ || copy!(b, b′)
@@ -63,7 +44,7 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, N, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, N) do _, (tblock, Nblock)
-            Nblock′ = MAK.$f!(Array(tblock), alg)
+            Nblock′ = MAK.$f!(copy_dense!(similar(tblock, size(tblock)), tblock), alg)
             # deal with the case where the output is not the same as the input
             Nblock === Nblock′ || copy!(Nblock, Nblock′)
             return nothing
@@ -144,7 +125,7 @@ end
 function MAK.initialize_output(::typeof(eigh_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_D = ⊕(fuse(domain(t)))
     T = real(scalartype(t))
-    D = DiagonalTensorMap{T}(undef, V_D)
+    D = TK.similar_diagonal(t, T, V_D)
     V = dense_similar(t, codomain(t) ← V_D)
     return D, V
 end
@@ -152,7 +133,7 @@ end
 function MAK.initialize_output(::typeof(eig_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_D = ⊕(fuse(domain(t)))
     Tc = complex(scalartype(t))
-    D = DiagonalTensorMap{Tc}(undef, V_D)
+    D = TK.similar_diagonal(t, Tc, V_D)
     V = dense_similar(t, Tc, codomain(t) ← V_D)
     return D, V
 end
@@ -168,7 +149,7 @@ end
 function MAK.initialize_output(::typeof(svd_compact!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_cod = V_dom = infimum(fuse(codomain(t)), fuse(domain(t)))
     U = dense_similar(t, codomain(t) ← V_cod)
-    S = DiagonalTensorMap{real(scalartype(t))}(undef, V_cod)
+    S = TK.similar_diagonal(t, real(scalartype(t)), V_cod)
     Vᴴ = dense_similar(t, V_dom ← domain(t))
     return U, S, Vᴴ
 end
