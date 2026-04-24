@@ -4,27 +4,6 @@ import MatrixAlgebraKit as MAK
 
 # Type piracy for defining the MAK rules on BlockArrays!
 # -----------------------------------------------------
-
-const BlockBlasMat{T <: MAK.BlasFloat} = BlockMatrix{T}
-
-function MatrixAlgebraKit.zero!(A::BlockBlasMat)
-    for bj in blockaxes(A, 2), bi in blockaxes(A, 1)
-        a = view(A, bi, bj)
-        MAK.zero!(a)
-    end
-    return A
-end
-
-function MatrixAlgebraKit.one!(A::BlockBlasMat)
-    for bj in blockaxes(A, 2), bi in blockaxes(A, 1)
-        a = view(A, bi, bj)
-        bi == bj ? MAK.one!(a) : MAK.zero!(a)
-    end
-    return A
-end
-
-_full(A) = Array(A)
-
 for f in
     [
         :svd_compact, :svd_full, :svd_vals,
@@ -46,8 +25,7 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, F, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, F...) do _, (tblock, Fblocks...)
-            full_block = _full(tblock)
-            Fblocks′ = MAK.$f!(full_block, alg)
+            Fblocks′ = MAK.$f!(copy_dense(tblock), alg)
             # deal with the case where the output is not in-place
             for (b′, b) in zip(Fblocks′, Fblocks)
                 b === b′ || copy!(b, b′)
@@ -66,7 +44,7 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, N, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, N) do _, (tblock, Nblock)
-            Nblock′ = MAK.$f!(_full(tblock), alg)
+            Nblock′ = MAK.$f!(copy_dense(tblock), alg)
             # deal with the case where the output is not the same as the input
             Nblock === Nblock′ || copy!(Nblock, Nblock′)
             return nothing

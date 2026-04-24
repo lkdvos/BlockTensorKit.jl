@@ -37,6 +37,8 @@ import TensorOperations as TO
 import TupleTools as TT
 import MatrixAlgebraKit as MAK
 
+include("auxiliary/blockarrays.jl")
+
 # Spaces
 include("vectorspaces/sumspace.jl")
 include("vectorspaces/sumspaceindices.jl")
