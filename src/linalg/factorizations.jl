@@ -125,7 +125,7 @@ end
 function MAK.initialize_output(::typeof(eigh_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_D = ⊕(fuse(domain(t)))
     T = real(scalartype(t))
-    D = DiagonalTensorMap{T}(undef, V_D)
+    D = TK.similar_diagonal(t, T, V_D)
     V = dense_similar(t, codomain(t) ← V_D)
     return D, V
 end
@@ -133,7 +133,7 @@ end
 function MAK.initialize_output(::typeof(eig_full!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_D = ⊕(fuse(domain(t)))
     Tc = complex(scalartype(t))
-    D = DiagonalTensorMap{Tc}(undef, V_D)
+    D = TK.similar_diagonal(t, Tc, V_D)
     V = dense_similar(t, Tc, codomain(t) ← V_D)
     return D, V
 end
@@ -149,9 +149,7 @@ end
 function MAK.initialize_output(::typeof(svd_compact!), t::AbstractBlockTensorMap, ::AbstractAlgorithm)
     V_cod = V_dom = infimum(fuse(codomain(t)), fuse(domain(t)))
     U = dense_similar(t, codomain(t) ← V_cod)
-    Tr = real(scalartype(t))
-    TAr = TK.similarstoragetype(t, Tr)
-    S = DiagonalTensorMap{Tr, spacetype(V_cod), TAr}(undef, V_cod)
+    S = TK.similar_diagonal(t, real(scalartype(t)), V_cod)
     Vᴴ = dense_similar(t, V_dom ← domain(t))
     return U, S, Vᴴ
 end
