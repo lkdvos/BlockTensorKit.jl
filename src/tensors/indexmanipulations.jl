@@ -102,6 +102,7 @@ for f! in (:add_permute!, :add_transpose!)
         end
         dstdata = parent(tdst)
         srcdata = permutedims(StridedView(parent(tsrc)), (p₁..., p₂...))
+
         @inbounds for I in eachindex(dstdata, srcdata)
             dstdata[I] = TK.$f!(dstdata[I], srcdata[I], (p₁, p₂), α, β, backend...)
         end
@@ -230,8 +231,7 @@ function TK.add_braid!(
 end
 
 Base.@constprop :aggressive function TK.insertleftunit(
-        t::AbstractBlockTensorMap, i::Int = numind(t) + 1;
-        kwargs...
+        t::AbstractBlockTensorMap, i::Int = numind(t) + 1; kwargs...
     )
     W = TK.insertleftunit(space(t), i; kwargs...)
     tdst = similar(t, W)
@@ -243,8 +243,7 @@ Base.@constprop :aggressive function TK.insertleftunit(
 end
 
 Base.@constprop :aggressive function TK.insertrightunit(
-        t::AbstractBlockTensorMap, i::Int = numind(t) + 1;
-        kwargs...
+        t::AbstractBlockTensorMap, i::Int = numind(t) + 1; kwargs...
     )
     W = TK.insertrightunit(space(t), i; kwargs...)
     tdst = similar(t, W)
