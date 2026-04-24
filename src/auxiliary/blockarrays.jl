@@ -1,12 +1,9 @@
 copy_dense(A) = copy_dense!(similar(first(A.blocks), size(A)), A)
 function copy_dense!(Adense, A)
-    for bj in blockaxes(A, 2)
-        js = axes(A, 2)[bj]
-        for bi in blockaxes(A, 1)
-            a = view(A, bi, bj)
-            is = axes(A, 1)[bi]
-            Adense[is, js] = @view A[block_index...]
-        end
+    for block_index in Iterators.product(blockaxes(A)...)
+        a = view(A, block_index...)
+        indices = getindex.(axes(A), block_index)
+        Adense[indices...] .= a
     end
     return Adense
 end
