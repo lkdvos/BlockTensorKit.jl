@@ -1,4 +1,3 @@
-copy_dense(A) = copy_dense!(similar(first(A.blocks), size(A)), A)
 function copy_dense!(Adense, A)
     for block_index in Iterators.product(blockaxes(A)...)
         a = view(A, block_index...)
