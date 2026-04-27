@@ -36,7 +36,7 @@ MatrixAlgebraKit = "0.6"
 Random = "1"
 SafeTestsets = "0.1"
 Strided = "2.3.3"
-TensorKit = "0.16.4"
+TensorKit = "0.17"
 TensorOperations = "5"
 Test = "1"
 TestExtras = "0.2, 0.3"
@@ -54,6 +54,9 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestExtras = "5ed8adda-3752-4e41-b88a-e8b09835ee3a"
+
+[sources]
+TensorKit = {url = "https://github.com/QuantumKitHub/TensorKit.jl", rev = "main"}
 
 [targets]
 test = ["Test", "TestExtras", "Random", "Combinatorics", "SafeTestsets", "Aqua", "Adapt", "JLArrays"]

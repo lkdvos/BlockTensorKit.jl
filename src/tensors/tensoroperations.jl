@@ -115,17 +115,25 @@ function TK.BraidingTensor(
     return TK.BraidingTensor{T, S}(V1, V2, adjoint)
 end
 
-function TK.BraidingTensor{T, S}(
+function TK.BraidingTensor{T, S, A}(
         V1::SumSpace{S}, V2::SumSpace{S}, adjoint::Bool = false
-    ) where {T, S}
-    τtype = BraidingTensor{T, S}
+    ) where {T, S, A}
+    τtype = BraidingTensor{T, S, A}
     tdst = SparseBlockTensorMap{τtype}(undef, V2 ⊗ V1, V1 ⊗ V2)
     Vs = eachspace(tdst)
     @inbounds for I in CartesianIndices(tdst)
         if I[1] == I[4] && I[2] == I[3]
             V = Vs[I]
-            tdst[I] = TK.BraidingTensor{T, S}(V[2], V[1], adjoint)
+            tdst[I] = TK.BraidingTensor{T, S, A}(V[2], V[1], adjoint)
         end
     end
     return tdst
+end
+
+function TK.braidingtensortype(::Type{SumSpace{S}}, ::Type{TorA}) where {S, TorA}
+    return BraidingTensor{scalartype(TorA), S, similarstoragetype(TorA)}
+end
+
+function TK.braidingtensortype(V1::SumSpace{S}, V2::SumSpace{S}, ::Type{TorA}) where {S, TorA}
+    return BraidingTensor{scalartype(TorA), S, similarstoragetype(TorA)}
 end
