@@ -25,7 +25,8 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, F, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, F...) do _, (tblock, Fblocks...)
-            Fblocks′ = MAK.$f!(copy_dense!(similar(tblock, size(tblock)), tblock), alg)
+            dense_block = similar_dense(tblock)
+            Fblocks′ = MAK.$f!(copy_dense!(dense_block, tblock), alg)
             # deal with the case where the output is not in-place
             for (b′, b) in zip(Fblocks′, Fblocks)
                 b === b′ || copy!(b, b′)
@@ -44,7 +45,8 @@ for f! in (
     )
     @eval function MAK.$f!(t::AbstractBlockTensorMap, N, alg::AbstractAlgorithm)
         TensorKit.foreachblock(t, N) do _, (tblock, Nblock)
-            Nblock′ = MAK.$f!(copy_dense!(similar(tblock, size(tblock)), tblock), alg)
+            dense_block = similar_dense(tblock)
+            Nblock′ = MAK.$f!(copy_dense!(dense_block, tblock), alg)
             # deal with the case where the output is not the same as the input
             Nblock === Nblock′ || copy!(Nblock, Nblock′)
             return nothing
