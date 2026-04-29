@@ -1,4 +1,4 @@
-similar_dense(::Type{Vector{T}}, sz::NTuple{N, Ti}) where {T, N, Ti} = Array{T, N}(undef, sz)
+similar_dense(::Type{Vector{T}}, sz::Dims{N}) where {T, N} = Array{T, N}(undef, sz)
 similar_dense(::Type{TA}, sz) where {T, N, P, TA <: Base.SubArray{T, N, P}} = similar_dense(P, sz)
 similar_dense(::Type{TA}, sz) where {T, N, P, TA <: Base.ReshapedArray{T, N, P}} = similar_dense(P, sz)
 similar_dense(::Type{TA}, sz) where {T, N, TA <: AbstractArray{T, N}} = TA(undef, sz)
