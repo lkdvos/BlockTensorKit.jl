@@ -55,6 +55,27 @@ for f! in (
     end
 end
 
+# Default algorithm
+# -----------------
+# Needed for disambiguation
+for f in [
+        :lq_full, :lq_compact, :lq_null,
+        :qr_full, :qr_compact, :qr_null,
+        :schur_full, :schur_vals,
+        :eig_full, :eig_vals, :eig_trunc, :eig_trunc_no_error,
+        :eigh_full, :eigh_vals, :eigh_trunc, :eigh_trunc_no_error,
+        :svd_full, :svd_compact, :svd_trunc, :svd_trunc_no_error, :svd_vals,
+        :left_polar, :right_polar,
+        :left_orth, :right_orth, :left_null, :right_null,
+        :project_hermitian, :project_antihermitian, :project_isometric,
+    ]
+    f! = Symbol(f, :!)
+    @eval MAK.$f!(t::AbstractBlockTensorMap, alg::DefaultAlgorithm) =
+        MAK.$f!(t, MAK.select_algorithm(MAK.$f!, t, nothing; alg.kwargs...))
+    @eval MAK.$f!(t::AbstractBlockTensorMap, out, alg::DefaultAlgorithm) =
+        MAK.$f!(t, out, MAK.select_algorithm(MAK.$f!, t, nothing; alg.kwargs...))
+end
+
 # specializations until fixes in base package
 function MAK.is_left_isometric(A::BlockMatrix; atol::Real = 0, rtol::Real = MAK.defaulttol(A), norm = LinearAlgebra.norm)
     P = A' * A
