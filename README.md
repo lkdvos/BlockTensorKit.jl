@@ -1,6 +1,6 @@
 <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/lkdvos/BlockTensorKit.jl/blob/main/docs/src/assets/logo.svg">
-    <img alt="BlockTensorKit.jl logo" src="https://github.com/lkdvos/BlockTensorKit.jl/blob/main/docs/src/assets/logo.svg" width="150">
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/QuantumKitHub/BlockTensorKit.jl/blob/main/docs/src/assets/logo.svg">
+    <img alt="BlockTensorKit.jl logo" src="https://github.com/QuantumKitHub/BlockTensorKit.jl/blob/main/docs/src/assets/logo.svg" width="150">
 </picture>
 
 # BlockTensorKit
@@ -13,16 +13,16 @@
 
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://lkdvos.github.io/BlockTensorKit.jl/stable
+[docs-stable-url]: https://QuantumKitHub.github.io/BlockTensorKit.jl/stable
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://lkdvos.github.io/BlockTensorKit.jl/dev
+[docs-dev-url]: https://QuantumKitHub.github.io/BlockTensorKit.jl/dev
 
-[ci-img]: https://github.com/lkdvos/BlockTensorKit.jl/actions/workflows/CI.yml/badge.svg
-[ci-url]: https://github.com/lkdvos/BlockTensorKit.jl/actions/workflows/CI.yml
+[ci-img]: https://github.com/QuantumKitHub/BlockTensorKit.jl/actions/workflows/CI.yml/badge.svg
+[ci-url]: https://github.com/QuantumKitHub/BlockTensorKit.jl/actions/workflows/CI.yml
 
-[codecov-img]: https://codecov.io/gh/lkdvos/BlockTensorKit.jl/graph/badge.svg?token=C1QPCRT1NT
-[codecov-url]: https://codecov.io/gh/lkdvos/BlockTensorKit.jl
+[codecov-img]: https://codecov.io/gh/QuantumKitHub/BlockTensorKit.jl/graph/badge.svg?token=C1QPCRT1NT
+[codecov-url]: https://codecov.io/gh/QuantumKitHub/BlockTensorKit.jl
 
 [aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
@@ -40,4 +40,4 @@ BlockTensorKit.jl aims to provide a convenient interface to such blocked tensors
 In particular, the central types of this package (`<:AbstractBlockTensorMap`) could be describes as having both `AbstractArray`-like interfaces, which allow indexing as well as slicing operations, and `AbstractTensorMap`-like interfaces, allowing linear algebra routines, tensor contraction and tensor factorization.
 The goal is to abstract away the need to deal with the inner structures of such tensors as much as possible, and have the ability to replace `AbstractTensorMap`s with `AbstractBlockTensorMap` without having to change the high-level code.
 
-For examples and further information, please check out the [documentation](https://lkdvos.github.io/BlockTensorKit.jl/dev).
+For examples and further information, please check out the [documentation](https://QuantumKitHub.github.io/BlockTensorKit.jl/dev).

@@ -15,11 +15,11 @@ makedocs(;
     format = Documenter.HTML(;
         prettyurls = get(ENV, "CI", nothing) == "true",
         mathengine = MathJax(),
-        repolink = "https://github.com/lkdvos/BlockTensorKit.jl.git",
+        repolink = "https://github.com/QuantumKitHub/BlockTensorKit.jl.git",
     ),
     pages = pages,
     pagesonly = true,
-    repo = "github.com/lkdvos/BlockTensorKit.jl.git",
+    repo = "github.com/QuantumKitHub/BlockTensorKit.jl.git",
 )
 
-deploydocs(; repo = "github.com/lkdvos/BlockTensorKit.jl.git", push_preview = true)
+deploydocs(; repo = "github.com/QuantumKitHub/BlockTensorKit.jl.git", push_preview = true)
